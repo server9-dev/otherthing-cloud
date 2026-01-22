@@ -3,7 +3,7 @@
 # OtherThing (RhizOS Cloud) Server Install Script
 # Run on a fresh Ubuntu 22.04+ server
 #
-# Usage: curl -fsSL https://raw.githubusercontent.com/Huck-dev/rhizos-cloud/main/install-server.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/server9-dev/otherthing-cloud/main/install-server.sh | bash
 #
 
 set -e
@@ -61,7 +61,7 @@ if [ -d "$INSTALL_DIR" ]; then
     cd $INSTALL_DIR
     git pull
 else
-    $SUDO git clone https://github.com/Huck-dev/rhizos-cloud.git $INSTALL_DIR
+    $SUDO git clone https://github.com/server9-dev/otherthing-cloud.git $INSTALL_DIR
     $SUDO chown -R $USER:$USER $INSTALL_DIR
 fi
 cd $INSTALL_DIR

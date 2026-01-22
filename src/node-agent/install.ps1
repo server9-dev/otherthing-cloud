@@ -1,9 +1,9 @@
 # RhizOS Node Agent Installer for Windows
-# https://github.com/Huck-dev/rhizos-node
+# https://github.com/server9-dev/otherthing-node
 
 $ErrorActionPreference = "Stop"
 
-$repo = "Huck-dev/rhizos-node"
+$repo = "server9-dev/otherthing-node"
 $installDir = "$env:LOCALAPPDATA\RhizOS"
 $binaryName = "rhizos-node.exe"
 

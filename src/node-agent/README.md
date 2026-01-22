@@ -14,14 +14,14 @@ A lightweight agent that shares your compute resources (CPU/GPU) with the RhizOS
 ### Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Huck-dev/rhizos-node/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/server9-dev/otherthing-node/main/install.sh | bash
 ```
 
 Or manually:
 
 ```bash
 # Download binary
-wget https://github.com/Huck-dev/rhizos-node/releases/latest/download/rhizos-node-linux-amd64
+wget https://github.com/server9-dev/otherthing-node/releases/latest/download/rhizos-node-linux-amd64
 chmod +x rhizos-node-linux-amd64
 sudo mv rhizos-node-linux-amd64 /usr/local/bin/rhizos-node
 
@@ -31,10 +31,10 @@ rhizos-node --orchestrator http://ORCHESTRATOR_IP:8080
 
 ### Windows
 
-Download from [Releases](https://github.com/Huck-dev/rhizos-node/releases) or use PowerShell:
+Download from [Releases](https://github.com/server9-dev/otherthing-node/releases) or use PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/Huck-dev/rhizos-node/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/server9-dev/otherthing-node/main/install.ps1 | iex
 ```
 
 ### Docker
@@ -53,7 +53,7 @@ docker run -d \
 Requires Rust 1.75+:
 
 ```bash
-git clone https://github.com/Huck-dev/rhizos-node.git
+git clone https://github.com/server9-dev/otherthing-node.git
 cd rhizos-node
 cargo build --release
 ./target/release/rhizos-node --help

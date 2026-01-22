@@ -2,9 +2,9 @@
 set -e
 
 # RhizOS Node Agent Installer
-# https://github.com/Huck-dev/rhizos-node
+# https://github.com/server9-dev/otherthing-node
 
-REPO="Huck-dev/rhizos-node"
+REPO="server9-dev/otherthing-node"
 INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="rhizos-node"
 
