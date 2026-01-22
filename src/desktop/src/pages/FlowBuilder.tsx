@@ -7,7 +7,7 @@ import {
   Cloud, DollarSign, Lightbulb, Server, Sparkles, Save, FolderOpen, Download, Upload
 } from 'lucide-react';
 import { CyberButton } from '../components';
-import { RHIZOS_MODULES, MODULE_CATEGORIES, getCategoryColor, getCategoryIcon, ModuleDefinition } from '../data/modules';
+import { RHIZOS_MODULES, MODULE_CATEGORIES, getCategoryColor, getCategoryIcon, ModuleDefinition, getMcpModules } from '../data/modules';
 import { ModuleConfigPanel } from '../components/flow';
 import { flowStorage, downloadFlow, readFlowFile, FlowListItem } from '../services/flow-storage';
 import { Flow, createEmptyFlow, generateNodeId } from '../../../shared/schemas/flows';
@@ -1119,9 +1119,10 @@ export function FlowBuilder() {
     setNodes(prev => [...prev, newNode]);
   };
 
-  // Filter modules for palette
+  // Filter modules for palette (only show real MCP adapters, not legacy placeholders)
   const filteredModules = useMemo(() => {
-    return RHIZOS_MODULES.filter(mod => {
+    const mcpModules = getMcpModules();
+    return mcpModules.filter(mod => {
       const matchesCategory = paletteCategory === 'all' || mod.category === paletteCategory;
       const matchesSearch = paletteSearch === '' ||
         mod.name.toLowerCase().includes(paletteSearch.toLowerCase()) ||

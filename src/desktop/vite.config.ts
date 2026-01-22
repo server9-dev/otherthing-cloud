@@ -10,6 +10,11 @@ export default defineConfig({
     proxy: {
       '/health': 'http://localhost:8080',
       '/api': 'http://localhost:8080',
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
   envPrefix: ['VITE_', 'TAURI_'],

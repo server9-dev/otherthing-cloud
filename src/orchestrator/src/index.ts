@@ -2115,7 +2115,7 @@ const server = http.createServer(app);
 
 // ============ WebSocket Server (Nodes) ============
 
-const wss = new WebSocketServer({ server, path: WS_PATH });
+const wss = new WebSocketServer({ noServer: true });
 
 wss.on('connection', (ws: WebSocket) => {
   nodeManager.handleConnection(ws);
@@ -2198,7 +2198,7 @@ function getCollaborators(workspaceId: string, whiteboardId: string): Array<{ us
   return Array.from(room).map(c => ({ userId: c.userId, username: c.username }));
 }
 
-const collabWss = new WebSocketServer({ server, path: COLLAB_WS_PATH });
+const collabWss = new WebSocketServer({ noServer: true });
 
 collabWss.on('connection', (ws: WebSocket, req) => {
   let clientInfo: { workspaceId: string; whiteboardId: string; userId: string; username: string } | null = null;
@@ -2366,7 +2366,7 @@ agentService.setProgressCallback((agentId, progress, message, action) => {
   }
 });
 
-const agentWss = new WebSocketServer({ server, path: AGENT_WS_PATH });
+const agentWss = new WebSocketServer({ noServer: true });
 
 agentWss.on('connection', (ws: WebSocket, req) => {
   let subscribedWorkspace: string | null = null;
@@ -2377,20 +2377,21 @@ agentWss.on('connection', (ws: WebSocket, req) => {
 
       // Handle subscribe to workspace agents
       if (msg.type === 'subscribe' && msg.workspaceId) {
-        subscribedWorkspace = msg.workspaceId;
+        const workspaceId: string = msg.workspaceId;
+        subscribedWorkspace = workspaceId;
 
-        if (!agentClients.has(subscribedWorkspace)) {
-          agentClients.set(subscribedWorkspace, new Set());
+        if (!agentClients.has(workspaceId)) {
+          agentClients.set(workspaceId, new Set());
         }
-        agentClients.get(subscribedWorkspace)!.add(ws);
+        agentClients.get(workspaceId)!.add(ws);
 
-        console.log(`[Agents WS] Client subscribed to workspace ${subscribedWorkspace}`);
+        console.log(`[Agents WS] Client subscribed to workspace ${workspaceId}`);
 
         // Send current running agents
-        const running = agentService.getRunningExecutions(subscribedWorkspace);
+        const running = agentService.getRunningExecutions(workspaceId);
         ws.send(JSON.stringify({
           type: 'subscribed',
-          workspaceId: subscribedWorkspace,
+          workspaceId,
           runningAgents: running,
         }));
       }
@@ -2414,6 +2415,29 @@ agentWss.on('connection', (ws: WebSocket, req) => {
   ws.on('error', (err) => {
     console.error('[Agents WS] WebSocket error:', err);
   });
+});
+
+// ============ WebSocket Upgrade Handling ============
+
+// Handle WebSocket upgrade requests manually to route to correct server
+server.on('upgrade', (request, socket, head) => {
+  const pathname = request.url;
+
+  if (pathname === WS_PATH) {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else if (pathname === COLLAB_WS_PATH) {
+    collabWss.handleUpgrade(request, socket, head, (ws) => {
+      collabWss.emit('connection', ws, request);
+    });
+  } else if (pathname === AGENT_WS_PATH) {
+    agentWss.handleUpgrade(request, socket, head, (ws) => {
+      agentWss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
 });
 
 // ============ Start Server ============

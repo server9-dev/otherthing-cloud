@@ -45,7 +45,7 @@
     ],
     "resources": [],
     "externalBin": [
-      "../../../node-agent/target/release/rhizos-node"
+      "../../node-agent/target/release/rhizos-node"
     ],
     "windows": {
       "certificateThumbprint": null,
@@ -70,7 +70,7 @@
       "scope": [
         {
           "name": "node-agent",
-          "cmd": "../../../node-agent/target/release/rhizos-node",
+          "cmd": "../../node-agent/target/release/rhizos-node",
           "args": true
         }
       ]

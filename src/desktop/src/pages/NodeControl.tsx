@@ -88,9 +88,7 @@ export function NodeControl() {
     running: false,
     connected: false,
     nodeId: null,
-    orchestratorUrl: window.location.hostname === 'localhost'
-      ? 'ws://localhost:8080/ws/node'
-      : `ws://${window.location.host}/ws/node`,
+    orchestratorUrl: `ws://${window.location.host}/ws/node`,
   });
   const [hardware, setHardware] = useState<HardwareInfo | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthStatus>({

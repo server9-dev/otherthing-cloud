@@ -52,11 +52,10 @@ interface WhiteboardProps {
   defaultHeight?: number;
 }
 
-// WebSocket URL - derive from current location
+// WebSocket URL - derive from current location (Vite proxy handles /ws routes)
 const getCollabWsUrl = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  // Use orchestrator URL
-  return `${protocol}//localhost:8080/ws/collab`;
+  return `${protocol}//${window.location.host}/ws/collab`;
 };
 
 // Get token from localStorage

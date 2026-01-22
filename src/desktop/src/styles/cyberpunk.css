@@ -17,6 +17,7 @@
   --bg-secondary: #18181b;
   --bg-tertiary: #27272a;
   --bg-elevated: #3f3f46;
+  --bg-void: #0a0a0c;
 
   /* Text */
   --text-primary: #fafafa;
@@ -750,4 +751,41 @@ body {
 .cyber-card-body.excalidraw-container {
   overflow: visible !important;
   padding: 0 !important;
+}
+
+/* ============ Select/Dropdown Styling ============ */
+/* Fix for dark theme select dropdowns - force light background on options */
+select {
+  background-color: #1a1a2e !important;
+  color: #ffffff !important;
+  cursor: pointer;
+}
+
+select option {
+  background-color: #2a2a4e !important;
+  color: #ffffff !important;
+  padding: 10px 12px !important;
+}
+
+select option:hover,
+select option:focus {
+  background-color: #3a3a6e !important;
+}
+
+select option:checked {
+  background-color: #4a4a8e !important;
+  color: #ffffff !important;
+}
+
+/* Firefox specific */
+select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #ffffff;
+}
+
+@-moz-document url-prefix() {
+  select option {
+    background-color: #2a2a4e !important;
+    color: #ffffff !important;
+  }
 }

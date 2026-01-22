@@ -571,6 +571,26 @@ export function WorkspaceDetail() {
     }
   };
 
+  // Cancel a running agent
+  const cancelAgent = async (agentId: string) => {
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/agents/${agentId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        // Update local state to mark as cancelled
+        setAgents(prev => prev.map(a =>
+          a.id === agentId
+            ? { ...a, status: 'failed', error: 'Cancelled by user', completedAt: new Date().toISOString() }
+            : a
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to cancel agent:', err);
+    }
+  };
+
   // Poll agent status
   const pollAgentStatus = async (agentId: string) => {
     const poll = async () => {
@@ -610,7 +630,7 @@ export function WorkspaceDetail() {
     if (!id) return;
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host;
+    const wsHost = window.location.host; // Use same host - Vite proxy handles /ws routes
     const wsUrl = `${wsProtocol}//${wsHost}/ws/agents`;
 
     let ws: WebSocket | null = null;
@@ -2955,8 +2975,58 @@ Members: ${workspace?.members.length || 0}`
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-xs)' }}>
                     <Globe size={16} style={{ color: computeSummary.hasCloudKeys ? 'var(--accent)' : 'var(--text-muted)' }} />
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Cloud: {computeSummary.cloudProviders.length > 0 ? computeSummary.cloudProviders.join(', ') : 'No API keys'}
+                      Cloud: {computeSummary.cloudProviders.length > 0 ? computeSummary.cloudProviders.join(', ') : (
+                        <button
+                          onClick={() => setActiveTab('api-keys')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent)',
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                            fontSize: 'inherit',
+                            padding: 0,
+                          }}
+                        >
+                          No API keys (click to add)
+                        </button>
+                      )}
                     </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Setup Required Warning */}
+          {computeSummary && !computeSummary.hasLocalCompute && !computeSummary.hasCloudKeys && (
+            <div className="cyber-card" style={{ marginBottom: 'var(--gap-md)', borderColor: 'var(--warning)' }}>
+              <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--gap-md)' }}>
+                  <AlertTriangle size={24} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+                  <div>
+                    <div style={{ color: 'var(--warning)', fontWeight: 600, marginBottom: 'var(--gap-xs)' }}>
+                      Setup Required
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-sm)' }}>
+                      To run agents, you need either local compute (Ollama) or cloud API keys configured.
+                    </p>
+                    <div style={{ display: 'flex', gap: 'var(--gap-sm)', flexWrap: 'wrap' }}>
+                      <CyberButton
+                        variant="primary"
+                        icon={Key}
+                        onClick={() => setActiveTab('api-keys')}
+                      >
+                        Add API Key
+                      </CyberButton>
+                      <CyberButton
+                        variant="secondary"
+                        icon={Server}
+                        onClick={() => setActiveTab('resources')}
+                      >
+                        Connect Node
+                      </CyberButton>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3012,15 +3082,18 @@ Members: ${workspace?.members.length || 0}`
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     <strong style={{ color: 'var(--accent)' }}>{taskAnalysis.category}</strong> task
                     {' → '}
-                    <span style={{ color: taskAnalysis.recommendation.provider === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
-                      {taskAnalysis.recommendation.model}
+                    <span style={{ color: (agentProvider || taskAnalysis.recommendation.provider) === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
+                      {agentModel || taskAnalysis.recommendation.model}
                     </span>
                     {' via '}
-                    <span style={{ color: taskAnalysis.recommendation.provider === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
-                      {taskAnalysis.recommendation.provider === 'ollama' ? 'local' : taskAnalysis.recommendation.provider}
+                    <span style={{ color: (agentProvider || taskAnalysis.recommendation.provider) === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
+                      {(agentProvider || taskAnalysis.recommendation.provider) === 'ollama' ? 'local' : (agentProvider || taskAnalysis.recommendation.provider)}
                     </span>
-                    {taskAnalysis.recommendation.needsPull && (
+                    {!agentModel && taskAnalysis.recommendation.needsPull && (
                       <span style={{ color: 'var(--warning)', marginLeft: 'var(--gap-xs)' }}>(will download)</span>
+                    )}
+                    {(agentModel || agentProvider) && (
+                      <span style={{ color: 'var(--info)', marginLeft: 'var(--gap-xs)' }}>(custom)</span>
                     )}
                   </span>
                 </div>
@@ -3176,9 +3249,25 @@ Members: ${workspace?.members.length || 0}`
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                         {agent.status === 'pulling_model' ? '📥 Downloading model...' : (agent.progressMessage || `${agent.progress.toFixed(0)}%`)}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: agent.computeSource === 'local' ? 'var(--success)' : 'var(--accent)' }}>
-                        {agent.computeSource === 'local' ? '⚡ Local' : '☁️ Cloud'} • {agent.model}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
+                        <span style={{ fontSize: '0.75rem', color: agent.computeSource === 'local' ? 'var(--success)' : 'var(--accent)' }}>
+                          {agent.computeSource === 'local' ? '⚡ Local' : '☁️ Cloud'} • {agent.model}
+                        </span>
+                        <button
+                          onClick={() => cancelAgent(agent.id)}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            border: '1px solid var(--error)',
+                            borderRadius: 'var(--radius-sm)',
+                            color: 'var(--error)',
+                            padding: '4px 8px',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

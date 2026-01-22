@@ -30,6 +30,8 @@ export interface ModuleDefinition {
   requiredCredentialTypes?: CredentialType[];
   optionalCredentialTypes?: CredentialType[];
   hasConfigSchema?: boolean;
+  // Is this a real MCP adapter (vs legacy placeholder)?
+  isMcpAdapter?: boolean;
 }
 
 // RhizOS Module Registry
@@ -53,6 +55,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     docs: 'https://github.com/server9-dev/otherthing-cloud/tree/main/src/mcp-adapters',
     requiredCredentialTypes: ['llm_api'],
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
   {
     id: 'mcp-agent',
@@ -72,6 +75,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     docs: 'https://github.com/server9-dev/otherthing-cloud/tree/main/src/mcp-adapters',
     requiredCredentialTypes: ['llm_api'],
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
   {
     id: 'mcp-memory',
@@ -89,6 +93,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     tools: ['store', 'query', 'list', 'delete'],
     chain_uri: 'mcp://memory',
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
   {
     id: 'mcp-tool',
@@ -106,6 +111,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     tools: ['call', 'http', 'shell', 'list_tools'],
     chain_uri: 'mcp://tool',
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
   {
     id: 'mcp-search',
@@ -124,6 +130,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     chain_uri: 'mcp://search',
     optionalCredentialTypes: ['search_api'],
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
   {
     id: 'mcp-trading',
@@ -142,6 +149,7 @@ export const RHIZOS_MODULES: ModuleDefinition[] = [
     chain_uri: 'mcp://trading',
     requiredCredentialTypes: ['exchange_api'],
     hasConfigSchema: true,
+    isMcpAdapter: true,
   },
 
   // ============ LEGACY MODULES (Mock/Placeholder) ============
@@ -571,4 +579,16 @@ export const getModulesByCategory = (category: string): ModuleDefinition[] => {
 // Get module by ID
 export const getModuleById = (id: string): ModuleDefinition | undefined => {
   return RHIZOS_MODULES.find(m => m.id === id);
+};
+
+// Get only real MCP adapter modules (not legacy placeholders)
+export const getMcpModules = (): ModuleDefinition[] => {
+  return RHIZOS_MODULES.filter(m => m.isMcpAdapter);
+};
+
+// Get MCP modules by category
+export const getMcpModulesByCategory = (category: string): ModuleDefinition[] => {
+  const mcpModules = getMcpModules();
+  if (category === 'all') return mcpModules;
+  return mcpModules.filter(m => m.category === category);
 };
