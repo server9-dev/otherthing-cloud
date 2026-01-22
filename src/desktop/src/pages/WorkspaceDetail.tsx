@@ -605,6 +605,98 @@ export function WorkspaceDetail() {
     loadComputeSummary();
   }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents, loadComputeSummary]);
 
+  // WebSocket for real-time agent progress updates
+  useEffect(() => {
+    if (!id) return;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host;
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/agents`;
+
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connect = () => {
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log('[Agents WS] Connected');
+          // Subscribe to this workspace's agent updates
+          ws?.send(JSON.stringify({ type: 'subscribe', workspaceId: id }));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+
+            if (msg.type === 'subscribed') {
+              console.log('[Agents WS] Subscribed, running agents:', msg.runningAgents?.length || 0);
+              if (msg.runningAgents?.length > 0) {
+                setAgents(prev => {
+                  const updated = [...prev];
+                  for (const running of msg.runningAgents) {
+                    const idx = updated.findIndex(a => a.id === running.id);
+                    if (idx >= 0) {
+                      updated[idx] = running;
+                    } else {
+                      updated.unshift(running);
+                    }
+                  }
+                  return updated;
+                });
+              }
+            }
+
+            if (msg.type === 'agent_progress') {
+              // Update agent progress in state
+              setAgents(prev => prev.map(a => {
+                if (a.id === msg.agentId) {
+                  return {
+                    ...a,
+                    progress: msg.progress,
+                    progressMessage: msg.message,
+                    ...(msg.action?.final ? { status: msg.action.result?.status || a.status, result: msg.action.result?.result } : {}),
+                  };
+                }
+                return a;
+              }));
+
+              // If agent completed, reload to get full details
+              if (msg.action?.final) {
+                setTimeout(loadAgents, 500);
+              }
+            }
+          } catch (err) {
+            console.error('[Agents WS] Error parsing message:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log('[Agents WS] Disconnected, reconnecting in 3s...');
+          reconnectTimeout = setTimeout(connect, 3000);
+        };
+
+        ws.onerror = (err) => {
+          console.error('[Agents WS] Error:', err);
+        };
+      } catch (err) {
+        console.error('[Agents WS] Failed to connect:', err);
+        reconnectTimeout = setTimeout(connect, 3000);
+      }
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect on intentional close
+        ws.close();
+      }
+    };
+  }, [id, loadAgents]);
+
   // Task CRUD
   const createTask = async () => {
     if (!taskForm.title.trim() || !id) return;

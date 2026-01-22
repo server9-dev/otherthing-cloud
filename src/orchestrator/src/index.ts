@@ -2324,6 +2324,98 @@ collabWss.on('connection', (ws: WebSocket, req) => {
   });
 });
 
+// ============ WebSocket Server (Agent Progress) ============
+
+const AGENT_WS_PATH = '/ws/agents';
+
+// Track clients subscribed to agent updates: Map<workspaceId, Set<WebSocket>>
+const agentClients: Map<string, Set<WebSocket>> = new Map();
+
+// Broadcast agent progress to all clients in a workspace
+function broadcastAgentProgress(
+  workspaceId: string,
+  agentId: string,
+  progress: number,
+  message: string,
+  action?: any
+): void {
+  const clients = agentClients.get(workspaceId);
+  if (!clients) return;
+
+  const payload = JSON.stringify({
+    type: 'agent_progress',
+    agentId,
+    progress,
+    message,
+    action,
+    timestamp: Date.now(),
+  });
+
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(payload);
+    }
+  }
+}
+
+// Wire up agent service progress callback
+agentService.setProgressCallback((agentId, progress, message, action) => {
+  const execution = agentService.getExecution(agentId);
+  if (execution) {
+    broadcastAgentProgress(execution.workspaceId, agentId, progress, message, action);
+  }
+});
+
+const agentWss = new WebSocketServer({ server, path: AGENT_WS_PATH });
+
+agentWss.on('connection', (ws: WebSocket, req) => {
+  let subscribedWorkspace: string | null = null;
+
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+
+      // Handle subscribe to workspace agents
+      if (msg.type === 'subscribe' && msg.workspaceId) {
+        subscribedWorkspace = msg.workspaceId;
+
+        if (!agentClients.has(subscribedWorkspace)) {
+          agentClients.set(subscribedWorkspace, new Set());
+        }
+        agentClients.get(subscribedWorkspace)!.add(ws);
+
+        console.log(`[Agents WS] Client subscribed to workspace ${subscribedWorkspace}`);
+
+        // Send current running agents
+        const running = agentService.getRunningExecutions(subscribedWorkspace);
+        ws.send(JSON.stringify({
+          type: 'subscribed',
+          workspaceId: subscribedWorkspace,
+          runningAgents: running,
+        }));
+      }
+    } catch (err) {
+      console.error('[Agents WS] Error parsing message:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    if (subscribedWorkspace) {
+      const clients = agentClients.get(subscribedWorkspace);
+      if (clients) {
+        clients.delete(ws);
+        if (clients.size === 0) {
+          agentClients.delete(subscribedWorkspace);
+        }
+      }
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error('[Agents WS] WebSocket error:', err);
+  });
+});
+
 // ============ Start Server ============
 
 server.listen(PORT, () => {
@@ -2333,6 +2425,7 @@ server.listen(PORT, () => {
   console.log(`  HTTP API:    http://localhost:${PORT}`);
   console.log(`  WebSocket:   ws://localhost:${PORT}${WS_PATH}`);
   console.log(`  Collab WS:   ws://localhost:${PORT}${COLLAB_WS_PATH}`);
+  console.log(`  Agents WS:   ws://localhost:${PORT}${AGENT_WS_PATH}`);
   console.log('========================================');
   console.log('');
   console.log('Endpoints:');
