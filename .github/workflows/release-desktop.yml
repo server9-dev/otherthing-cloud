@@ -1,0 +1,192 @@
+name: Release Desktop App
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform: windows
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            platform: macos-intel
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            platform: macos-arm
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src/node-agent
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build node-agent
+        working-directory: src/node-agent
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Copy node-agent binary (Unix)
+        if: matrix.platform != 'windows'
+        run: |
+          mkdir -p src/node-agent/target/release
+          cp src/node-agent/target/${{ matrix.target }}/release/rhizos-node src/node-agent/target/release/
+
+      - name: Copy node-agent binary (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          mkdir -p src/node-agent/target/release
+          cp src/node-agent/target/${{ matrix.target }}/release/rhizos-node.exe src/node-agent/target/release/
+
+      - name: Build Tauri app
+        working-directory: src/desktop
+        run: pnpm tauri:build --target ${{ matrix.target }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
+          if-no-files-found: warn
+
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+          if-no-files-found: warn
+
+      - name: Upload macOS Intel artifacts
+        if: matrix.platform == 'macos-intel'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-intel
+          path: |
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+      - name: Upload macOS ARM artifacts
+        if: matrix.platform == 'macos-arm'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-arm
+          path: |
+            src/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=desktop-v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/desktop-v}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: RhizOS Desktop ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/desktop-windows/**/*
+            artifacts/desktop-linux/**/*
+            artifacts/desktop-macos-intel/**/*
+            artifacts/desktop-macos-arm/**/*
+          body: |
+            ## RhizOS Desktop ${{ steps.version.outputs.version }}
+
+            Decentralized compute platform desktop application.
+
+            ### Downloads
+
+            | Platform | Download |
+            |----------|----------|
+            | Windows | `.exe` (NSIS installer) or `.msi` |
+            | macOS (Apple Silicon) | `.dmg` (arm64) |
+            | macOS (Intel) | `.dmg` (x64) |
+            | Linux | `.AppImage` or `.deb` |
+
+            ### What's New
+
+            See [CHANGELOG.md](https://github.com/server9-dev/otherthing-cloud/blob/main/CHANGELOG.md) for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
