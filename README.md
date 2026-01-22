@@ -236,12 +236,6 @@ Stored in platform config directory:
 | Module Registry | Mock data |
 | Chain Integration | Planned |
 
-## Related Projects
-
-- [modc2](https://github.com/modc2) - Compute marketplace ecosystem
-- [commune-ai](https://github.com/commune-ai) - AI module library
-- [MCP Specification](https://modelcontextprotocol.io/) - Model Context Protocol
-
 ## License
 
 MIT
