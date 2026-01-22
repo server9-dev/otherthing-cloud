@@ -7,8 +7,9 @@ import {
   DollarSign, Activity, FolderGit2, ExternalLink, AlertTriangle, Shield,
   FileCode, Users2, TrendingUp, Loader2, Globe
 } from 'lucide-react';
-import { CyberButton } from '../components';
+import { CyberButton, Whiteboard } from '../components';
 import { authFetch } from '../App';
+import { PenTool } from 'lucide-react';
 
 // UUID helper that works on HTTP (non-secure contexts)
 const generateUUID = (): string => {
@@ -75,7 +76,7 @@ interface Workspace {
   createdAt: string;
 }
 
-type TabType = 'tasks' | 'console' | 'resources' | 'api-keys' | 'flows' | 'repos' | 'storage' | 'agents';
+type TabType = 'tasks' | 'console' | 'resources' | 'api-keys' | 'flows' | 'repos' | 'storage' | 'agents' | 'whiteboard';
 
 interface WorkspaceFlow {
   id: string;
@@ -324,6 +325,14 @@ export function WorkspaceDetail() {
     category: string;
     recommendation: { model: string; provider: string; reason: string; needsPull?: boolean };
   } | null>(null);
+
+  // Whiteboard state
+  interface WhiteboardData {
+    elements: any[];
+    appState?: any;
+    files?: any;
+  }
+  const [whiteboardData, setWhiteboardData] = useState<WhiteboardData>({ elements: [] });
 
   // Load workspace data
   const loadWorkspace = useCallback(async () => {
@@ -1158,6 +1167,7 @@ Members: ${workspace?.members.length || 0}`
           { id: 'storage', label: 'Storage', icon: HardDrive },
           { id: 'flows', label: 'Flows', icon: GitBranch },
           { id: 'agents', label: 'Agents', icon: Zap },
+          { id: 'whiteboard', label: 'Whiteboard', icon: PenTool },
           { id: 'console', label: 'Console', icon: Terminal },
           { id: 'resources', label: 'Resources', icon: Server },
           { id: 'api-keys', label: 'API Keys', icon: Key },
@@ -3219,6 +3229,29 @@ Members: ${workspace?.members.length || 0}`
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'whiteboard' && (
+        <div>
+          <Whiteboard
+            workspaceId={id || ''}
+            boardName={`${workspace?.name || 'Workspace'} Whiteboard`}
+            initialData={whiteboardData}
+            onSave={async (data) => {
+              setWhiteboardData(data);
+              // Could save to workspace storage here
+              console.log('Whiteboard saved', data.elements.length, 'elements');
+            }}
+          />
+          <div className="cyber-card">
+            <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+                Use the whiteboard to brainstorm, diagram, or sketch ideas with your team.
+                Click "Pop Out" for a full-screen experience, or drag the resize handle to adjust the height.
+              </p>
+            </div>
           </div>
         </div>
       )}

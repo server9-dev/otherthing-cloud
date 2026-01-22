@@ -3,3 +3,4 @@ export { NodeList } from './NodeList';
 export { JobList } from './JobList';
 export { ActivityLog } from './ActivityLog';
 export { CyberButton } from './CyberButton';
+export { Whiteboard } from './Whiteboard';
