@@ -131,8 +131,20 @@ export class NodeManager {
         this.handleIPFSRetrieveResult(message as any);
         break;
 
+      // Sandbox operation results
+      case 'sandbox_write_file_result':
+      case 'sandbox_read_file_result':
+      case 'sandbox_list_files_result':
+      case 'sandbox_delete_file_result':
+      case 'sandbox_execute_result':
+      case 'sandbox_sync_ipfs_result':
+      case 'sandbox_restore_ipfs_result':
+      case 'pull_model_result':
+        this.handleSandboxResult(message as any);
+        break;
+
       default:
-        console.warn('[NodeManager] Unknown message type');
+        console.warn('[NodeManager] Unknown message type:', (message as any).type);
     }
   }
 
@@ -836,6 +848,171 @@ export class NodeManager {
       console.log(`[NodeManager] IPFS retrieve failed: ${message.error}`);
       request.reject(new Error(message.error || 'IPFS retrieve failed'));
     }
+  }
+
+  // ============ Sandbox Operations ============
+
+  // Track pending sandbox requests
+  private sandboxRequests: Map<string, {
+    resolve: (result: any) => void;
+    reject: (error: Error) => void;
+    timeout: NodeJS.Timeout;
+  }> = new Map();
+
+  /**
+   * Send a request to a node and wait for the response
+   * Generic method for sandbox operations
+   */
+  async sendNodeRequest(nodeId: string, message: any, timeoutMs: number = 60000): Promise<any> {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      throw new Error(`Node ${nodeId} not found`);
+    }
+
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    message.request_id = requestId;
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.sandboxRequests.delete(requestId);
+        reject(new Error('Request timed out'));
+      }, timeoutMs);
+
+      this.sandboxRequests.set(requestId, { resolve, reject, timeout });
+      this.send(node.ws, message);
+    });
+  }
+
+  /**
+   * Handle sandbox operation results from nodes
+   */
+  private handleSandboxResult(message: { request_id: string; success: boolean; [key: string]: any }): void {
+    const request = this.sandboxRequests.get(message.request_id);
+    if (!request) return;
+
+    clearTimeout(request.timeout);
+    this.sandboxRequests.delete(message.request_id);
+
+    // Return the full message (includes success, content, files, etc.)
+    request.resolve(message);
+  }
+
+  /**
+   * Write a file to a node's sandbox
+   */
+  async sandboxWriteFile(
+    nodeId: string,
+    workspaceId: string,
+    path: string,
+    content: string
+  ): Promise<{ success: boolean; path?: string; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_write_file',
+      workspace_id: workspaceId,
+      path,
+      content,
+    });
+  }
+
+  /**
+   * Read a file from a node's sandbox
+   */
+  async sandboxReadFile(
+    nodeId: string,
+    workspaceId: string,
+    path: string
+  ): Promise<{ success: boolean; content?: string; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_read_file',
+      workspace_id: workspaceId,
+      path,
+    });
+  }
+
+  /**
+   * List files in a node's sandbox
+   */
+  async sandboxListFiles(
+    nodeId: string,
+    workspaceId: string,
+    path?: string
+  ): Promise<{ success: boolean; files?: any[]; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_list_files',
+      workspace_id: workspaceId,
+      path: path || '.',
+    });
+  }
+
+  /**
+   * Delete a file from a node's sandbox
+   */
+  async sandboxDeleteFile(
+    nodeId: string,
+    workspaceId: string,
+    path: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_delete_file',
+      workspace_id: workspaceId,
+      path,
+    });
+  }
+
+  /**
+   * Execute a command in a node's sandbox
+   */
+  async sandboxExecute(
+    nodeId: string,
+    workspaceId: string,
+    command: string,
+    timeout?: number
+  ): Promise<{ success: boolean; stdout: string; stderr: string; exitCode: number; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_execute',
+      workspace_id: workspaceId,
+      command,
+      timeout: timeout || 30000,
+    }, (timeout || 30000) + 5000); // Add 5s buffer for network
+  }
+
+  /**
+   * Sync a node's sandbox to IPFS
+   */
+  async sandboxSyncToIPFS(
+    nodeId: string,
+    workspaceId: string
+  ): Promise<{ success: boolean; cid?: string; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_sync_ipfs',
+      workspace_id: workspaceId,
+    }, 120000); // 2 minutes for sync
+  }
+
+  /**
+   * Restore a node's sandbox from IPFS
+   */
+  async sandboxRestoreFromIPFS(
+    nodeId: string,
+    workspaceId: string,
+    cid: string
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.sendNodeRequest(nodeId, {
+      type: 'sandbox_restore_ipfs',
+      workspace_id: workspaceId,
+      cid,
+    }, 120000); // 2 minutes for restore
+  }
+
+  /**
+   * Find a node with sandbox capability for a workspace
+   */
+  findSandboxNodeForWorkspace(workspaceId: string): ConnectedNode | null {
+    const nodes = this.getNodesForWorkspace(workspaceId);
+    // Prefer nodes that have storage configured (available_gb > 0 means storage is set up)
+    return nodes.find(n => n.available && n.capabilities.storage?.available_gb > 0) ||
+           nodes.find(n => n.available) ||
+           null;
   }
 
   // ============ Ollama Model Management ============

@@ -19,6 +19,22 @@ interface NodeManagerLike {
   getOllamaNodesForWorkspace(workspaceId: string): ConnectedNode[];
   findBestNodeForModel(workspaceId: string, model: string, vramNeeded: number): ConnectedNode | null;
   pullModel(nodeId: string, model: string): Promise<{ success: boolean; error?: string }>;
+  findSandboxNodeForWorkspace(workspaceId: string): ConnectedNode | null;
+  // Sandbox operations
+  sandboxWriteFile(nodeId: string, workspaceId: string, path: string, content: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  sandboxReadFile(nodeId: string, workspaceId: string, path: string): Promise<{ success: boolean; content?: string; error?: string }>;
+  sandboxListFiles(nodeId: string, workspaceId: string, path?: string): Promise<{ success: boolean; files?: any[]; error?: string }>;
+  sandboxDeleteFile(nodeId: string, workspaceId: string, path: string): Promise<{ success: boolean; error?: string }>;
+  sandboxExecute(nodeId: string, workspaceId: string, command: string, timeout?: number): Promise<{ success: boolean; stdout: string; stderr: string; exitCode: number; error?: string }>;
+  sandboxSyncToIPFS(nodeId: string, workspaceId: string): Promise<{ success: boolean; cid?: string; error?: string }>;
+  sandboxRestoreFromIPFS(nodeId: string, workspaceId: string, cid: string): Promise<{ success: boolean; error?: string }>;
+}
+
+// Tool context passed to agents for sandbox operations
+export interface AgentToolContext {
+  workspaceId: string;
+  nodeId: string | null;
+  nodeManager: NodeManagerLike | null;
 }
 
 interface WorkspaceManagerLike {
@@ -68,6 +84,9 @@ export interface AgentExecution {
   ollamaEndpoint?: string; // Remote node's Ollama endpoint URL
   modelPulled?: boolean;
   taskCategory?: string;
+  // Sandbox info
+  sandboxNodeId?: string; // Node used for sandbox operations
+  sandboxCid?: string; // IPFS CID of final sandbox state
 }
 
 // Progress callback type
@@ -196,6 +215,16 @@ export class AgentService {
       }
     }
 
+    // Find sandbox node for this workspace
+    let sandboxNodeId: string | null = null;
+    if (this.nodeManager) {
+      const sandboxNode = this.nodeManager.findSandboxNodeForWorkspace(workspaceId);
+      sandboxNodeId = sandboxNode?.id || null;
+      if (sandboxNodeId) {
+        console.log(`[AgentService] Using sandbox node: ${sandboxNodeId}`);
+      }
+    }
+
     // Create execution record
     const execution: AgentExecution = {
       id: executionId,
@@ -216,6 +245,7 @@ export class AgentService {
       computeSource: provider === 'ollama' ? 'local' : 'cloud',
       nodeId: recommendation.nodeId,
       ollamaEndpoint,
+      sandboxNodeId: sandboxNodeId || undefined,
     };
 
     this.executions.set(executionId, execution);
@@ -296,6 +326,13 @@ export class AgentService {
     execution.status = 'running';
     this.emitProgress(execution.id, 10, `Running ${execution.agentType} agent with ${execution.model}...`);
 
+    // Build tool context for sandbox operations
+    const toolContext: AgentToolContext = {
+      workspaceId: execution.workspaceId,
+      nodeId: execution.sandboxNodeId || null,
+      nodeManager: this.nodeManager || null,
+    };
+
     try {
       const result = await this.agentAdapter.execute('run', {
         goal: request.goal,
@@ -308,6 +345,8 @@ export class AgentService {
         max_tokens: request.maxTokens || 4096,
         temperature: request.temperature || 0.7,
         security_enabled: true,
+        // Pass tool context for sandbox operations
+        tool_context: toolContext,
       }, {
         job_id: execution.id,
         timeout_seconds: 300,
@@ -339,6 +378,22 @@ export class AgentService {
       execution.completedAt = new Date();
       execution.progress = 100;
       execution.progressMessage = 'Complete';
+
+      // Sync sandbox to IPFS after completion if we have a sandbox node
+      if (execution.sandboxNodeId && this.nodeManager && execution.status === 'completed') {
+        try {
+          const syncResult = await this.nodeManager.sandboxSyncToIPFS(
+            execution.sandboxNodeId,
+            execution.workspaceId
+          );
+          if (syncResult.success && syncResult.cid) {
+            execution.sandboxCid = syncResult.cid;
+            console.log(`[AgentService] Sandbox synced to IPFS: ${syncResult.cid}`);
+          }
+        } catch (syncError) {
+          console.warn(`[AgentService] Failed to sync sandbox to IPFS: ${syncError}`);
+        }
+      }
 
       const computeInfo = execution.computeSource === 'local'
         ? `Local node ${execution.nodeId?.slice(0, 8) || 'unknown'}`

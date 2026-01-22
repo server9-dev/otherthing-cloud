@@ -217,6 +217,63 @@ export const NodeMessageSchema = z.discriminatedUnion('type', [
     content: z.string().optional(),
     error: z.string().optional(),
   }),
+  // Sandbox operation results
+  z.object({
+    type: z.literal('sandbox_write_file_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    path: z.string().optional(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_read_file_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    content: z.string().optional(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_list_files_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    files: z.array(z.any()).optional(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_delete_file_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_execute_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    stdout: z.string(),
+    stderr: z.string(),
+    exitCode: z.number(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_sync_ipfs_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    cid: z.string().optional(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('sandbox_restore_ipfs_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('pull_model_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    model: z.string().optional(),
+    error: z.string().optional(),
+  }),
 ]);
 
 export type NodeMessage = z.infer<typeof NodeMessageSchema>;

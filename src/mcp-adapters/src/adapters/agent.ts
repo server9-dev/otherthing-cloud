@@ -18,12 +18,25 @@ import { SecurityScanner, RiskLevel, scanForThreats } from '../security/index.js
 // Agent architectures
 type AgentArchitecture = 'react' | 'plan-execute' | 'simple';
 
+// Tool context for sandbox operations (injected from orchestrator)
+interface ToolContext {
+  workspaceId: string;
+  nodeId: string | null;
+  nodeManager: {
+    sandboxWriteFile(nodeId: string, workspaceId: string, path: string, content: string): Promise<{ success: boolean; path?: string; error?: string }>;
+    sandboxReadFile(nodeId: string, workspaceId: string, path: string): Promise<{ success: boolean; content?: string; error?: string }>;
+    sandboxListFiles(nodeId: string, workspaceId: string, path?: string): Promise<{ success: boolean; files?: any[]; error?: string }>;
+    sandboxDeleteFile(nodeId: string, workspaceId: string, path: string): Promise<{ success: boolean; error?: string }>;
+    sandboxExecute(nodeId: string, workspaceId: string, command: string, timeout?: number): Promise<{ success: boolean; stdout: string; stderr: string; exitCode: number; error?: string }>;
+  } | null;
+}
+
 // Tool definition
 interface ToolDef {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
-  execute: (params: Record<string, unknown>) => Promise<string>;
+  execute: (params: Record<string, unknown>, context?: ToolContext) => Promise<string>;
 }
 
 // Agent request schema
@@ -40,6 +53,12 @@ export const AgentRunRequestSchema = z.object({
   temperature: z.number().optional().default(0.7),
   verbose: z.boolean().optional().default(false),
   security_enabled: z.boolean().optional().default(true),
+  // Tool context for sandbox operations (passed from orchestrator)
+  tool_context: z.object({
+    workspaceId: z.string(),
+    nodeId: z.string().nullable(),
+    nodeManager: z.any().nullable(),
+  }).optional(),
 });
 
 export const AgentRunResponseSchema = z.object({
@@ -119,6 +138,7 @@ export class AgentAdapter extends BaseAdapter {
   private llmAdapter: LlmInferenceAdapter;
   private securityScanner: SecurityScanner;
   private tools: Map<string, ToolDef> = new Map();
+  private currentToolContext: ToolContext | null = null;
 
   constructor() {
     super();
@@ -156,7 +176,18 @@ export class AgentAdapter extends BaseAdapter {
     context: ExecutionContext
   ): Promise<AgentRunResponse> {
     const request = AgentRunRequestSchema.parse(params);
-    const { goal, agent_type, max_iterations, verbose, security_enabled } = request;
+    const { goal, agent_type, max_iterations, verbose, security_enabled, tool_context } = request;
+
+    // Set tool context for this execution
+    if (tool_context) {
+      this.currentToolContext = tool_context as ToolContext;
+      // Register sandbox tools if we have a node available
+      if (tool_context.nodeId && tool_context.nodeManager) {
+        this.registerSandboxTools();
+      }
+    } else {
+      this.currentToolContext = null;
+    }
 
     console.log(`[agent] Starting ${agent_type} agent for goal: ${goal.slice(0, 50)}...`);
 
@@ -574,7 +605,7 @@ Begin!`;
     }
 
     try {
-      return await tool.execute({ input });
+      return await tool.execute({ input }, this.currentToolContext || undefined);
     } catch (error) {
       return `Error executing ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
@@ -622,6 +653,193 @@ Begin!`;
    */
   registerTool(tool: ToolDef): void {
     this.tools.set(tool.name.toLowerCase(), tool);
+  }
+
+  /**
+   * Register sandbox tools when tool context is available
+   */
+  private registerSandboxTools(): void {
+    // Write file tool
+    this.tools.set('write_file', {
+      name: 'write_file',
+      description: 'Write content to a file in the workspace sandbox. Input format: path|content (e.g., "code/hello.py|print(\'hello\')")',
+      parameters: { input: 'string (path|content)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const input = String(params.input);
+        const pipeIndex = input.indexOf('|');
+        if (pipeIndex === -1) {
+          return 'Error: Invalid format. Use: path|content (e.g., "code/hello.py|print(\'hello\')")';
+        }
+        const filePath = input.slice(0, pipeIndex).trim();
+        const content = input.slice(pipeIndex + 1);
+
+        const result = await ctx.nodeManager.sandboxWriteFile(
+          ctx.nodeId,
+          ctx.workspaceId,
+          filePath,
+          content
+        );
+
+        if (result.success) {
+          return `File written successfully: ${filePath}`;
+        } else {
+          return `Error writing file: ${result.error}`;
+        }
+      },
+    });
+
+    // Read file tool
+    this.tools.set('read_file', {
+      name: 'read_file',
+      description: 'Read content from a file in the workspace sandbox',
+      parameters: { input: 'string (file path)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const filePath = String(params.input).trim();
+
+        const result = await ctx.nodeManager.sandboxReadFile(
+          ctx.nodeId,
+          ctx.workspaceId,
+          filePath
+        );
+
+        if (result.success && result.content !== undefined) {
+          return `File content:\n${result.content}`;
+        } else {
+          return `Error reading file: ${result.error}`;
+        }
+      },
+    });
+
+    // List files tool
+    this.tools.set('list_files', {
+      name: 'list_files',
+      description: 'List files in a directory within the workspace sandbox. Use "." for root.',
+      parameters: { input: 'string (directory path)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const dirPath = String(params.input).trim() || '.';
+
+        const result = await ctx.nodeManager.sandboxListFiles(
+          ctx.nodeId,
+          ctx.workspaceId,
+          dirPath
+        );
+
+        if (result.success && result.files) {
+          if (result.files.length === 0) {
+            return 'Directory is empty';
+          }
+          return result.files.map(f =>
+            `${f.isDirectory ? '[DIR]' : '[FILE]'} ${f.name} (${f.size} bytes)`
+          ).join('\n');
+        } else {
+          return `Error listing files: ${result.error}`;
+        }
+      },
+    });
+
+    // Delete file tool
+    this.tools.set('delete_file', {
+      name: 'delete_file',
+      description: 'Delete a file or directory from the workspace sandbox',
+      parameters: { input: 'string (file path)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const filePath = String(params.input).trim();
+
+        const result = await ctx.nodeManager.sandboxDeleteFile(
+          ctx.nodeId,
+          ctx.workspaceId,
+          filePath
+        );
+
+        if (result.success) {
+          return `Deleted: ${filePath}`;
+        } else {
+          return `Error deleting: ${result.error}`;
+        }
+      },
+    });
+
+    // Shell execute tool
+    this.tools.set('shell', {
+      name: 'shell',
+      description: 'Execute a shell command in the workspace sandbox. Commands run in the sandbox directory.',
+      parameters: { input: 'string (command)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const command = String(params.input).trim();
+
+        // Security scan the command
+        const scan = scanForThreats(command);
+        if (!scan.safe && (scan.riskLevel === RiskLevel.Critical || scan.riskLevel === RiskLevel.High)) {
+          return `Command blocked for security: ${scan.summary}`;
+        }
+
+        const result = await ctx.nodeManager.sandboxExecute(
+          ctx.nodeId,
+          ctx.workspaceId,
+          command,
+          30000 // 30 second timeout
+        );
+
+        let output = '';
+        if (result.stdout) output += `stdout:\n${result.stdout}\n`;
+        if (result.stderr) output += `stderr:\n${result.stderr}\n`;
+        output += `Exit code: ${result.exitCode}`;
+
+        if (!result.success && result.error) {
+          output += `\nError: ${result.error}`;
+        }
+
+        return output || 'Command completed with no output';
+      },
+    });
+
+    // Run Python tool (convenience wrapper)
+    this.tools.set('run_python', {
+      name: 'run_python',
+      description: 'Execute a Python script in the workspace sandbox. Input is the script path or inline code.',
+      parameters: { input: 'string (script path or code)' },
+      execute: async (params, ctx) => {
+        if (!ctx?.nodeId || !ctx?.nodeManager) {
+          return 'Error: Sandbox not available (no node connected)';
+        }
+        const input = String(params.input).trim();
+
+        // Check if it's a file path or inline code
+        const isFile = input.endsWith('.py') && !input.includes('\n');
+        const command = isFile ? `python ${input}` : `python -c "${input.replace(/"/g, '\\"')}"`;
+
+        const result = await ctx.nodeManager.sandboxExecute(
+          ctx.nodeId,
+          ctx.workspaceId,
+          command,
+          60000 // 60 second timeout for scripts
+        );
+
+        let output = '';
+        if (result.stdout) output += result.stdout;
+        if (result.stderr) output += `\nstderr: ${result.stderr}`;
+        if (result.exitCode !== 0) output += `\nExit code: ${result.exitCode}`;
+
+        return output || 'Script completed with no output';
+      },
+    });
+
+    console.log('[agent] Registered sandbox tools: write_file, read_file, list_files, delete_file, shell, run_python');
   }
 
   // ============ Info Methods ============
