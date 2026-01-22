@@ -93,6 +93,18 @@ export interface WorkspaceResourceUsage {
   lastUpdated: string;
 }
 
+export interface WhiteboardData {
+  id: string;
+  name: string;
+  elements: any[]; // Drawing elements
+  appState?: any;  // View state
+  files?: Record<string, any>; // Embedded files (images)
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number; // For conflict resolution
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -105,6 +117,7 @@ export interface Workspace {
   flows: WorkspaceFlow[];
   repos: WorkspaceRepo[];
   files: StoredFile[];
+  whiteboards: WhiteboardData[];
   resourceUsage: WorkspaceResourceUsage;
   createdAt: string;
   // IPFS integration - swarm key for private network isolation
@@ -205,6 +218,7 @@ export class WorkspaceManager {
       flows: [],
       repos: [],
       files: [],
+      whiteboards: [],
       resourceUsage: {
         totalCostCents: 0,
         totalTokens: 0,
@@ -1285,5 +1299,228 @@ export class WorkspaceManager {
     console.log(`[WorkspaceManager] Deleted file "${removed.name}" from workspace "${workspace.name}"`);
 
     return { success: true };
+  }
+
+  // ============ Whiteboard Methods ============
+
+  /**
+   * Get all whiteboards for a workspace
+   */
+  getWhiteboards(
+    workspaceId: string,
+    userId: string
+  ): { success: boolean; whiteboards?: WhiteboardData[]; error?: string } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    if (!this.isMember(workspaceId, userId)) {
+      return { success: false, error: 'Not a member of this workspace' };
+    }
+
+    // Initialize whiteboards array if not present (for existing workspaces)
+    if (!workspace.whiteboards) {
+      workspace.whiteboards = [];
+    }
+
+    return { success: true, whiteboards: workspace.whiteboards };
+  }
+
+  /**
+   * Get a specific whiteboard
+   */
+  getWhiteboard(
+    workspaceId: string,
+    whiteboardId: string,
+    userId: string
+  ): { success: boolean; whiteboard?: WhiteboardData; error?: string } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    if (!this.isMember(workspaceId, userId)) {
+      return { success: false, error: 'Not a member of this workspace' };
+    }
+
+    if (!workspace.whiteboards) {
+      workspace.whiteboards = [];
+    }
+
+    const whiteboard = workspace.whiteboards.find((w) => w.id === whiteboardId);
+    if (!whiteboard) {
+      return { success: false, error: 'Whiteboard not found' };
+    }
+
+    return { success: true, whiteboard };
+  }
+
+  /**
+   * Create a new whiteboard
+   */
+  createWhiteboard(
+    workspaceId: string,
+    userId: string,
+    name: string
+  ): { success: boolean; whiteboard?: WhiteboardData; error?: string } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    if (!this.isMember(workspaceId, userId)) {
+      return { success: false, error: 'Not a member of this workspace' };
+    }
+
+    if (!workspace.whiteboards) {
+      workspace.whiteboards = [];
+    }
+
+    const whiteboard: WhiteboardData = {
+      id: uuidv4(),
+      name: name || 'Untitled Board',
+      elements: [],
+      createdBy: userId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    };
+
+    workspace.whiteboards.push(whiteboard);
+    this.saveToDisk();
+
+    console.log(`[WorkspaceManager] Created whiteboard "${name}" in workspace "${workspace.name}"`);
+
+    return { success: true, whiteboard };
+  }
+
+  /**
+   * Update whiteboard data (elements, appState, etc.)
+   * Uses version for optimistic concurrency control
+   */
+  updateWhiteboard(
+    workspaceId: string,
+    whiteboardId: string,
+    userId: string,
+    updates: {
+      name?: string;
+      elements?: any[];
+      appState?: any;
+      files?: Record<string, any>;
+      expectedVersion?: number;
+    }
+  ): { success: boolean; whiteboard?: WhiteboardData; error?: string; conflict?: boolean } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    if (!this.isMember(workspaceId, userId)) {
+      return { success: false, error: 'Not a member of this workspace' };
+    }
+
+    if (!workspace.whiteboards) {
+      return { success: false, error: 'Whiteboard not found' };
+    }
+
+    const whiteboard = workspace.whiteboards.find((w) => w.id === whiteboardId);
+    if (!whiteboard) {
+      return { success: false, error: 'Whiteboard not found' };
+    }
+
+    // Check version for conflict detection (if provided)
+    if (updates.expectedVersion !== undefined && whiteboard.version !== updates.expectedVersion) {
+      return {
+        success: false,
+        error: 'Version conflict - whiteboard was modified by another user',
+        conflict: true,
+        whiteboard, // Return current state for client to merge
+      };
+    }
+
+    // Apply updates
+    if (updates.name !== undefined) whiteboard.name = updates.name;
+    if (updates.elements !== undefined) whiteboard.elements = updates.elements;
+    if (updates.appState !== undefined) whiteboard.appState = updates.appState;
+    if (updates.files !== undefined) whiteboard.files = updates.files;
+
+    whiteboard.updatedAt = new Date().toISOString();
+    whiteboard.version += 1;
+
+    this.saveToDisk();
+
+    return { success: true, whiteboard };
+  }
+
+  /**
+   * Delete a whiteboard
+   */
+  deleteWhiteboard(
+    workspaceId: string,
+    whiteboardId: string,
+    userId: string
+  ): { success: boolean; error?: string } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    // Only owner/admin can delete whiteboards
+    const member = workspace.members.find((m) => m.userId === userId);
+    if (!member || (member.role !== 'owner' && member.role !== 'admin')) {
+      return { success: false, error: 'Only workspace owner or admin can delete whiteboards' };
+    }
+
+    if (!workspace.whiteboards) {
+      return { success: false, error: 'Whiteboard not found' };
+    }
+
+    const whiteboardIndex = workspace.whiteboards.findIndex((w) => w.id === whiteboardId);
+    if (whiteboardIndex === -1) {
+      return { success: false, error: 'Whiteboard not found' };
+    }
+
+    const removed = workspace.whiteboards.splice(whiteboardIndex, 1)[0];
+    this.saveToDisk();
+
+    console.log(`[WorkspaceManager] Deleted whiteboard "${removed.name}" from workspace "${workspace.name}"`);
+
+    return { success: true };
+  }
+
+  /**
+   * Get or create default whiteboard for workspace
+   */
+  getOrCreateDefaultWhiteboard(
+    workspaceId: string,
+    userId: string
+  ): { success: boolean; whiteboard?: WhiteboardData; error?: string } {
+    const workspace = this.workspaces.get(workspaceId);
+
+    if (!workspace) {
+      return { success: false, error: 'Workspace not found' };
+    }
+
+    if (!this.isMember(workspaceId, userId)) {
+      return { success: false, error: 'Not a member of this workspace' };
+    }
+
+    if (!workspace.whiteboards) {
+      workspace.whiteboards = [];
+    }
+
+    // Return first whiteboard or create default
+    if (workspace.whiteboards.length > 0) {
+      return { success: true, whiteboard: workspace.whiteboards[0] };
+    }
+
+    // Create default whiteboard
+    return this.createWhiteboard(workspaceId, userId, 'Main Board');
   }
 }

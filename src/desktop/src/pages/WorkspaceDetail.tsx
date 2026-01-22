@@ -326,14 +326,6 @@ export function WorkspaceDetail() {
     recommendation: { model: string; provider: string; reason: string; needsPull?: boolean };
   } | null>(null);
 
-  // Whiteboard state
-  interface WhiteboardData {
-    elements: any[];
-    appState?: any;
-    files?: any;
-  }
-  const [whiteboardData, setWhiteboardData] = useState<WhiteboardData>({ elements: [] });
-
   // Load workspace data
   const loadWorkspace = useCallback(async () => {
     if (!id) return;
@@ -3235,21 +3227,12 @@ Members: ${workspace?.members.length || 0}`
 
       {activeTab === 'whiteboard' && (
         <div>
-          <Whiteboard
-            workspaceId={id || ''}
-            boardName={`${workspace?.name || 'Workspace'} Whiteboard`}
-            initialData={whiteboardData}
-            onSave={async (data) => {
-              setWhiteboardData(data);
-              // Could save to workspace storage here
-              console.log('Whiteboard saved', data.elements.length, 'elements');
-            }}
-          />
+          <Whiteboard workspaceId={id || ''} />
           <div className="cyber-card">
             <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
                 Use the whiteboard to brainstorm, diagram, or sketch ideas with your team.
-                Click "Pop Out" for a full-screen experience, or drag the resize handle to adjust the height.
+                Multiple users can draw together in real-time. Changes are saved to the workspace.
               </p>
             </div>
           </div>

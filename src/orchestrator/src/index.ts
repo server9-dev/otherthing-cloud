@@ -1111,6 +1111,111 @@ app.delete('/api/v1/workspaces/:id/storage/files/:fileId', requireAuth, (req, re
   res.json({ success: true });
 });
 
+// ============ Workspace Whiteboards ============
+
+// Get all whiteboards for a workspace
+app.get('/api/v1/workspaces/:id/whiteboards', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const result = workspaceManager.getWhiteboards(req.params.id, session.userId);
+
+  if (!result.success) {
+    res.status(403).json({ error: result.error });
+    return;
+  }
+
+  res.json({ whiteboards: result.whiteboards });
+});
+
+// Get or create default whiteboard
+app.get('/api/v1/workspaces/:id/whiteboards/default', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const result = workspaceManager.getOrCreateDefaultWhiteboard(req.params.id, session.userId);
+
+  if (!result.success) {
+    res.status(result.error === 'Workspace not found' ? 404 : 403).json({ error: result.error });
+    return;
+  }
+
+  res.json({ whiteboard: result.whiteboard });
+});
+
+// Get a specific whiteboard
+app.get('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const result = workspaceManager.getWhiteboard(req.params.id, req.params.whiteboardId, session.userId);
+
+  if (!result.success) {
+    res.status(result.error === 'Whiteboard not found' ? 404 : 403).json({ error: result.error });
+    return;
+  }
+
+  res.json({ whiteboard: result.whiteboard });
+});
+
+// Create a new whiteboard
+app.post('/api/v1/workspaces/:id/whiteboards', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const { name } = req.body;
+
+  const result = workspaceManager.createWhiteboard(
+    req.params.id,
+    session.userId,
+    name || 'Untitled Board'
+  );
+
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+
+  res.status(201).json({ whiteboard: result.whiteboard });
+});
+
+// Update a whiteboard
+app.patch('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const { name, elements, appState, files, expectedVersion } = req.body;
+
+  const result = workspaceManager.updateWhiteboard(
+    req.params.id,
+    req.params.whiteboardId,
+    session.userId,
+    { name, elements, appState, files, expectedVersion }
+  );
+
+  if (!result.success) {
+    // Return 409 for version conflicts
+    if (result.conflict) {
+      res.status(409).json({ error: result.error, whiteboard: result.whiteboard, conflict: true });
+      return;
+    }
+    res.status(400).json({ error: result.error });
+    return;
+  }
+
+  // Broadcast update to collaboration room
+  broadcastWhiteboardUpdate(req.params.id, req.params.whiteboardId, result.whiteboard!, session.userId);
+
+  res.json({ whiteboard: result.whiteboard });
+});
+
+// Delete a whiteboard
+app.delete('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const result = workspaceManager.deleteWhiteboard(
+    req.params.id,
+    req.params.whiteboardId,
+    session.userId
+  );
+
+  if (!result.success) {
+    res.status(403).json({ error: result.error });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
 // ============ Workspace Resource Usage ============
 
 // Get resource usage for a workspace
@@ -1937,12 +2042,215 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 const server = http.createServer(app);
 
-// ============ WebSocket Server ============
+// ============ WebSocket Server (Nodes) ============
 
 const wss = new WebSocketServer({ server, path: WS_PATH });
 
 wss.on('connection', (ws: WebSocket) => {
   nodeManager.handleConnection(ws);
+});
+
+// ============ WebSocket Server (Whiteboard Collaboration) ============
+
+const COLLAB_WS_PATH = '/ws/collab';
+
+// Track clients in whiteboard rooms: Map<workspaceId:whiteboardId, Set<{ws, userId, username}>>
+interface CollabClient {
+  ws: WebSocket;
+  userId: string;
+  username: string;
+}
+const whiteboardRooms: Map<string, Set<CollabClient>> = new Map();
+
+// Broadcast whiteboard update to all clients in a room (except sender)
+function broadcastWhiteboardUpdate(
+  workspaceId: string,
+  whiteboardId: string,
+  whiteboard: any,
+  senderId: string
+): void {
+  const roomKey = `${workspaceId}:${whiteboardId}`;
+  const room = whiteboardRooms.get(roomKey);
+
+  if (!room) return;
+
+  const message = JSON.stringify({
+    type: 'whiteboard_update',
+    whiteboardId,
+    whiteboard,
+    senderId,
+    timestamp: Date.now(),
+  });
+
+  for (const client of room) {
+    if (client.userId !== senderId && client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(message);
+    }
+  }
+}
+
+// Broadcast cursor/pointer position for live collaboration
+function broadcastPointer(
+  workspaceId: string,
+  whiteboardId: string,
+  userId: string,
+  username: string,
+  pointer: { x: number; y: number } | null
+): void {
+  const roomKey = `${workspaceId}:${whiteboardId}`;
+  const room = whiteboardRooms.get(roomKey);
+
+  if (!room) return;
+
+  const message = JSON.stringify({
+    type: 'pointer_update',
+    userId,
+    username,
+    pointer,
+    timestamp: Date.now(),
+  });
+
+  for (const client of room) {
+    if (client.userId !== userId && client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(message);
+    }
+  }
+}
+
+// Get list of active collaborators in a room
+function getCollaborators(workspaceId: string, whiteboardId: string): Array<{ userId: string; username: string }> {
+  const roomKey = `${workspaceId}:${whiteboardId}`;
+  const room = whiteboardRooms.get(roomKey);
+
+  if (!room) return [];
+
+  return Array.from(room).map(c => ({ userId: c.userId, username: c.username }));
+}
+
+const collabWss = new WebSocketServer({ server, path: COLLAB_WS_PATH });
+
+collabWss.on('connection', (ws: WebSocket, req) => {
+  let clientInfo: { workspaceId: string; whiteboardId: string; userId: string; username: string } | null = null;
+
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+
+      // Handle join room
+      if (msg.type === 'join') {
+        const { workspaceId, whiteboardId, userId, username, token } = msg;
+
+        // TODO: Validate token/session here
+        // For now, just accept the join
+
+        clientInfo = { workspaceId, whiteboardId, userId, username };
+        const roomKey = `${workspaceId}:${whiteboardId}`;
+
+        // Create room if it doesn't exist
+        if (!whiteboardRooms.has(roomKey)) {
+          whiteboardRooms.set(roomKey, new Set());
+        }
+
+        const room = whiteboardRooms.get(roomKey)!;
+        room.add({ ws, userId, username });
+
+        console.log(`[Collab] User ${username} joined whiteboard ${whiteboardId} (${room.size} users now)`);
+
+        // Send current collaborators to the new client
+        ws.send(JSON.stringify({
+          type: 'joined',
+          whiteboardId,
+          collaborators: getCollaborators(workspaceId, whiteboardId),
+        }));
+
+        // Notify others that a new user joined
+        for (const client of room) {
+          if (client.userId !== userId && client.ws.readyState === WebSocket.OPEN) {
+            client.ws.send(JSON.stringify({
+              type: 'user_joined',
+              userId,
+              username,
+            }));
+          }
+        }
+      }
+
+      // Handle pointer/cursor updates
+      if (msg.type === 'pointer' && clientInfo) {
+        broadcastPointer(
+          clientInfo.workspaceId,
+          clientInfo.whiteboardId,
+          clientInfo.userId,
+          clientInfo.username,
+          msg.pointer
+        );
+      }
+
+      // Handle element updates (real-time drawing sync)
+      if (msg.type === 'elements_update' && clientInfo) {
+        const roomKey = `${clientInfo.workspaceId}:${clientInfo.whiteboardId}`;
+        const room = whiteboardRooms.get(roomKey);
+
+        if (room) {
+          const message = JSON.stringify({
+            type: 'elements_update',
+            elements: msg.elements,
+            senderId: clientInfo.userId,
+            senderName: clientInfo.username,
+            timestamp: Date.now(),
+          });
+
+          for (const client of room) {
+            if (client.userId !== clientInfo.userId && client.ws.readyState === WebSocket.OPEN) {
+              client.ws.send(message);
+            }
+          }
+        }
+      }
+
+    } catch (err) {
+      console.error('[Collab] Error handling message:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    if (clientInfo) {
+      const roomKey = `${clientInfo.workspaceId}:${clientInfo.whiteboardId}`;
+      const room = whiteboardRooms.get(roomKey);
+
+      if (room) {
+        // Remove client from room
+        for (const client of room) {
+          if (client.ws === ws) {
+            room.delete(client);
+            break;
+          }
+        }
+
+        console.log(`[Collab] User ${clientInfo.username} left whiteboard ${clientInfo.whiteboardId} (${room.size} users remain)`);
+
+        // Notify others that user left
+        for (const client of room) {
+          if (client.ws.readyState === WebSocket.OPEN) {
+            client.ws.send(JSON.stringify({
+              type: 'user_left',
+              userId: clientInfo.userId,
+              username: clientInfo.username,
+            }));
+          }
+        }
+
+        // Clean up empty rooms
+        if (room.size === 0) {
+          whiteboardRooms.delete(roomKey);
+        }
+      }
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error('[Collab] WebSocket error:', err);
+  });
 });
 
 // ============ Start Server ============
@@ -1953,6 +2261,7 @@ server.listen(PORT, () => {
   console.log('========================================');
   console.log(`  HTTP API:    http://localhost:${PORT}`);
   console.log(`  WebSocket:   ws://localhost:${PORT}${WS_PATH}`);
+  console.log(`  Collab WS:   ws://localhost:${PORT}${COLLAB_WS_PATH}`);
   console.log('========================================');
   console.log('');
   console.log('Endpoints:');
