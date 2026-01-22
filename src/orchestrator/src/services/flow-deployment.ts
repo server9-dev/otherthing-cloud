@@ -19,6 +19,50 @@ import { PaymentService } from './payment.js';
 
 // Module to hardware requirements mapping
 const MODULE_REQUIREMENTS: Record<string, Partial<JobRequirements>> = {
+  // ============ CORE MCP ADAPTERS ============
+  'mcp-llm-inference': {
+    cpu: { min_cores: 2 },
+    memory: { min_mb: 4096 },
+    mcp_adapter: 'llm-inference',
+    max_cost_cents: 50,
+    currency: 'USDC',
+  },
+  'mcp-agent': {
+    cpu: { min_cores: 2 },
+    memory: { min_mb: 4096 },
+    mcp_adapter: 'agent',
+    max_cost_cents: 100,
+    currency: 'USDC',
+  },
+  'mcp-memory': {
+    cpu: { min_cores: 2 },
+    memory: { min_mb: 2048 },
+    mcp_adapter: 'memory',
+    max_cost_cents: 20,
+    currency: 'USDC',
+  },
+  'mcp-tool': {
+    cpu: { min_cores: 1 },
+    memory: { min_mb: 512 },
+    mcp_adapter: 'tool',
+    max_cost_cents: 10,
+    currency: 'USDC',
+  },
+  'mcp-search': {
+    cpu: { min_cores: 1 },
+    memory: { min_mb: 512 },
+    mcp_adapter: 'search',
+    max_cost_cents: 10,
+    currency: 'USDC',
+  },
+  'mcp-trading': {
+    cpu: { min_cores: 2 },
+    memory: { min_mb: 2048 },
+    mcp_adapter: 'trading',
+    max_cost_cents: 50,
+    currency: 'USDC',
+  },
+  // ============ LEGACY MODULES ============
   'rhizos-hummingbot': {
     cpu: { min_cores: 4 },
     memory: { min_mb: 8192 },
