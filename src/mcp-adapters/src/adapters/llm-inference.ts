@@ -252,8 +252,8 @@ export class LlmInferenceAdapter extends BaseAdapter {
     // Use specified provider or find best available
     const providerType = request.provider || this.selectBestProvider(request.model);
 
-    // Check for runtime API key override
-    if (request.api_key) {
+    // Check for runtime API key or base_url override
+    if (request.api_key || request.base_url) {
       return {
         type: providerType,
         apiKey: request.api_key,
@@ -263,6 +263,14 @@ export class LlmInferenceAdapter extends BaseAdapter {
 
     const config = this.providers.get(providerType);
     if (!config) {
+      // For Ollama without a detected local instance, create a config
+      // This allows remote Ollama nodes to work even if local Ollama isn't running
+      if (providerType === 'ollama') {
+        return {
+          type: 'ollama',
+          baseUrl: 'http://localhost:11434',
+        };
+      }
       throw new Error(`Provider '${providerType}' not available. Configure API key or use Ollama locally.`);
     }
 

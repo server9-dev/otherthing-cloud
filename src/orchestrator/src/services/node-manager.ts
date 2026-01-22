@@ -233,6 +233,16 @@ export class NodeManager {
       `${message.capabilities.cpu.cores} cores, ${message.capabilities.memory.total_mb}MB RAM, ` +
       `shareKey: ${shareKey}`
     );
+
+    // Log Ollama info if present
+    if (message.capabilities.ollama) {
+      console.log(
+        `[NodeManager] Node ${nodeId} Ollama: endpoint=${message.capabilities.ollama.endpoint}, ` +
+        `models=${message.capabilities.ollama.models?.length || 0}`
+      );
+    } else {
+      console.log(`[NodeManager] Node ${nodeId} has no Ollama configured`);
+    }
   }
 
   private handleHeartbeat(

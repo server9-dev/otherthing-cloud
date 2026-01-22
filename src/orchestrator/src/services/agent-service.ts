@@ -65,6 +65,7 @@ export interface AgentExecution {
   // Compute info
   computeSource?: 'local' | 'cloud';
   nodeId?: string;
+  ollamaEndpoint?: string; // Remote node's Ollama endpoint URL
   modelPulled?: boolean;
   taskCategory?: string;
 }
@@ -185,6 +186,16 @@ export class AgentService {
     console.log(`[AgentService] Task category: ${category}, recommended: ${recommendation.model} via ${recommendation.provider}`);
     console.log(`[AgentService] Using: ${model} via ${provider} (reason: ${recommendation.reason})`);
 
+    // Get the Ollama endpoint from the selected node (if using local compute)
+    let ollamaEndpoint: string | undefined;
+    if (provider === 'ollama' && recommendation.nodeId) {
+      const node = compute.ollamaNodes.find(n => n.nodeId === recommendation.nodeId);
+      ollamaEndpoint = node?.endpoint;
+      if (ollamaEndpoint) {
+        console.log(`[AgentService] Using Ollama endpoint from node: ${ollamaEndpoint}`);
+      }
+    }
+
     // Create execution record
     const execution: AgentExecution = {
       id: executionId,
@@ -204,6 +215,7 @@ export class AgentService {
       taskCategory: category,
       computeSource: provider === 'ollama' ? 'local' : 'cloud',
       nodeId: recommendation.nodeId,
+      ollamaEndpoint,
     };
 
     this.executions.set(executionId, execution);
@@ -291,6 +303,7 @@ export class AgentService {
         model: execution.model,
         provider: execution.provider,
         api_key: apiKey,
+        base_url: execution.ollamaEndpoint, // Pass node's Ollama endpoint for remote access
         max_iterations: request.maxIterations || 10,
         max_tokens: request.maxTokens || 4096,
         temperature: request.temperature || 0.7,
