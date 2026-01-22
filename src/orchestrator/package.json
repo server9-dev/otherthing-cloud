@@ -20,6 +20,7 @@
   "author": "Huck-dev",
   "license": "MIT",
   "dependencies": {
+    "@rhizos-cloud/mcp-adapters": "link:../mcp-adapters",
     "bcrypt": "^6.0.0",
     "express": "^5.0.1",
     "uuid": "^11.0.4",

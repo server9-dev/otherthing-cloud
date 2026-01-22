@@ -23,6 +23,9 @@ export { ToolAdapter } from './adapters/tool.js';
 export { TradingAdapter } from './adapters/trading.js';
 export { SearchAdapter } from './adapters/search.js';
 
+// Export security module
+export * from './security/index.js';
+
 // Adapter registry
 const adapters: Map<string, BaseAdapter> = new Map();
 

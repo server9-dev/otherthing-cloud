@@ -75,7 +75,7 @@ interface Workspace {
   createdAt: string;
 }
 
-type TabType = 'tasks' | 'console' | 'resources' | 'api-keys' | 'flows' | 'repos' | 'storage';
+type TabType = 'tasks' | 'console' | 'resources' | 'api-keys' | 'flows' | 'repos' | 'storage' | 'agents';
 
 interface WorkspaceFlow {
   id: string;
@@ -94,6 +94,39 @@ interface ApiKey {
   maskedKey: string;
   addedBy: string;
   addedAt: string;
+}
+
+// Agent types
+interface AgentExecution {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  goal: string;
+  agentType: string;
+  model: string;
+  provider: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked';
+  progress: number;
+  progressMessage: string;
+  actions: Array<{
+    thought: string;
+    tool?: string;
+    input?: string;
+    output?: string;
+  }>;
+  result?: string;
+  error?: string;
+  securityAlerts?: string[];
+  tokensUsed: number;
+  iterations: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+interface AgentScanResult {
+  safe: boolean;
+  riskLevel: string | null;
+  alerts: string[];
 }
 
 // Repo analysis types
@@ -263,6 +296,16 @@ export function WorkspaceDetail() {
   }
   const [usageSummary, setUsageSummary] = useState<UsageSummary | null>(null);
 
+  // Agent state
+  const [agents, setAgents] = useState<AgentExecution[]>([]);
+  const [agentGoal, setAgentGoal] = useState('');
+  const [agentType, setAgentType] = useState<'react' | 'plan-execute' | 'simple'>('simple');
+  const [agentModel, setAgentModel] = useState('qwen2.5-coder:7b');
+  const [agentProvider, setAgentProvider] = useState<'ollama' | 'openai' | 'anthropic'>('ollama');
+  const [runningAgent, setRunningAgent] = useState(false);
+  const [agentScan, setAgentScan] = useState<AgentScanResult | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentExecution | null>(null);
+
   // Load workspace data
   const loadWorkspace = useCallback(async () => {
     if (!id) return;
@@ -385,6 +428,102 @@ export function WorkspaceDetail() {
     }
   }, [id]);
 
+  // Load agents
+  const loadAgents = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/agents`);
+      if (res.ok) {
+        const data = await res.json();
+        setAgents(data.agents || []);
+      }
+    } catch {
+      // Agents might fail, use empty
+    }
+  }, [id]);
+
+  // Scan agent goal for security
+  const scanAgentGoal = async (goal: string) => {
+    if (!id || !goal.trim()) {
+      setAgentScan(null);
+      return;
+    }
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/agents/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAgentScan(data);
+      }
+    } catch {
+      setAgentScan(null);
+    }
+  };
+
+  // Run agent
+  const runAgent = async () => {
+    if (!id || !agentGoal.trim() || runningAgent) return;
+
+    setRunningAgent(true);
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/agents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal: agentGoal,
+          agentType,
+          model: agentModel,
+          provider: agentProvider,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to run agent');
+      }
+
+      const data = await res.json();
+      setAgents(prev => [data.agent, ...prev]);
+      setAgentGoal('');
+      setAgentScan(null);
+
+      // Poll for updates if agent is running
+      if (data.agent.status === 'running' || data.agent.status === 'pending') {
+        pollAgentStatus(data.agent.id);
+      }
+    } catch (err) {
+      console.error('Failed to run agent:', err);
+    } finally {
+      setRunningAgent(false);
+    }
+  };
+
+  // Poll agent status
+  const pollAgentStatus = async (agentId: string) => {
+    const poll = async () => {
+      try {
+        const res = await authFetch(`/api/v1/workspaces/${id}/agents/${agentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAgents(prev => prev.map(a => a.id === agentId ? data.agent : a));
+
+          if (data.agent.status === 'running' || data.agent.status === 'pending') {
+            setTimeout(poll, 1000);
+          }
+        }
+      } catch {
+        // Stop polling on error
+      }
+    };
+    poll();
+  };
+
   useEffect(() => {
     loadWorkspace();
     loadTasks();
@@ -394,7 +533,8 @@ export function WorkspaceDetail() {
     loadRepos();
     loadFiles();
     loadUsage();
-  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage]);
+    loadAgents();
+  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents]);
 
   // Task CRUD
   const createTask = async () => {
@@ -949,6 +1089,7 @@ Members: ${workspace?.members.length || 0}`
           { id: 'repos', label: 'Repos', icon: FolderGit2 },
           { id: 'storage', label: 'Storage', icon: HardDrive },
           { id: 'flows', label: 'Flows', icon: GitBranch },
+          { id: 'agents', label: 'Agents', icon: Zap },
           { id: 'console', label: 'Console', icon: Terminal },
           { id: 'resources', label: 'Resources', icon: Server },
           { id: 'api-keys', label: 'API Keys', icon: Key },
@@ -2631,6 +2772,315 @@ Members: ${workspace?.members.length || 0}`
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'agents' && (
+        <div>
+          {/* Agent Goal Input */}
+          <div className="cyber-card" style={{ marginBottom: 'var(--gap-lg)' }}>
+            <div className="cyber-card-body" style={{ padding: 'var(--gap-lg)' }}>
+              <div style={{ marginBottom: 'var(--gap-md)' }}>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-xs)' }}>
+                  Agent Goal
+                </label>
+                <textarea
+                  value={agentGoal}
+                  onChange={(e) => {
+                    setAgentGoal(e.target.value);
+                    // Debounce scan
+                    const timeout = setTimeout(() => scanAgentGoal(e.target.value), 500);
+                    return () => clearTimeout(timeout);
+                  }}
+                  placeholder="Describe what you want the agent to accomplish..."
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: 'var(--gap-sm)',
+                    background: 'var(--bg-void)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              {/* Security scan indicator */}
+              {agentScan && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--gap-sm)',
+                  padding: 'var(--gap-sm)',
+                  marginBottom: 'var(--gap-md)',
+                  background: agentScan.safe ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                  border: `1px solid ${agentScan.safe ? 'var(--success)' : 'var(--error)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                }}>
+                  <Shield size={16} style={{ color: agentScan.safe ? 'var(--success)' : 'var(--error)' }} />
+                  <span style={{ color: agentScan.safe ? 'var(--success)' : 'var(--error)', fontSize: '0.85rem' }}>
+                    {agentScan.safe ? 'Goal is safe' : `Security risk: ${agentScan.alerts.join(', ')}`}
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 'var(--gap-md)', flexWrap: 'wrap', marginBottom: 'var(--gap-md)' }}>
+                <div style={{ flex: '1', minWidth: '150px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: 'var(--gap-xs)' }}>
+                    Agent Type
+                  </label>
+                  <select
+                    value={agentType}
+                    onChange={(e) => setAgentType(e.target.value as any)}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--gap-sm)',
+                      background: 'var(--bg-void)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <option value="simple">Simple (1 step)</option>
+                    <option value="plan-execute">Plan & Execute</option>
+                    <option value="react">ReAct (Multi-step)</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: '1', minWidth: '150px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: 'var(--gap-xs)' }}>
+                    Provider
+                  </label>
+                  <select
+                    value={agentProvider}
+                    onChange={(e) => setAgentProvider(e.target.value as any)}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--gap-sm)',
+                      background: 'var(--bg-void)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <option value="ollama">Ollama (Local)</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: '1', minWidth: '150px' }}>
+                  <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: 'var(--gap-xs)' }}>
+                    Model
+                  </label>
+                  <select
+                    value={agentModel}
+                    onChange={(e) => setAgentModel(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--gap-sm)',
+                      background: 'var(--bg-void)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    {agentProvider === 'ollama' && (
+                      <>
+                        <option value="qwen2.5-coder:7b">Qwen 2.5 Coder 7B</option>
+                        <option value="llama3.2">Llama 3.2</option>
+                        <option value="deepseek-coder-v2">DeepSeek Coder V2</option>
+                      </>
+                    )}
+                    {agentProvider === 'openai' && (
+                      <>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      </>
+                    )}
+                    {agentProvider === 'anthropic' && (
+                      <>
+                        <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+                        <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <CyberButton
+                variant="primary"
+                icon={Play}
+                onClick={runAgent}
+                disabled={!agentGoal.trim() || runningAgent || (agentScan && !agentScan.safe)}
+                style={{ width: '100%' }}
+              >
+                {runningAgent ? 'RUNNING...' : 'RUN AGENT'}
+              </CyberButton>
+            </div>
+          </div>
+
+          {/* Running Agents */}
+          {agents.filter(a => a.status === 'running' || a.status === 'pending').length > 0 && (
+            <div style={{ marginBottom: 'var(--gap-lg)' }}>
+              <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-sm)' }}>
+                Running ({agents.filter(a => a.status === 'running' || a.status === 'pending').length})
+              </h4>
+              {agents.filter(a => a.status === 'running' || a.status === 'pending').map(agent => (
+                <div key={agent.id} className="cyber-card" style={{ marginBottom: 'var(--gap-sm)' }}>
+                  <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)', marginBottom: 'var(--gap-sm)' }}>
+                      <Loader2 size={16} style={{ color: 'var(--accent)', animation: 'spin 1s linear infinite' }} />
+                      <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                        {agent.goal.slice(0, 60)}{agent.goal.length > 60 ? '...' : ''}
+                      </span>
+                    </div>
+                    <div style={{
+                      background: 'var(--bg-void)',
+                      borderRadius: 'var(--radius-sm)',
+                      height: '6px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        width: `${agent.progress}%`,
+                        height: '100%',
+                        background: 'var(--accent)',
+                        transition: 'width 0.3s',
+                      }} />
+                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 'var(--gap-xs)' }}>
+                      {agent.progressMessage || `${agent.progress.toFixed(0)}%`} • {agent.model}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Completed Agents */}
+          <div>
+            <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-sm)' }}>
+              History ({agents.filter(a => a.status !== 'running' && a.status !== 'pending').length})
+            </h4>
+            {agents.filter(a => a.status !== 'running' && a.status !== 'pending').length === 0 ? (
+              <div className="cyber-card">
+                <div className="cyber-card-body" style={{ textAlign: 'center', padding: 'var(--gap-xl)' }}>
+                  <Zap size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 'var(--gap-md)' }} />
+                  <p style={{ color: 'var(--text-muted)' }}>No agents run yet.</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    Enter a goal above and click "Run Agent" to get started.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              agents.filter(a => a.status !== 'running' && a.status !== 'pending').map(agent => (
+                <div
+                  key={agent.id}
+                  className="cyber-card"
+                  style={{ marginBottom: 'var(--gap-sm)', cursor: 'pointer' }}
+                  onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
+                >
+                  <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
+                        {agent.status === 'completed' && <CheckCircle size={16} style={{ color: 'var(--success)' }} />}
+                        {agent.status === 'failed' && <AlertTriangle size={16} style={{ color: 'var(--error)' }} />}
+                        {agent.status === 'blocked' && <Shield size={16} style={{ color: 'var(--warning)' }} />}
+                        <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                          {agent.goal.slice(0, 50)}{agent.goal.length > 50 ? '...' : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        <span>{agent.iterations} steps</span>
+                        <span>{agent.tokensUsed} tokens</span>
+                        <span>{agent.model}</span>
+                      </div>
+                    </div>
+
+                    {/* Expanded details */}
+                    {selectedAgent?.id === agent.id && (
+                      <div style={{ marginTop: 'var(--gap-md)', paddingTop: 'var(--gap-md)', borderTop: '1px solid var(--border-subtle)' }}>
+                        {agent.securityAlerts && agent.securityAlerts.length > 0 && (
+                          <div style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid var(--error)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: 'var(--gap-sm)',
+                            marginBottom: 'var(--gap-md)',
+                          }}>
+                            <div style={{ color: 'var(--error)', fontSize: '0.85rem', fontWeight: 500 }}>Security Alerts</div>
+                            {agent.securityAlerts.map((alert, i) => (
+                              <div key={i} style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>• {alert}</div>
+                            ))}
+                          </div>
+                        )}
+
+                        {agent.result && (
+                          <div style={{ marginBottom: 'var(--gap-md)' }}>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: 'var(--gap-xs)' }}>Result</div>
+                            <div style={{
+                              background: 'var(--bg-void)',
+                              padding: 'var(--gap-sm)',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: '0.85rem',
+                              color: 'var(--text-primary)',
+                              whiteSpace: 'pre-wrap',
+                              maxHeight: '300px',
+                              overflow: 'auto',
+                            }}>
+                              {agent.result}
+                            </div>
+                          </div>
+                        )}
+
+                        {agent.error && (
+                          <div style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            padding: 'var(--gap-sm)',
+                            borderRadius: 'var(--radius-sm)',
+                            color: 'var(--error)',
+                            fontSize: '0.85rem',
+                          }}>
+                            Error: {agent.error}
+                          </div>
+                        )}
+
+                        {agent.actions.length > 0 && (
+                          <div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: 'var(--gap-xs)' }}>
+                              Actions ({agent.actions.length})
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap-xs)' }}>
+                              {agent.actions.map((action, i) => (
+                                <div key={i} style={{
+                                  background: 'var(--bg-void)',
+                                  padding: 'var(--gap-xs) var(--gap-sm)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  fontSize: '0.8rem',
+                                }}>
+                                  <div style={{ color: 'var(--text-muted)' }}>
+                                    {action.thought?.slice(0, 100)}{action.thought && action.thought.length > 100 ? '...' : ''}
+                                  </div>
+                                  {action.tool && (
+                                    <div style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>
+                                      → {action.tool}: {action.input?.slice(0, 50)}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

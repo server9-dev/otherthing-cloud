@@ -19,6 +19,7 @@ import { PaymentService } from './services/payment.js';
 import { FlowDeploymentService } from './services/flow-deployment.js';
 import { WorkspaceManager } from './services/workspace-manager.js';
 import { taskManager } from './services/task-manager.js';
+import { agentService } from './services/agent-service.js';
 import {
   RegisterNodeRequestSchema,
   CreateJobRequestSchema,
@@ -1167,6 +1168,172 @@ app.post('/api/v1/workspaces/:id/usage', requireAuth, (req, res) => {
   }
 
   res.status(201).json({ entry: result.entry });
+});
+
+// ============ Agent Endpoints ============
+
+// Scan a goal for security threats (preview)
+app.post('/api/v1/workspaces/:id/agents/scan', requireAuth, (req, res) => {
+  const { goal } = req.body;
+
+  if (!goal) {
+    res.status(400).json({ error: 'Goal is required' });
+    return;
+  }
+
+  const result = agentService.scanGoal(goal);
+  res.json(result);
+});
+
+// Run an agent in a workspace
+app.post('/api/v1/workspaces/:id/agents', requireAuth, async (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  const { goal, agentType, model, provider, maxIterations, maxTokens, temperature } = req.body;
+
+  if (!goal) {
+    res.status(400).json({ error: 'Goal is required' });
+    return;
+  }
+
+  // Get API key from workspace if needed
+  let apiKey: string | undefined;
+  if (provider && provider !== 'ollama') {
+    const wsApiKey = workspace.apiKeys?.find(k => k.provider === provider);
+    apiKey = wsApiKey?.key;
+  }
+
+  try {
+    const execution = await agentService.runAgent(workspaceId, session.userId, {
+      goal,
+      agentType,
+      model,
+      provider,
+      maxIterations,
+      maxTokens,
+      temperature,
+    }, apiKey);
+
+    res.status(201).json({ agent: execution });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to run agent' });
+  }
+});
+
+// List agents in a workspace
+app.get('/api/v1/workspaces/:id/agents', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  const executions = agentService.getWorkspaceExecutions(workspaceId);
+  res.json({ agents: executions });
+});
+
+// Get agent execution details
+app.get('/api/v1/workspaces/:id/agents/:agentId', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const { id: workspaceId, agentId } = req.params;
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  const execution = agentService.getExecution(agentId);
+  if (!execution || execution.workspaceId !== workspaceId) {
+    res.status(404).json({ error: 'Agent not found' });
+    return;
+  }
+
+  res.json({ agent: execution });
+});
+
+// Cancel an agent
+app.delete('/api/v1/workspaces/:id/agents/:agentId', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const { id: workspaceId, agentId } = req.params;
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  const execution = agentService.getExecution(agentId);
+  if (!execution || execution.workspaceId !== workspaceId) {
+    res.status(404).json({ error: 'Agent not found' });
+    return;
+  }
+
+  const cancelled = agentService.cancelExecution(agentId);
+  if (!cancelled) {
+    res.status(400).json({ error: 'Agent cannot be cancelled (not running)' });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
+// List available agent architectures
+app.get('/api/v1/agents/architectures', requireAuth, async (req, res) => {
+  try {
+    const architectures = await agentService.listArchitectures();
+    res.json({ architectures });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list architectures' });
+  }
+});
+
+// List available models
+app.get('/api/v1/agents/models', requireAuth, async (req, res) => {
+  try {
+    const models = await agentService.listModels();
+    res.json({ models });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list models' });
+  }
 });
 
 // ============ Protected API Endpoints ============
