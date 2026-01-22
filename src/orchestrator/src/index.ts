@@ -53,6 +53,9 @@ const workspaceManager = new WorkspaceManager();
 // Wire up cross-references for IPFS integration
 nodeManager.setWorkspaceManager(workspaceManager);
 
+// Wire up agent service with managers for smart compute orchestration
+agentService.setManagers(nodeManager, workspaceManager);
+
 // ============ Express App ============
 
 const app = express();
@@ -1171,6 +1174,50 @@ app.post('/api/v1/workspaces/:id/usage', requireAuth, (req, res) => {
 });
 
 // ============ Agent Endpoints ============
+
+// Get workspace compute summary (local nodes + cloud API keys)
+app.get('/api/v1/workspaces/:id/compute', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+
+  // Verify user has access to workspace
+  if (!workspaceManager.isMember(workspaceId, session.userId)) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  const summary = agentService.getComputeSummary(workspaceId);
+  res.json({ compute: summary });
+});
+
+// Analyze a task and get model/compute recommendation
+app.post('/api/v1/workspaces/:id/agents/analyze', requireAuth, (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+  const { goal } = req.body;
+
+  // Verify user has access to workspace
+  if (!workspaceManager.isMember(workspaceId, session.userId)) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  if (!goal) {
+    res.status(400).json({ error: 'Goal is required' });
+    return;
+  }
+
+  const analysis = agentService.analyzeTask(goal, workspaceId);
+  res.json({
+    category: analysis.category,
+    recommendation: analysis.recommendation,
+    compute: {
+      hasLocalCompute: analysis.compute.hasLocalCompute,
+      localNodeCount: analysis.compute.ollamaNodes.length,
+      hasCloudKeys: analysis.compute.apiKeys.openai || analysis.compute.apiKeys.anthropic,
+    },
+  });
+});
 
 // Scan a goal for security threats (preview)
 app.post('/api/v1/workspaces/:id/agents/scan', requireAuth, (req, res) => {

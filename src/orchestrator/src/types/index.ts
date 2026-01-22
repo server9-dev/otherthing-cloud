@@ -50,6 +50,24 @@ export const StorageCapabilitySchema = z.object({
   storage_type: StorageTypeSchema,
 });
 
+export const OllamaModelSchema = z.object({
+  name: z.string(),
+  size: z.number(), // bytes
+  quantization: z.string().optional(),
+  family: z.string().optional(),
+  parameterSize: z.string().optional(),
+});
+
+export const OllamaCapabilitySchema = z.object({
+  installed: z.boolean(),
+  version: z.string().optional(),
+  models: z.array(OllamaModelSchema),
+  endpoint: z.string().optional(), // Usually http://localhost:11434
+});
+
+export type OllamaCapability = z.infer<typeof OllamaCapabilitySchema>;
+export type OllamaModel = z.infer<typeof OllamaModelSchema>;
+
 export const NodeCapabilitiesSchema = z.object({
   node_id: z.string(),
   node_version: z.string(),
@@ -60,6 +78,7 @@ export const NodeCapabilitiesSchema = z.object({
   docker_version: z.string().optional(),
   container_runtimes: z.array(z.string()),
   mcp_adapters: z.array(z.string()),
+  ollama: OllamaCapabilitySchema.optional(),
 });
 
 export type NodeCapabilities = z.infer<typeof NodeCapabilitiesSchema>;
@@ -188,8 +207,25 @@ export const NodeMessageSchema = z.discriminatedUnion('type', [
 export type NodeMessage = z.infer<typeof NodeMessageSchema>;
 
 export interface OrchestratorMessage {
-  type: 'registered' | 'job_assignment' | 'cancel_job' | 'config_update' | 'error' | 'workspace_joined';
+  type: 'registered' | 'job_assignment' | 'cancel_job' | 'config_update' | 'error' | 'workspace_joined' | 'ollama_pull' | 'ollama_pull_status';
   [key: string]: unknown;
+}
+
+// Ollama pull request (orchestrator -> node)
+export interface OllamaPullMessage extends OrchestratorMessage {
+  type: 'ollama_pull';
+  model: string;
+  requestId: string;
+}
+
+// Ollama pull status (node -> orchestrator)
+export interface OllamaPullStatusMessage {
+  type: 'ollama_pull_status';
+  requestId: string;
+  model: string;
+  status: 'pulling' | 'completed' | 'failed';
+  progress?: number; // 0-100
+  error?: string;
 }
 
 // IPFS message types

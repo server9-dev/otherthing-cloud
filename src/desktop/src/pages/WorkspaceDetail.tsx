@@ -5,7 +5,7 @@ import {
   Terminal, LayoutGrid, Trash2, Edit2, CheckCircle, Clock, Circle,
   Copy, RefreshCw, Settings, Cpu, HardDrive, Zap, Key, GitBranch, Play,
   DollarSign, Activity, FolderGit2, ExternalLink, AlertTriangle, Shield,
-  FileCode, Users2, TrendingUp, Loader2
+  FileCode, Users2, TrendingUp, Loader2, Globe
 } from 'lucide-react';
 import { CyberButton } from '../components';
 import { authFetch } from '../App';
@@ -105,7 +105,7 @@ interface AgentExecution {
   agentType: string;
   model: string;
   provider: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked' | 'pulling_model';
   progress: number;
   progressMessage: string;
   actions: Array<{
@@ -121,6 +121,20 @@ interface AgentExecution {
   iterations: number;
   createdAt: string;
   completedAt?: string;
+  // Smart compute fields
+  computeSource?: 'local' | 'cloud';
+  nodeId?: string;
+  modelPulled?: boolean;
+  taskCategory?: string;
+}
+
+// Compute summary
+interface ComputeSummary {
+  hasLocalCompute: boolean;
+  localNodes: number;
+  localModels: string[];
+  hasCloudKeys: boolean;
+  cloudProviders: string[];
 }
 
 interface AgentScanResult {
@@ -300,11 +314,16 @@ export function WorkspaceDetail() {
   const [agents, setAgents] = useState<AgentExecution[]>([]);
   const [agentGoal, setAgentGoal] = useState('');
   const [agentType, setAgentType] = useState<'react' | 'plan-execute' | 'simple'>('simple');
-  const [agentModel, setAgentModel] = useState('qwen2.5-coder:7b');
-  const [agentProvider, setAgentProvider] = useState<'ollama' | 'openai' | 'anthropic'>('ollama');
+  const [agentModel, setAgentModel] = useState(''); // Auto-selected if empty
+  const [agentProvider, setAgentProvider] = useState<'ollama' | 'openai' | 'anthropic' | ''>(''); // Auto-selected if empty
   const [runningAgent, setRunningAgent] = useState(false);
   const [agentScan, setAgentScan] = useState<AgentScanResult | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<AgentExecution | null>(null);
+  const [computeSummary, setComputeSummary] = useState<ComputeSummary | null>(null);
+  const [taskAnalysis, setTaskAnalysis] = useState<{
+    category: string;
+    recommendation: { model: string; provider: string; reason: string; needsPull?: boolean };
+  } | null>(null);
 
   // Load workspace data
   const loadWorkspace = useCallback(async () => {
@@ -443,6 +462,46 @@ export function WorkspaceDetail() {
     }
   }, [id]);
 
+  // Load compute summary
+  const loadComputeSummary = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/compute`);
+      if (res.ok) {
+        const data = await res.json();
+        setComputeSummary(data.compute);
+      }
+    } catch {
+      // Compute might fail, use null
+    }
+  }, [id]);
+
+  // Analyze task for model recommendation
+  const analyzeTask = async (goal: string) => {
+    if (!id || !goal.trim()) {
+      setTaskAnalysis(null);
+      return;
+    }
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/agents/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTaskAnalysis({
+          category: data.category,
+          recommendation: data.recommendation,
+        });
+      }
+    } catch {
+      setTaskAnalysis(null);
+    }
+  };
+
   // Scan agent goal for security
   const scanAgentGoal = async (goal: string) => {
     if (!id || !goal.trim()) {
@@ -472,15 +531,21 @@ export function WorkspaceDetail() {
     setRunningAgent(true);
 
     try {
+      // Build request - only include model/provider if explicitly set
+      const request: Record<string, unknown> = {
+        goal: agentGoal,
+        agentType,
+        preferLocal: true, // Always prefer local compute
+      };
+
+      // Only override auto-selection if user explicitly chose
+      if (agentModel) request.model = agentModel;
+      if (agentProvider) request.provider = agentProvider;
+
       const res = await authFetch(`/api/v1/workspaces/${id}/agents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          goal: agentGoal,
-          agentType,
-          model: agentModel,
-          provider: agentProvider,
-        }),
+        body: JSON.stringify(request),
       });
 
       if (!res.ok) {
@@ -492,9 +557,10 @@ export function WorkspaceDetail() {
       setAgents(prev => [data.agent, ...prev]);
       setAgentGoal('');
       setAgentScan(null);
+      setTaskAnalysis(null);
 
       // Poll for updates if agent is running
-      if (data.agent.status === 'running' || data.agent.status === 'pending') {
+      if (data.agent.status === 'running' || data.agent.status === 'pending' || data.agent.status === 'pulling_model') {
         pollAgentStatus(data.agent.id);
       }
     } catch (err) {
@@ -513,7 +579,8 @@ export function WorkspaceDetail() {
           const data = await res.json();
           setAgents(prev => prev.map(a => a.id === agentId ? data.agent : a));
 
-          if (data.agent.status === 'running' || data.agent.status === 'pending') {
+          // Continue polling for active states
+          if (data.agent.status === 'running' || data.agent.status === 'pending' || data.agent.status === 'pulling_model') {
             setTimeout(poll, 1000);
           }
         }
@@ -534,7 +601,8 @@ export function WorkspaceDetail() {
     loadFiles();
     loadUsage();
     loadAgents();
-  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents]);
+    loadComputeSummary();
+  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents, loadComputeSummary]);
 
   // Task CRUD
   const createTask = async () => {
@@ -2778,6 +2846,29 @@ Members: ${workspace?.members.length || 0}`
 
       {activeTab === 'agents' && (
         <div>
+          {/* Compute Summary */}
+          {computeSummary && (
+            <div className="cyber-card" style={{ marginBottom: 'var(--gap-md)' }}>
+              <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-xs)' }}>
+                    <Cpu size={16} style={{ color: computeSummary.hasLocalCompute ? 'var(--success)' : 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      Local: {computeSummary.localNodes} node{computeSummary.localNodes !== 1 ? 's' : ''}
+                      {computeSummary.localModels.length > 0 && ` (${computeSummary.localModels.slice(0, 3).join(', ')}${computeSummary.localModels.length > 3 ? '...' : ''})`}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-xs)' }}>
+                    <Globe size={16} style={{ color: computeSummary.hasCloudKeys ? 'var(--accent)' : 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      Cloud: {computeSummary.cloudProviders.length > 0 ? computeSummary.cloudProviders.join(', ') : 'No API keys'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Agent Goal Input */}
           <div className="cyber-card" style={{ marginBottom: 'var(--gap-lg)' }}>
             <div className="cyber-card-body" style={{ padding: 'var(--gap-lg)' }}>
@@ -2789,8 +2880,11 @@ Members: ${workspace?.members.length || 0}`
                   value={agentGoal}
                   onChange={(e) => {
                     setAgentGoal(e.target.value);
-                    // Debounce scan
-                    const timeout = setTimeout(() => scanAgentGoal(e.target.value), 500);
+                    // Debounce scan and analysis
+                    const timeout = setTimeout(() => {
+                      scanAgentGoal(e.target.value);
+                      analyzeTask(e.target.value);
+                    }, 500);
                     return () => clearTimeout(timeout);
                   }}
                   placeholder="Describe what you want the agent to accomplish..."
@@ -2807,6 +2901,36 @@ Members: ${workspace?.members.length || 0}`
                   }}
                 />
               </div>
+
+              {/* Task analysis - recommended model */}
+              {taskAnalysis && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--gap-sm)',
+                  padding: 'var(--gap-sm)',
+                  marginBottom: 'var(--gap-md)',
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  border: '1px solid var(--accent)',
+                  borderRadius: 'var(--radius-sm)',
+                }}>
+                  <Zap size={16} style={{ color: 'var(--accent)' }} />
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    <strong style={{ color: 'var(--accent)' }}>{taskAnalysis.category}</strong> task
+                    {' → '}
+                    <span style={{ color: taskAnalysis.recommendation.provider === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
+                      {taskAnalysis.recommendation.model}
+                    </span>
+                    {' via '}
+                    <span style={{ color: taskAnalysis.recommendation.provider === 'ollama' ? 'var(--success)' : 'var(--warning)' }}>
+                      {taskAnalysis.recommendation.provider === 'ollama' ? 'local' : taskAnalysis.recommendation.provider}
+                    </span>
+                    {taskAnalysis.recommendation.needsPull && (
+                      <span style={{ color: 'var(--warning)', marginLeft: 'var(--gap-xs)' }}>(will download)</span>
+                    )}
+                  </span>
+                </div>
+              )}
 
               {/* Security scan indicator */}
               {agentScan && (
@@ -2866,6 +2990,7 @@ Members: ${workspace?.members.length || 0}`
                       color: 'var(--text-primary)',
                     }}
                   >
+                    <option value="">Auto (Best Available)</option>
                     <option value="ollama">Ollama (Local)</option>
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic</option>
@@ -2888,21 +3013,22 @@ Members: ${workspace?.members.length || 0}`
                       color: 'var(--text-primary)',
                     }}
                   >
-                    {agentProvider === 'ollama' && (
+                    <option value="">Auto (Best for Task)</option>
+                    {(agentProvider === '' || agentProvider === 'ollama') && (
                       <>
                         <option value="qwen2.5-coder:7b">Qwen 2.5 Coder 7B</option>
-                        <option value="llama3.2">Llama 3.2</option>
+                        <option value="qwen2.5-coder:14b">Qwen 2.5 Coder 14B</option>
+                        <option value="llama3.2:8b">Llama 3.2 8B</option>
                         <option value="deepseek-coder-v2">DeepSeek Coder V2</option>
                       </>
                     )}
-                    {agentProvider === 'openai' && (
+                    {(agentProvider === '' || agentProvider === 'openai') && (
                       <>
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                       </>
                     )}
-                    {agentProvider === 'anthropic' && (
+                    {(agentProvider === '' || agentProvider === 'anthropic') && (
                       <>
                         <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
                         <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
@@ -2925,16 +3051,16 @@ Members: ${workspace?.members.length || 0}`
           </div>
 
           {/* Running Agents */}
-          {agents.filter(a => a.status === 'running' || a.status === 'pending').length > 0 && (
+          {agents.filter(a => a.status === 'running' || a.status === 'pending' || a.status === 'pulling_model').length > 0 && (
             <div style={{ marginBottom: 'var(--gap-lg)' }}>
               <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-sm)' }}>
-                Running ({agents.filter(a => a.status === 'running' || a.status === 'pending').length})
+                Running ({agents.filter(a => a.status === 'running' || a.status === 'pending' || a.status === 'pulling_model').length})
               </h4>
-              {agents.filter(a => a.status === 'running' || a.status === 'pending').map(agent => (
+              {agents.filter(a => a.status === 'running' || a.status === 'pending' || a.status === 'pulling_model').map(agent => (
                 <div key={agent.id} className="cyber-card" style={{ marginBottom: 'var(--gap-sm)' }}>
                   <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)', marginBottom: 'var(--gap-sm)' }}>
-                      <Loader2 size={16} style={{ color: 'var(--accent)', animation: 'spin 1s linear infinite' }} />
+                      <Loader2 size={16} style={{ color: agent.status === 'pulling_model' ? 'var(--warning)' : 'var(--accent)', animation: 'spin 1s linear infinite' }} />
                       <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>
                         {agent.goal.slice(0, 60)}{agent.goal.length > 60 ? '...' : ''}
                       </span>
@@ -2948,12 +3074,17 @@ Members: ${workspace?.members.length || 0}`
                       <div style={{
                         width: `${agent.progress}%`,
                         height: '100%',
-                        background: 'var(--accent)',
+                        background: agent.status === 'pulling_model' ? 'var(--warning)' : 'var(--accent)',
                         transition: 'width 0.3s',
                       }} />
                     </div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 'var(--gap-xs)' }}>
-                      {agent.progressMessage || `${agent.progress.toFixed(0)}%`} • {agent.model}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--gap-xs)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        {agent.status === 'pulling_model' ? '📥 Downloading model...' : (agent.progressMessage || `${agent.progress.toFixed(0)}%`)}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: agent.computeSource === 'local' ? 'var(--success)' : 'var(--accent)' }}>
+                        {agent.computeSource === 'local' ? '⚡ Local' : '☁️ Cloud'} • {agent.model}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2964,9 +3095,9 @@ Members: ${workspace?.members.length || 0}`
           {/* Completed Agents */}
           <div>
             <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--gap-sm)' }}>
-              History ({agents.filter(a => a.status !== 'running' && a.status !== 'pending').length})
+              History ({agents.filter(a => a.status !== 'running' && a.status !== 'pending' && a.status !== 'pulling_model').length})
             </h4>
-            {agents.filter(a => a.status !== 'running' && a.status !== 'pending').length === 0 ? (
+            {agents.filter(a => a.status !== 'running' && a.status !== 'pending' && a.status !== 'pulling_model').length === 0 ? (
               <div className="cyber-card">
                 <div className="cyber-card-body" style={{ textAlign: 'center', padding: 'var(--gap-xl)' }}>
                   <Zap size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 'var(--gap-md)' }} />
@@ -2977,7 +3108,7 @@ Members: ${workspace?.members.length || 0}`
                 </div>
               </div>
             ) : (
-              agents.filter(a => a.status !== 'running' && a.status !== 'pending').map(agent => (
+              agents.filter(a => a.status !== 'running' && a.status !== 'pending' && a.status !== 'pulling_model').map(agent => (
                 <div
                   key={agent.id}
                   className="cyber-card"
@@ -2997,7 +3128,14 @@ Members: ${workspace?.members.length || 0}`
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         <span>{agent.iterations} steps</span>
                         <span>{agent.tokensUsed} tokens</span>
-                        <span>{agent.model}</span>
+                        <span style={{ color: agent.computeSource === 'local' ? 'var(--success)' : 'var(--accent)' }}>
+                          {agent.computeSource === 'local' ? '⚡ ' : '☁️ '}{agent.model}
+                        </span>
+                        {agent.taskCategory && (
+                          <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            {agent.taskCategory}
+                          </span>
+                        )}
                       </div>
                     </div>
 

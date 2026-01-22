@@ -2,21 +2,39 @@
  * Agent Service
  *
  * Manages agent execution within workspaces using pooled resources.
- * Agents can use workspace API keys and node hardware.
+ * Smart compute orchestration:
+ * 1. Check workspace nodes for Ollama
+ * 2. Auto-select best model for the task
+ * 3. Pull model if needed
+ * 4. Fall back to cloud APIs only if no local compute
  */
 
 import { AgentAdapter, LlmInferenceAdapter, SecurityScanner, RiskLevel } from '@rhizos-cloud/mcp-adapters';
 import { v4 as uuidv4 } from 'uuid';
+import { modelSelector, ModelRecommendation, ComputeAvailability } from './model-selector.js';
+import { ConnectedNode } from '../types/index.js';
+
+// Types for external managers (injected)
+interface NodeManagerLike {
+  getOllamaNodesForWorkspace(workspaceId: string): ConnectedNode[];
+  findBestNodeForModel(workspaceId: string, model: string, vramNeeded: number): ConnectedNode | null;
+  pullModel(nodeId: string, model: string): Promise<{ success: boolean; error?: string }>;
+}
+
+interface WorkspaceManagerLike {
+  getWorkspace(workspaceId: string): { apiKeys?: Array<{ provider: string; key: string }> } | null;
+}
 
 // Agent execution request
 export interface AgentRequest {
   goal: string;
   agentType?: 'react' | 'plan-execute' | 'simple';
-  model?: string;
+  model?: string; // If not specified, will auto-select
   provider?: 'ollama' | 'openai' | 'anthropic' | 'azure' | 'bedrock';
   maxIterations?: number;
   maxTokens?: number;
   temperature?: number;
+  preferLocal?: boolean; // Default true - prefer local compute over cloud
 }
 
 // Agent execution state
@@ -28,7 +46,7 @@ export interface AgentExecution {
   agentType: string;
   model: string;
   provider: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'blocked' | 'pulling_model';
   progress: number;
   progressMessage: string;
   actions: Array<{
@@ -44,6 +62,11 @@ export interface AgentExecution {
   iterations: number;
   createdAt: Date;
   completedAt?: Date;
+  // Compute info
+  computeSource?: 'local' | 'cloud';
+  nodeId?: string;
+  modelPulled?: boolean;
+  taskCategory?: string;
 }
 
 // Progress callback type
@@ -57,10 +80,22 @@ export class AgentService {
   private initialized = false;
   private onProgress?: ProgressCallback;
 
+  // External managers (injected)
+  private nodeManager?: NodeManagerLike;
+  private workspaceManager?: WorkspaceManagerLike;
+
   constructor() {
     this.agentAdapter = new AgentAdapter();
     this.llmAdapter = new LlmInferenceAdapter();
     this.securityScanner = new SecurityScanner();
+  }
+
+  /**
+   * Set external managers for compute orchestration
+   */
+  setManagers(nodeManager: NodeManagerLike, workspaceManager: WorkspaceManagerLike): void {
+    this.nodeManager = nodeManager;
+    this.workspaceManager = workspaceManager;
   }
 
   async initialize(): Promise<void> {
@@ -68,7 +103,7 @@ export class AgentService {
     await this.agentAdapter.initialize();
     await this.llmAdapter.initialize();
     this.initialized = true;
-    console.log('[AgentService] Initialized');
+    console.log('[AgentService] Initialized with smart compute orchestration');
   }
 
   /**
@@ -91,20 +126,64 @@ export class AgentService {
   }
 
   /**
-   * Run an agent within a workspace context
+   * Analyze task and get compute recommendation
+   */
+  analyzeTask(goal: string, workspaceId: string): {
+    category: string;
+    recommendation: ModelRecommendation;
+    compute: ComputeAvailability;
+  } {
+    const category = modelSelector.categorizeTask(goal);
+    const compute = this.getComputeAvailability(workspaceId);
+    const recommendation = modelSelector.selectModel(goal, compute, true);
+
+    return { category, recommendation, compute };
+  }
+
+  /**
+   * Get compute availability for a workspace
+   */
+  private getComputeAvailability(workspaceId: string): ComputeAvailability {
+    if (!this.nodeManager || !this.workspaceManager) {
+      // Fallback if managers not set
+      return {
+        hasLocalCompute: false,
+        ollamaNodes: [],
+        apiKeys: { openai: false, anthropic: false },
+      };
+    }
+
+    const nodes = this.nodeManager.getOllamaNodesForWorkspace(workspaceId);
+    const workspace = this.workspaceManager.getWorkspace(workspaceId);
+    const apiKeys = workspace?.apiKeys || [];
+
+    return modelSelector.getComputeAvailability(nodes, apiKeys);
+  }
+
+  /**
+   * Run an agent within a workspace context with smart compute selection
    */
   async runAgent(
     workspaceId: string,
     userId: string,
     request: AgentRequest,
-    apiKey?: string
+    apiKeyOverride?: string
   ): Promise<AgentExecution> {
     await this.initialize();
 
     const executionId = uuidv4();
     const agentType = request.agentType || 'simple';
-    const model = request.model || 'qwen2.5-coder:7b';
-    const provider = request.provider || 'ollama';
+    const preferLocal = request.preferLocal !== false; // Default true
+
+    // Analyze task and get recommendation
+    const { category, recommendation, compute } = this.analyzeTask(request.goal, workspaceId);
+
+    // Use explicit model/provider if provided, otherwise use recommendation
+    const model = request.model || recommendation.model;
+    const provider = request.provider || recommendation.provider;
+
+    console.log(`[AgentService] Task category: ${category}, recommended: ${recommendation.model} via ${recommendation.provider}`);
+    console.log(`[AgentService] Using: ${model} via ${provider} (reason: ${recommendation.reason})`);
 
     // Create execution record
     const execution: AgentExecution = {
@@ -117,11 +196,14 @@ export class AgentService {
       provider,
       status: 'pending',
       progress: 0,
-      progressMessage: 'Starting agent...',
+      progressMessage: 'Analyzing task...',
       actions: [],
       tokensUsed: 0,
       iterations: 0,
       createdAt: new Date(),
+      taskCategory: category,
+      computeSource: provider === 'ollama' ? 'local' : 'cloud',
+      nodeId: recommendation.nodeId,
     };
 
     this.executions.set(executionId, execution);
@@ -134,6 +216,55 @@ export class AgentService {
       execution.securityAlerts = goalScan.threats.map(t => t.pattern.description);
       execution.completedAt = new Date();
       return execution;
+    }
+
+    // Get API key
+    let apiKey = apiKeyOverride;
+    if (!apiKey && provider !== 'ollama') {
+      const workspace = this.workspaceManager?.getWorkspace(workspaceId);
+      const wsApiKey = workspace?.apiKeys?.find(k => k.provider === provider);
+      apiKey = wsApiKey?.key;
+
+      if (!apiKey) {
+        execution.status = 'failed';
+        execution.error = `No ${provider} API key configured in workspace`;
+        execution.completedAt = new Date();
+        return execution;
+      }
+    }
+
+    // Handle model pull if needed (local compute)
+    if (provider === 'ollama' && recommendation.needsPull && recommendation.nodeId && this.nodeManager) {
+      execution.status = 'pulling_model';
+      execution.progressMessage = `Downloading ${model}...`;
+      this.emitProgress(executionId, 5, `Downloading ${model} to node...`);
+
+      const pullResult = await this.nodeManager.pullModel(recommendation.nodeId, model);
+
+      if (!pullResult.success) {
+        // Pull failed - try cloud fallback
+        console.log(`[AgentService] Model pull failed: ${pullResult.error}, checking cloud fallback`);
+
+        if (compute.apiKeys.anthropic || compute.apiKeys.openai) {
+          const cloudProvider = compute.apiKeys.anthropic ? 'anthropic' : 'openai';
+          const cloudModel = cloudProvider === 'anthropic' ? 'claude-sonnet-4-5' : 'gpt-4o';
+
+          execution.model = cloudModel;
+          execution.provider = cloudProvider;
+          execution.computeSource = 'cloud';
+          execution.progressMessage = `Falling back to ${cloudProvider}...`;
+
+          const workspace = this.workspaceManager?.getWorkspace(workspaceId);
+          apiKey = workspace?.apiKeys?.find(k => k.provider === cloudProvider)?.key;
+        } else {
+          execution.status = 'failed';
+          execution.error = `Failed to pull model: ${pullResult.error}. No cloud API keys available as fallback.`;
+          execution.completedAt = new Date();
+          return execution;
+        }
+      } else {
+        execution.modelPulled = true;
+      }
     }
 
     // Run agent asynchronously
@@ -151,14 +282,14 @@ export class AgentService {
     apiKey?: string
   ): Promise<void> {
     execution.status = 'running';
-    this.emitProgress(execution.id, 5, 'Agent starting...');
+    this.emitProgress(execution.id, 10, `Running ${execution.agentType} agent with ${execution.model}...`);
 
     try {
       const result = await this.agentAdapter.execute('run', {
         goal: request.goal,
-        agent_type: request.agentType || 'simple',
-        model: request.model || 'qwen2.5-coder:7b',
-        provider: request.provider || 'ollama',
+        agent_type: execution.agentType,
+        model: execution.model,
+        provider: execution.provider,
         api_key: apiKey,
         max_iterations: request.maxIterations || 10,
         max_tokens: request.maxTokens || 4096,
@@ -169,9 +300,11 @@ export class AgentService {
         timeout_seconds: 300,
         hardware: { gpus: [], cpu_cores: 4, memory_mb: 8192 },
         on_progress: (pct: number, msg?: string) => {
-          execution.progress = pct;
+          // Adjust progress to account for model pull phase (10-100)
+          const adjustedPct = 10 + (pct * 0.9);
+          execution.progress = adjustedPct;
           execution.progressMessage = msg || '';
-          this.emitProgress(execution.id, pct, msg || '');
+          this.emitProgress(execution.id, adjustedPct, msg || '');
         },
       }) as {
         result: string;
@@ -193,6 +326,11 @@ export class AgentService {
       execution.completedAt = new Date();
       execution.progress = 100;
       execution.progressMessage = 'Complete';
+
+      const computeInfo = execution.computeSource === 'local'
+        ? `Local node ${execution.nodeId?.slice(0, 8) || 'unknown'}`
+        : `Cloud (${execution.provider})`;
+      console.log(`[AgentService] Agent completed: ${execution.tokensUsed} tokens, ${execution.iterations} iterations, compute: ${computeInfo}`);
 
       this.emitProgress(execution.id, 100, 'Complete', { final: true, result: execution });
 
@@ -234,7 +372,7 @@ export class AgentService {
    */
   getRunningExecutions(workspaceId: string): AgentExecution[] {
     return this.getWorkspaceExecutions(workspaceId)
-      .filter(e => e.status === 'running' || e.status === 'pending');
+      .filter(e => e.status === 'running' || e.status === 'pending' || e.status === 'pulling_model');
   }
 
   /**
@@ -242,7 +380,7 @@ export class AgentService {
    */
   cancelExecution(executionId: string): boolean {
     const execution = this.executions.get(executionId);
-    if (!execution || execution.status !== 'running') {
+    if (!execution || (execution.status !== 'running' && execution.status !== 'pulling_model')) {
       return false;
     }
     execution.status = 'failed';
@@ -264,7 +402,7 @@ export class AgentService {
   }
 
   /**
-   * List available models
+   * List available models (local + cloud based on workspace)
    */
   async listModels(): Promise<Array<{ name: string; provider: string }>> {
     await this.initialize();
@@ -273,6 +411,38 @@ export class AgentService {
       timeout_seconds: 10,
       hardware: { gpus: [], cpu_cores: 1, memory_mb: 1024 },
     }) as Promise<Array<{ name: string; provider: string }>>;
+  }
+
+  /**
+   * Get workspace compute summary
+   */
+  getComputeSummary(workspaceId: string): {
+    hasLocalCompute: boolean;
+    localNodes: number;
+    localModels: string[];
+    hasCloudKeys: boolean;
+    cloudProviders: string[];
+  } {
+    const compute = this.getComputeAvailability(workspaceId);
+
+    const localModels = new Set<string>();
+    for (const node of compute.ollamaNodes) {
+      for (const model of node.models) {
+        localModels.add(model.name);
+      }
+    }
+
+    const cloudProviders: string[] = [];
+    if (compute.apiKeys.openai) cloudProviders.push('openai');
+    if (compute.apiKeys.anthropic) cloudProviders.push('anthropic');
+
+    return {
+      hasLocalCompute: compute.hasLocalCompute,
+      localNodes: compute.ollamaNodes.length,
+      localModels: Array.from(localModels),
+      hasCloudKeys: cloudProviders.length > 0,
+      cloudProviders,
+    };
   }
 }
 

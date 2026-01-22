@@ -692,4 +692,140 @@ export class NodeManager {
       }
     }
   }
+
+  // ============ Ollama Model Management ============
+
+  // Track pending pull requests
+  private pullRequests: Map<string, {
+    nodeId: string;
+    model: string;
+    status: 'pulling' | 'completed' | 'failed';
+    progress: number;
+    error?: string;
+    callbacks: Array<(success: boolean, error?: string) => void>;
+  }> = new Map();
+
+  /**
+   * Request a node to pull an Ollama model
+   * Returns a promise that resolves when the pull completes
+   */
+  async pullModel(nodeId: string, model: string): Promise<{ success: boolean; error?: string }> {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      return { success: false, error: 'Node not found' };
+    }
+
+    if (!node.capabilities.ollama?.installed) {
+      return { success: false, error: 'Node does not have Ollama installed' };
+    }
+
+    // Check if model already exists
+    const hasModel = node.capabilities.ollama.models.some(m =>
+      m.name === model || m.name.startsWith(model.split(':')[0])
+    );
+    if (hasModel) {
+      return { success: true };
+    }
+
+    const requestId = `pull-${nodeId}-${model}-${Date.now()}`;
+
+    return new Promise((resolve) => {
+      // Create pull request tracker
+      this.pullRequests.set(requestId, {
+        nodeId,
+        model,
+        status: 'pulling',
+        progress: 0,
+        callbacks: [(success, error) => resolve({ success, error })],
+      });
+
+      // Send pull command to node
+      console.log(`[NodeManager] Requesting node ${nodeId} to pull model ${model}`);
+      this.send(node.ws, {
+        type: 'ollama_pull',
+        model,
+        requestId,
+      });
+
+      // Timeout after 10 minutes
+      setTimeout(() => {
+        const req = this.pullRequests.get(requestId);
+        if (req && req.status === 'pulling') {
+          req.status = 'failed';
+          req.error = 'Pull timed out';
+          req.callbacks.forEach(cb => cb(false, 'Pull timed out'));
+          this.pullRequests.delete(requestId);
+        }
+      }, 10 * 60 * 1000);
+    });
+  }
+
+  /**
+   * Handle pull status update from node
+   */
+  handlePullStatus(message: { requestId: string; status: string; progress?: number; error?: string }): void {
+    const req = this.pullRequests.get(message.requestId);
+    if (!req) return;
+
+    req.progress = message.progress || 0;
+
+    if (message.status === 'completed') {
+      req.status = 'completed';
+      console.log(`[NodeManager] Model ${req.model} pulled successfully to node ${req.nodeId}`);
+
+      // Update node capabilities with new model
+      const node = this.nodes.get(req.nodeId);
+      if (node && node.capabilities.ollama) {
+        node.capabilities.ollama.models.push({
+          name: req.model,
+          size: 0, // Will be updated on next heartbeat
+        });
+      }
+
+      req.callbacks.forEach(cb => cb(true));
+      this.pullRequests.delete(message.requestId);
+    } else if (message.status === 'failed') {
+      req.status = 'failed';
+      req.error = message.error;
+      console.log(`[NodeManager] Model pull failed: ${message.error}`);
+      req.callbacks.forEach(cb => cb(false, message.error));
+      this.pullRequests.delete(message.requestId);
+    }
+  }
+
+  /**
+   * Get nodes with Ollama for a workspace
+   */
+  getOllamaNodesForWorkspace(workspaceId: string): ConnectedNode[] {
+    return this.getNodesForWorkspace(workspaceId)
+      .filter(n => n.capabilities.ollama?.installed && n.available);
+  }
+
+  /**
+   * Find the best node for running a model in a workspace
+   */
+  findBestNodeForModel(workspaceId: string, model: string, vramNeeded: number): ConnectedNode | null {
+    const nodes = this.getOllamaNodesForWorkspace(workspaceId);
+
+    // First, try to find a node that already has the model
+    for (const node of nodes) {
+      const hasModel = node.capabilities.ollama?.models.some(m =>
+        m.name === model || m.name.startsWith(model.split(':')[0])
+      );
+      if (hasModel) {
+        return node;
+      }
+    }
+
+    // Otherwise, find a node with enough VRAM to pull it
+    for (const node of nodes) {
+      const nodeVram = node.capabilities.gpus.reduce((sum, g) => sum + g.vram_mb, 0) ||
+                       node.capabilities.memory.available_mb * 0.7;
+      if (nodeVram >= vramNeeded) {
+        return node;
+      }
+    }
+
+    return null;
+  }
 }
