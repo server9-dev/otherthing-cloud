@@ -707,3 +707,47 @@ body {
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
+
+/* Excalidraw Container - ensure proper rendering */
+.excalidraw-container {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.excalidraw-container .excalidraw-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.excalidraw-container .excalidraw {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure Excalidraw's toolbars are visible and clickable */
+.excalidraw-container .excalidraw .layer-ui__wrapper {
+  z-index: 10 !important;
+}
+
+.excalidraw-container .excalidraw .Island {
+  pointer-events: auto !important;
+}
+
+.excalidraw-container .excalidraw button,
+.excalidraw-container .excalidraw input,
+.excalidraw-container .excalidraw select {
+  pointer-events: auto !important;
+}
+
+/* Ensure bottom toolbar is visible */
+.excalidraw-container .excalidraw .App-toolbar-container,
+.excalidraw-container .excalidraw .App-toolbar {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+/* Make sure the card body doesn't clip the toolbar */
+.cyber-card-body.excalidraw-container {
+  overflow: visible !important;
+  padding: 0 !important;
+}

@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Excalidraw, exportToBlob } from '@excalidraw/excalidraw';
+import '@excalidraw/excalidraw/index.css';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { AppState, BinaryFiles, Collaborator } from '@excalidraw/excalidraw/types';
 import {
@@ -64,9 +65,9 @@ const getToken = () => localStorage.getItem('rhizos_token') || '';
 export const Whiteboard = ({
   workspaceId,
   onClose,
-  minHeight = 300,
-  maxHeight = 800,
-  defaultHeight = 500,
+  minHeight = 400,
+  maxHeight = 1200,
+  defaultHeight = 600,
 }: WhiteboardProps) => {
   // User info (fetched on mount)
   const [userInfo, setUserInfo] = useState<{ userId: string; username: string } | null>(null);
@@ -484,19 +485,34 @@ export const Whiteboard = ({
         </div>
 
         {/* Excalidraw */}
-        <div style={{ height: 'calc(100vh - 50px)' }}>
-          <Excalidraw
-            ref={excalidrawRef}
-            initialData={{
-              elements: localElements,
-              appState: { theme: 'dark' },
-            }}
-            onChange={handleChange}
-            onPointerUpdate={handlePointerUpdate}
-            theme="dark"
-            isCollaborating={collaborators.length > 0}
-            collaborators={excalidrawCollaborators}
-          />
+        <div style={{ height: 'calc(100vh - 50px)', width: '100%', position: 'relative' }}>
+          <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
+            <Excalidraw
+              ref={excalidrawRef}
+              initialData={{
+                elements: localElements,
+                appState: {
+                  theme: 'dark',
+                  viewBackgroundColor: '#1e1e1e',
+                },
+              }}
+              onChange={handleChange}
+              onPointerUpdate={handlePointerUpdate}
+              theme="dark"
+              isCollaborating={collaborators.length > 0}
+              collaborators={excalidrawCollaborators}
+              UIOptions={{
+                canvasActions: {
+                  loadScene: true,
+                  export: { saveFileToDisk: true },
+                  toggleTheme: true,
+                },
+                tools: {
+                  image: true,
+                },
+              }}
+            />
+          </div>
         </div>
       </div>
     );
@@ -598,26 +614,42 @@ export const Whiteboard = ({
       {!isCollapsed && (
         <>
           <div
-            className="cyber-card-body"
+            className="cyber-card-body excalidraw-container"
             style={{
               height: `${height}px`,
+              width: '100%',
               padding: 0,
-              overflow: 'hidden',
               background: '#1e1e1e',
+              position: 'relative',
             }}
           >
-            <Excalidraw
-              ref={excalidrawRef}
-              initialData={{
-                elements: localElements,
-                appState: { theme: 'dark' },
-              }}
-              onChange={handleChange}
-              onPointerUpdate={handlePointerUpdate}
-              theme="dark"
-              isCollaborating={collaborators.length > 0}
-              collaborators={excalidrawCollaborators}
-            />
+            <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
+              <Excalidraw
+                ref={excalidrawRef}
+                initialData={{
+                  elements: localElements,
+                  appState: {
+                    theme: 'dark',
+                    viewBackgroundColor: '#1e1e1e',
+                  },
+                }}
+                onChange={handleChange}
+                onPointerUpdate={handlePointerUpdate}
+                theme="dark"
+                isCollaborating={collaborators.length > 0}
+                collaborators={excalidrawCollaborators}
+                UIOptions={{
+                  canvasActions: {
+                    loadScene: true,
+                    export: { saveFileToDisk: true },
+                    toggleTheme: true,
+                  },
+                  tools: {
+                    image: true,
+                  },
+                }}
+              />
+            </div>
           </div>
 
           {/* Resize handle */}
