@@ -96,7 +96,8 @@ export interface WorkspaceResourceUsage {
 export interface WhiteboardData {
   id: string;
   name: string;
-  elements: any[]; // Drawing elements
+  elements: any[]; // Drawing elements (in-memory cache, may be empty if stored in IPFS)
+  elementsCid?: string; // IPFS CID for elements (if stored in IPFS)
   appState?: any;  // View state
   files?: Record<string, any>; // Embedded files (images)
   createdBy: string;
@@ -1409,6 +1410,7 @@ export class WorkspaceManager {
     updates: {
       name?: string;
       elements?: any[];
+      elementsCid?: string; // IPFS CID for elements
       appState?: any;
       files?: Record<string, any>;
       expectedVersion?: number;
@@ -1446,6 +1448,7 @@ export class WorkspaceManager {
     // Apply updates
     if (updates.name !== undefined) whiteboard.name = updates.name;
     if (updates.elements !== undefined) whiteboard.elements = updates.elements;
+    if (updates.elementsCid !== undefined) whiteboard.elementsCid = updates.elementsCid;
     if (updates.appState !== undefined) whiteboard.appState = updates.appState;
     if (updates.files !== undefined) whiteboard.files = updates.files;
 

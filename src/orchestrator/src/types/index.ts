@@ -202,6 +202,21 @@ export const NodeMessageSchema = z.discriminatedUnion('type', [
     peer_id: z.string(),
     addresses: z.array(z.string()),
   }),
+  z.object({
+    type: z.literal('ipfs_store_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    cid: z.string().optional(),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('ipfs_retrieve_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    cid: z.string().optional(),
+    content: z.string().optional(),
+    error: z.string().optional(),
+  }),
 ]);
 
 export type NodeMessage = z.infer<typeof NodeMessageSchema>;

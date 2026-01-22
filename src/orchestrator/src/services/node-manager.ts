@@ -123,6 +123,14 @@ export class NodeManager {
         this.handleIPFSReady(ws, message as unknown as IPFSReadyMessage);
         break;
 
+      case 'ipfs_store_result':
+        this.handleIPFSStoreResult(message as any);
+        break;
+
+      case 'ipfs_retrieve_result':
+        this.handleIPFSRetrieveResult(message as any);
+        break;
+
       default:
         console.warn('[NodeManager] Unknown message type');
     }
@@ -690,6 +698,133 @@ export class NodeManager {
         this.nodeWorkspaces.delete(nodeId);
         this.nodeOwners.delete(nodeId);
       }
+    }
+  }
+
+  // ============ IPFS Storage Operations ============
+
+  // Track pending IPFS requests
+  private ipfsRequests: Map<string, {
+    type: 'store' | 'retrieve';
+    resolve: (result: any) => void;
+    reject: (error: Error) => void;
+  }> = new Map();
+
+  /**
+   * Store content in IPFS via a node
+   * Returns the CID of the stored content
+   */
+  async storeInIPFS(workspaceId: string, content: string | object, filename?: string): Promise<string> {
+    // Find a node with IPFS ready in this workspace
+    const node = this.findIPFSNodeForWorkspace(workspaceId);
+    if (!node) {
+      throw new Error('No IPFS-capable node available in workspace');
+    }
+
+    const requestId = `ipfs-store-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    return new Promise((resolve, reject) => {
+      // Store the pending request
+      this.ipfsRequests.set(requestId, { type: 'store', resolve, reject });
+
+      // Send store request to node
+      const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
+      this.send(node.ws, {
+        type: 'ipfs_store',
+        request_id: requestId,
+        content: contentStr,
+        filename,
+      } as any);
+
+      console.log(`[NodeManager] Sent IPFS store request ${requestId} to node ${node.id}`);
+
+      // Timeout after 60 seconds
+      setTimeout(() => {
+        if (this.ipfsRequests.has(requestId)) {
+          this.ipfsRequests.delete(requestId);
+          reject(new Error('IPFS store request timed out'));
+        }
+      }, 60000);
+    });
+  }
+
+  /**
+   * Retrieve content from IPFS via a node
+   * Returns the content as a string
+   */
+  async retrieveFromIPFS(workspaceId: string, cid: string): Promise<string> {
+    // Find a node with IPFS ready in this workspace
+    const node = this.findIPFSNodeForWorkspace(workspaceId);
+    if (!node) {
+      throw new Error('No IPFS-capable node available in workspace');
+    }
+
+    const requestId = `ipfs-retrieve-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    return new Promise((resolve, reject) => {
+      // Store the pending request
+      this.ipfsRequests.set(requestId, { type: 'retrieve', resolve, reject });
+
+      // Send retrieve request to node
+      this.send(node.ws, {
+        type: 'ipfs_retrieve',
+        request_id: requestId,
+        cid,
+      } as any);
+
+      console.log(`[NodeManager] Sent IPFS retrieve request ${requestId} to node ${node.id} for CID ${cid}`);
+
+      // Timeout after 60 seconds
+      setTimeout(() => {
+        if (this.ipfsRequests.has(requestId)) {
+          this.ipfsRequests.delete(requestId);
+          reject(new Error('IPFS retrieve request timed out'));
+        }
+      }, 60000);
+    });
+  }
+
+  /**
+   * Find a node with IPFS ready for a workspace
+   */
+  findIPFSNodeForWorkspace(workspaceId: string): ConnectedNode | null {
+    const nodes = this.getNodesForWorkspace(workspaceId);
+    return nodes.find(n => n.ipfsReady && n.available) || null;
+  }
+
+  /**
+   * Handle IPFS store result from node
+   */
+  handleIPFSStoreResult(message: { request_id: string; success: boolean; cid?: string; error?: string }): void {
+    const request = this.ipfsRequests.get(message.request_id);
+    if (!request || request.type !== 'store') return;
+
+    this.ipfsRequests.delete(message.request_id);
+
+    if (message.success && message.cid) {
+      console.log(`[NodeManager] IPFS store successful: ${message.cid}`);
+      request.resolve(message.cid);
+    } else {
+      console.log(`[NodeManager] IPFS store failed: ${message.error}`);
+      request.reject(new Error(message.error || 'IPFS store failed'));
+    }
+  }
+
+  /**
+   * Handle IPFS retrieve result from node
+   */
+  handleIPFSRetrieveResult(message: { request_id: string; success: boolean; cid?: string; content?: string; error?: string }): void {
+    const request = this.ipfsRequests.get(message.request_id);
+    if (!request || request.type !== 'retrieve') return;
+
+    this.ipfsRequests.delete(message.request_id);
+
+    if (message.success && message.content !== undefined) {
+      console.log(`[NodeManager] IPFS retrieve successful: ${message.cid}`);
+      request.resolve(message.content);
+    } else {
+      console.log(`[NodeManager] IPFS retrieve failed: ${message.error}`);
+      request.reject(new Error(message.error || 'IPFS retrieve failed'));
     }
   }
 

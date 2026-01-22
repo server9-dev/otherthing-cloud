@@ -1127,29 +1127,67 @@ app.get('/api/v1/workspaces/:id/whiteboards', requireAuth, (req, res) => {
 });
 
 // Get or create default whiteboard
-app.get('/api/v1/workspaces/:id/whiteboards/default', requireAuth, (req, res) => {
+app.get('/api/v1/workspaces/:id/whiteboards/default', requireAuth, async (req, res) => {
   const session = (req as any).session;
-  const result = workspaceManager.getOrCreateDefaultWhiteboard(req.params.id, session.userId);
+  const workspaceId = req.params.id;
+  const result = workspaceManager.getOrCreateDefaultWhiteboard(workspaceId, session.userId);
 
   if (!result.success) {
     res.status(result.error === 'Workspace not found' ? 404 : 403).json({ error: result.error });
     return;
   }
 
-  res.json({ whiteboard: result.whiteboard });
+  const whiteboard = { ...result.whiteboard! };
+
+  // If elements are stored in IPFS, retrieve them
+  if (whiteboard.elementsCid && whiteboard.elements.length === 0) {
+    try {
+      const ipfsNode = nodeManager.findIPFSNodeForWorkspace(workspaceId);
+      if (ipfsNode) {
+        console.log(`[Whiteboard] Retrieving elements from IPFS: ${whiteboard.elementsCid}`);
+        const content = await nodeManager.retrieveFromIPFS(workspaceId, whiteboard.elementsCid);
+        whiteboard.elements = JSON.parse(content);
+        console.log(`[Whiteboard] Retrieved ${whiteboard.elements.length} elements from IPFS`);
+      }
+    } catch (err) {
+      console.warn(`[Whiteboard] IPFS retrieval failed:`, err);
+      // Return empty elements if IPFS retrieval fails
+    }
+  }
+
+  res.json({ whiteboard });
 });
 
 // Get a specific whiteboard
-app.get('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req, res) => {
+app.get('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, async (req, res) => {
   const session = (req as any).session;
-  const result = workspaceManager.getWhiteboard(req.params.id, req.params.whiteboardId, session.userId);
+  const workspaceId = req.params.id;
+  const result = workspaceManager.getWhiteboard(workspaceId, req.params.whiteboardId, session.userId);
 
   if (!result.success) {
     res.status(result.error === 'Whiteboard not found' ? 404 : 403).json({ error: result.error });
     return;
   }
 
-  res.json({ whiteboard: result.whiteboard });
+  const whiteboard = { ...result.whiteboard! };
+
+  // If elements are stored in IPFS, retrieve them
+  if (whiteboard.elementsCid && whiteboard.elements.length === 0) {
+    try {
+      const ipfsNode = nodeManager.findIPFSNodeForWorkspace(workspaceId);
+      if (ipfsNode) {
+        console.log(`[Whiteboard] Retrieving elements from IPFS: ${whiteboard.elementsCid}`);
+        const content = await nodeManager.retrieveFromIPFS(workspaceId, whiteboard.elementsCid);
+        whiteboard.elements = JSON.parse(content);
+        console.log(`[Whiteboard] Retrieved ${whiteboard.elements.length} elements from IPFS`);
+      }
+    } catch (err) {
+      console.warn(`[Whiteboard] IPFS retrieval failed:`, err);
+      // Return empty elements if IPFS retrieval fails
+    }
+  }
+
+  res.json({ whiteboard });
 });
 
 // Create a new whiteboard
@@ -1172,15 +1210,42 @@ app.post('/api/v1/workspaces/:id/whiteboards', requireAuth, (req, res) => {
 });
 
 // Update a whiteboard
-app.patch('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req, res) => {
+app.patch('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, async (req, res) => {
   const session = (req as any).session;
-  const { name, elements, appState, files, expectedVersion } = req.body;
+  const { name, elements, appState, files, expectedVersion, storeInIPFS } = req.body;
+  const workspaceId = req.params.id;
+
+  // Try to store elements in IPFS if requested or if elements are large
+  let elementsCid: string | undefined;
+  const shouldStoreInIPFS = storeInIPFS || (elements && JSON.stringify(elements).length > 10000);
+
+  if (shouldStoreInIPFS && elements && elements.length > 0) {
+    try {
+      // Check if there's an IPFS-capable node
+      const ipfsNode = nodeManager.findIPFSNodeForWorkspace(workspaceId);
+      if (ipfsNode) {
+        console.log(`[Whiteboard] Storing elements in IPFS via node ${ipfsNode.id}`);
+        elementsCid = await nodeManager.storeInIPFS(workspaceId, elements, `whiteboard-${req.params.whiteboardId}.json`);
+        console.log(`[Whiteboard] Stored elements with CID: ${elementsCid}`);
+      }
+    } catch (err) {
+      console.warn(`[Whiteboard] IPFS storage failed, falling back to direct storage:`, err);
+      // Continue with direct storage if IPFS fails
+    }
+  }
 
   const result = workspaceManager.updateWhiteboard(
-    req.params.id,
+    workspaceId,
     req.params.whiteboardId,
     session.userId,
-    { name, elements, appState, files, expectedVersion }
+    {
+      name,
+      elements: elementsCid ? [] : elements, // Clear elements if stored in IPFS
+      appState,
+      files,
+      expectedVersion,
+      elementsCid, // Store the CID
+    }
   );
 
   if (!result.success) {
@@ -1193,10 +1258,16 @@ app.patch('/api/v1/workspaces/:id/whiteboards/:whiteboardId', requireAuth, (req,
     return;
   }
 
-  // Broadcast update to collaboration room
-  broadcastWhiteboardUpdate(req.params.id, req.params.whiteboardId, result.whiteboard!, session.userId);
+  // For the response, include the full elements (not just CID)
+  const responseWhiteboard = { ...result.whiteboard };
+  if (elementsCid && elements) {
+    responseWhiteboard!.elements = elements; // Include full elements in response
+  }
 
-  res.json({ whiteboard: result.whiteboard });
+  // Broadcast update to collaboration room
+  broadcastWhiteboardUpdate(workspaceId, req.params.whiteboardId, responseWhiteboard!, session.userId);
+
+  res.json({ whiteboard: responseWhiteboard });
 });
 
 // Delete a whiteboard
