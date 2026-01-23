@@ -3232,13 +3232,10 @@ Members: ${workspace?.members.length || 0}`
                     }}
                   >
                     <option value="">Auto (Best for Task)</option>
-                    {(agentProvider === '' || agentProvider === 'ollama') && (
-                      <>
-                        <option value="qwen2.5-coder:7b">Qwen 2.5 Coder 7B</option>
-                        <option value="qwen2.5-coder:14b">Qwen 2.5 Coder 14B</option>
-                        <option value="llama3.2:8b">Llama 3.2 8B</option>
-                        <option value="deepseek-coder-v2">DeepSeek Coder V2</option>
-                      </>
+                    {(agentProvider === '' || agentProvider === 'ollama') && computeSummary?.localModels && (
+                      computeSummary.localModels.map(model => (
+                        <option key={model} value={model}>{model}</option>
+                      ))
                     )}
                     {(agentProvider === '' || agentProvider === 'openai') && (
                       <>
