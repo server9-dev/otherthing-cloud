@@ -1539,6 +1539,81 @@ app.delete('/api/v1/workspaces/:id/agents/:agentId', requireAuth, (req, res) => 
   res.json({ success: true });
 });
 
+// ============ Sandbox Endpoints ============
+
+// List sandbox files for a workspace
+app.get('/api/v1/workspaces/:id/sandbox/files', requireAuth, async (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+  const path = (req.query.path as string) || '';
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  // Find a node in this workspace to query sandbox
+  const node = nodeManager.findSandboxNodeForWorkspace(workspaceId);
+  if (!node) {
+    res.json({ files: [], message: 'No nodes connected to workspace' });
+    return;
+  }
+
+  try {
+    const result = await nodeManager.sandboxListFiles(node.id, workspaceId, path);
+    res.json({ files: result.files || [] });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list files' });
+  }
+});
+
+// Read a sandbox file
+app.get('/api/v1/workspaces/:id/sandbox/file', requireAuth, async (req, res) => {
+  const session = (req as any).session;
+  const workspaceId = req.params.id;
+  const filePath = req.query.path as string;
+
+  if (!filePath) {
+    res.status(400).json({ error: 'Path is required' });
+    return;
+  }
+
+  // Verify user has access to workspace
+  const workspace = workspaceManager.getWorkspace(workspaceId);
+  if (!workspace) {
+    res.status(404).json({ error: 'Workspace not found' });
+    return;
+  }
+
+  const isMember = workspace.members.some(m => m.userId === session.userId);
+  if (!isMember) {
+    res.status(403).json({ error: 'Not a member of this workspace' });
+    return;
+  }
+
+  // Find a node in this workspace to query sandbox
+  const node = nodeManager.findSandboxNodeForWorkspace(workspaceId);
+  if (!node) {
+    res.status(404).json({ error: 'No nodes connected to workspace' });
+    return;
+  }
+
+  try {
+    const result = await nodeManager.sandboxReadFile(node.id, workspaceId, filePath);
+    res.json({ content: result.content });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to read file' });
+  }
+});
+
 // List available agent architectures
 app.get('/api/v1/agents/architectures', requireAuth, async (req, res) => {
   try {

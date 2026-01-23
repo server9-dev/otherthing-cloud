@@ -5,7 +5,7 @@ import {
   Terminal, LayoutGrid, Trash2, Edit2, CheckCircle, Clock, Circle,
   Copy, RefreshCw, Settings, Cpu, HardDrive, Zap, Key, GitBranch, Play,
   DollarSign, Activity, FolderGit2, ExternalLink, AlertTriangle, Shield,
-  FileCode, Users2, TrendingUp, Loader2, Globe
+  FileCode, Users2, TrendingUp, Loader2, Globe, Folder, File, FolderOpen, ChevronRight, ChevronDown
 } from 'lucide-react';
 import { CyberButton, Whiteboard } from '../components';
 import { authFetch } from '../App';
@@ -142,6 +142,15 @@ interface AgentScanResult {
   safe: boolean;
   riskLevel: string | null;
   alerts: string[];
+}
+
+// Sandbox file types
+interface SandboxFile {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size?: number;
+  modifiedAt?: string;
 }
 
 // Repo analysis types
@@ -314,7 +323,7 @@ export function WorkspaceDetail() {
   // Agent state
   const [agents, setAgents] = useState<AgentExecution[]>([]);
   const [agentGoal, setAgentGoal] = useState('');
-  const [agentType, setAgentType] = useState<'react' | 'plan-execute' | 'simple'>('simple');
+  const [agentType, setAgentType] = useState<'react' | 'plan-execute' | 'simple'>('react');
   const [agentModel, setAgentModel] = useState(''); // Auto-selected if empty
   const [agentProvider, setAgentProvider] = useState<'ollama' | 'openai' | 'anthropic' | ''>(''); // Auto-selected if empty
   const [runningAgent, setRunningAgent] = useState(false);
@@ -325,6 +334,13 @@ export function WorkspaceDetail() {
     category: string;
     recommendation: { model: string; provider: string; reason: string; needsPull?: boolean };
   } | null>(null);
+
+  // Sandbox state
+  const [sandboxFiles, setSandboxFiles] = useState<SandboxFile[]>([]);
+  const [sandboxLoading, setSandboxLoading] = useState(false);
+  const [selectedSandboxFile, setSelectedSandboxFile] = useState<string | null>(null);
+  const [sandboxFileContent, setSandboxFileContent] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
 
   // Load workspace data
   const loadWorkspace = useCallback(async () => {
@@ -478,6 +494,40 @@ export function WorkspaceDetail() {
     }
   }, [id]);
 
+  // Load sandbox files
+  const loadSandboxFiles = useCallback(async (path: string = '') => {
+    if (!id) return;
+
+    try {
+      setSandboxLoading(true);
+      const res = await authFetch(`/api/v1/workspaces/${id}/sandbox/files?path=${encodeURIComponent(path)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSandboxFiles(data.files || []);
+      }
+    } catch {
+      setSandboxFiles([]);
+    } finally {
+      setSandboxLoading(false);
+    }
+  }, [id]);
+
+  // Load sandbox file content
+  const loadSandboxFileContent = async (filePath: string) => {
+    if (!id) return;
+
+    try {
+      const res = await authFetch(`/api/v1/workspaces/${id}/sandbox/file?path=${encodeURIComponent(filePath)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSandboxFileContent(data.content);
+        setSelectedSandboxFile(filePath);
+      }
+    } catch {
+      setSandboxFileContent('Error loading file');
+    }
+  };
+
   // Analyze task for model recommendation
   const analyzeTask = async (goal: string) => {
     if (!id || !goal.trim()) {
@@ -623,7 +673,8 @@ export function WorkspaceDetail() {
     loadUsage();
     loadAgents();
     loadComputeSummary();
-  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents, loadComputeSummary]);
+    loadSandboxFiles();
+  }, [loadWorkspace, loadTasks, loadNodes, loadApiKeys, loadFlows, loadRepos, loadFiles, loadUsage, loadAgents, loadComputeSummary, loadSandboxFiles]);
 
   // WebSocket for real-time agent progress updates
   useEffect(() => {
@@ -3402,6 +3453,152 @@ Members: ${workspace?.members.length || 0}`
                 </div>
               ))
             )}
+          </div>
+
+          {/* Sandbox Browser */}
+          <div style={{ marginTop: 'var(--gap-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--gap-sm)' }}>
+              <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                Agent Sandbox
+              </h4>
+              <CyberButton
+                variant="secondary"
+                icon={RefreshCw}
+                onClick={() => loadSandboxFiles()}
+                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+              >
+                Refresh
+              </CyberButton>
+            </div>
+
+            <div className="cyber-card">
+              <div className="cyber-card-body" style={{ padding: 'var(--gap-md)' }}>
+                {sandboxLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)', color: 'var(--text-muted)' }}>
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    Loading sandbox files...
+                  </div>
+                ) : sandboxFiles.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 'var(--gap-lg)' }}>
+                    <Folder size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 'var(--gap-md)' }} />
+                    <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                      Sandbox is empty. Run an agent to create files.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 'var(--gap-md)', minHeight: '300px' }}>
+                    {/* File tree */}
+                    <div style={{
+                      width: '250px',
+                      borderRight: '1px solid var(--border-subtle)',
+                      paddingRight: 'var(--gap-md)',
+                      overflowY: 'auto',
+                      maxHeight: '400px',
+                    }}>
+                      {sandboxFiles.map(file => (
+                        <div
+                          key={file.path}
+                          onClick={() => {
+                            if (file.isDirectory) {
+                              const newExpanded = new Set(expandedFolders);
+                              if (newExpanded.has(file.path)) {
+                                newExpanded.delete(file.path);
+                              } else {
+                                newExpanded.add(file.path);
+                              }
+                              setExpandedFolders(newExpanded);
+                            } else {
+                              loadSandboxFileContent(file.path);
+                            }
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--gap-xs)',
+                            padding: '4px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            background: selectedSandboxFile === file.path ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                            color: selectedSandboxFile === file.path ? 'var(--accent)' : 'var(--text-primary)',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          {file.isDirectory ? (
+                            <>
+                              {expandedFolders.has(file.path) ? (
+                                <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+                              ) : (
+                                <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
+                              )}
+                              <Folder size={14} style={{ color: 'var(--warning)' }} />
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ width: '14px' }} />
+                              <File size={14} style={{ color: 'var(--accent)' }} />
+                            </>
+                          )}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {file.name}
+                          </span>
+                          {file.size !== undefined && !file.isDirectory && (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginLeft: 'auto' }}>
+                              {file.size < 1024 ? `${file.size}B` : `${(file.size / 1024).toFixed(1)}KB`}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* File content preview */}
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      {selectedSandboxFile ? (
+                        <div>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--gap-sm)',
+                            marginBottom: 'var(--gap-sm)',
+                            paddingBottom: 'var(--gap-sm)',
+                            borderBottom: '1px solid var(--border-subtle)',
+                          }}>
+                            <FileCode size={16} style={{ color: 'var(--accent)' }} />
+                            <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+                              {selectedSandboxFile}
+                            </span>
+                          </div>
+                          <pre style={{
+                            background: 'var(--bg-void)',
+                            padding: 'var(--gap-md)',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-primary)',
+                            overflow: 'auto',
+                            maxHeight: '350px',
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}>
+                            {sandboxFileContent || 'Loading...'}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '100%',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.85rem',
+                        }}>
+                          Select a file to view its contents
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

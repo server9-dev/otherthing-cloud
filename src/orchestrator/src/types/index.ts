@@ -47,7 +47,8 @@ export const StorageTypeSchema = z.enum(['Ssd', 'Hdd', 'Nvme', 'Unknown']);
 export const StorageCapabilitySchema = z.object({
   total_gb: z.number(),
   available_gb: z.number(),
-  storage_type: StorageTypeSchema,
+  storage_type: StorageTypeSchema.optional(),
+  path: z.string().optional(),
 });
 
 export const OllamaModelSchema = z.object({
