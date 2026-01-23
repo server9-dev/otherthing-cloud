@@ -1,0 +1,59 @@
+[package]
+name = "abcdodaf"
+version = "0.1.0"
+edition = "2021"
+description = "BPMN-based process modeling with DoDAF 2.02 framework for AI workforce orchestration"
+license = "MIT"
+repository = "https://github.com/server9-dev/otherthing-cloud"
+
+[dependencies]
+# BPMN schema types (without the full engine that has compatibility issues)
+# We implement our own lightweight execution engine
+# bpxe = "0.2"  # Disabled due to rhai 0.19 compilation issues
+# bpxe-bpmn-schema = "0.2"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# UUID generation for process instances
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Date/time for operational activities
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+
+# Async streams
+futures = "0.3"
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
+
+[lib]
+name = "abcdodaf"
+path = "src/lib.rs"
+
+[[example]]
+name = "simple_workflow"
+path = "examples/simple_workflow.rs"
+
+[[example]]
+name = "agent_orchestration"
+path = "examples/agent_orchestration.rs"
+
+[[example]]
+name = "bpm_plus_triple_threat"
+path = "examples/bpm_plus_triple_threat.rs"
