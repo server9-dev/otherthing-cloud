@@ -79,6 +79,13 @@ Added after line 1540:
 - Node app connects then immediately disconnects - need full restart after rebuild
 - Orchestrator URL input IS in the UI (index.html line 1341) - users can change it
 
+## UNRESOLVED: Windows Node not detecting all Ollama models
+- Windows Node reports only 1 model but Windows Ollama has 5 models
+- User has separate Ollama: Windows (1 model?) vs WSL (5 models)
+- Need to investigate `/mnt/d/github/node/src/ollama-manager.ts` getModels() function
+- Check if Node app is connecting to correct Ollama instance
+- The Node app's OllamaManager.getModels() fetches from `http://127.0.0.1:11434/api/tags`
+
 ## To Restart Node App on Windows
 ```powershell
 # Kill completely
