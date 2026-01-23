@@ -249,14 +249,25 @@ export class ModelSelector {
     // Check if any node has a recommended model
     for (const model of modelPriority) {
       for (const node of ollamaNodes) {
-        const hasModel = node.models.some(m =>
-          m.name === model || m.name.startsWith(model.split(':')[0])
-        );
-        if (hasModel) {
+        // First check for exact match
+        const exactMatch = node.models.find(m => m.name === model);
+        if (exactMatch) {
           return {
-            model,
+            model: exactMatch.name,
             provider: 'ollama',
-            reason: `Using local ${model} on node ${node.nodeId.slice(0, 8)} for ${category} task`,
+            reason: `Using local ${exactMatch.name} on node ${node.nodeId.slice(0, 8)} for ${category} task`,
+            nodeId: node.nodeId,
+          };
+        }
+        // Then check for family match (e.g., llama3.2:1b matches llama3.2:8b family)
+        const familyMatch = node.models.find(m =>
+          m.name.startsWith(model.split(':')[0])
+        );
+        if (familyMatch) {
+          return {
+            model: familyMatch.name, // Use the ACTUAL model that exists
+            provider: 'ollama',
+            reason: `Using local ${familyMatch.name} on node ${node.nodeId.slice(0, 8)} for ${category} task`,
             nodeId: node.nodeId,
           };
         }
