@@ -39,6 +39,14 @@ interface ToolDef {
   execute: (params: Record<string, unknown>, context?: ToolContext) => Promise<string>;
 }
 
+// LLM function type for node-based inference
+export type LlmFunction = (request: {
+  model: string;
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  max_tokens?: number;
+  temperature?: number;
+}) => Promise<{ text: string; tokens_generated: number }>;
+
 // Agent request schema
 export const AgentRunRequestSchema = z.object({
   goal: z.string().min(1),
@@ -58,6 +66,8 @@ export const AgentRunRequestSchema = z.object({
     workspaceId: z.string(),
     nodeId: z.string().nullable(),
     nodeManager: z.any().nullable(),
+    // Custom LLM function for node-based inference
+    llmFunction: z.any().nullable().optional(),
   }).optional(),
 });
 
@@ -150,6 +160,75 @@ export class AgentAdapter extends BaseAdapter {
   async initialize(): Promise<void> {
     await super.initialize();
     await this.llmAdapter.initialize();
+  }
+
+  /**
+   * Call LLM (chat mode) - uses custom function if provided, otherwise falls back to adapter
+   */
+  private async callLlm(
+    request: AgentRunRequest,
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    context: ExecutionContext
+  ): Promise<{ text: string; tokens_generated: number }> {
+    const llmFunction = request.tool_context?.llmFunction as LlmFunction | undefined;
+
+    if (llmFunction) {
+      // Use custom LLM function (node-based inference)
+      return llmFunction({
+        model: request.model || 'llama3.2:3b',
+        messages,
+        max_tokens: request.max_tokens,
+        temperature: request.temperature,
+      });
+    }
+
+    // Fall back to built-in adapter
+    const response = await this.llmAdapter.execute('chat', {
+      model: request.model || 'gpt-4o',
+      provider: request.provider,
+      api_key: request.api_key,
+      base_url: request.base_url,
+      messages,
+      max_tokens: request.max_tokens,
+      temperature: request.temperature,
+    }, context) as { text: string; tokens_generated: number };
+
+    return response;
+  }
+
+  /**
+   * Call LLM (generate mode) - uses custom function if provided, otherwise falls back to adapter
+   */
+  private async callLlmGenerate(
+    request: AgentRunRequest,
+    prompt: string,
+    context: ExecutionContext,
+    options?: { max_tokens?: number; temperature?: number }
+  ): Promise<{ text: string; tokens_generated: number }> {
+    const llmFunction = request.tool_context?.llmFunction as LlmFunction | undefined;
+
+    if (llmFunction) {
+      // Convert prompt to messages format for node-based inference
+      return llmFunction({
+        model: request.model || 'llama3.2:3b',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: options?.max_tokens || request.max_tokens,
+        temperature: options?.temperature || request.temperature,
+      });
+    }
+
+    // Fall back to built-in adapter
+    const response = await this.llmAdapter.execute('generate', {
+      model: request.model || 'gpt-4o',
+      provider: request.provider,
+      api_key: request.api_key,
+      base_url: request.base_url,
+      prompt,
+      max_tokens: options?.max_tokens || request.max_tokens,
+      temperature: options?.temperature || request.temperature,
+    }, context) as { text: string; tokens_generated: number };
+
+    return response;
   }
 
   async execute(
@@ -256,17 +335,8 @@ export class AgentAdapter extends BaseAdapter {
         `Iteration ${iteration}/${max_iterations}`
       );
 
-      // Get LLM response
-      const response = await this.llmAdapter.execute('chat', {
-        model: request.model || 'gpt-4o',
-        provider: request.provider,
-        api_key: request.api_key,
-        base_url: request.base_url,
-        messages,
-        max_tokens: request.max_tokens,
-        temperature: request.temperature,
-      }, context) as { text: string; tokens_generated: number };
-
+      // Get LLM response (uses node-based inference if llmFunction provided)
+      const response = await this.callLlm(request, messages, context);
       totalTokens += response.tokens_generated;
 
       // Parse the response
@@ -367,15 +437,10 @@ Format:
 
 Plan:`;
 
-    const planResponse = await this.llmAdapter.execute('generate', {
-      model: request.model || 'gpt-4o',
-      provider: request.provider,
-      api_key: request.api_key,
-      base_url: request.base_url,
-      prompt: planPrompt,
+    const planResponse = await this.callLlmGenerate(request, planPrompt, context, {
       max_tokens: 1024,
       temperature: 0.3,
-    }, context) as { text: string; tokens_generated: number };
+    });
 
     totalTokens += planResponse.tokens_generated;
 
@@ -428,15 +493,7 @@ Execute this step and provide the result. Be specific about what was done.
 
 Result:`;
 
-      const stepResponse = await this.llmAdapter.execute('generate', {
-        model: request.model || 'gpt-4o',
-        provider: request.provider,
-        api_key: request.api_key,
-        base_url: request.base_url,
-        prompt: executePrompt,
-        max_tokens: request.max_tokens,
-        temperature: request.temperature,
-      }, context) as { text: string; tokens_generated: number };
+      const stepResponse = await this.callLlmGenerate(request, executePrompt, context);
 
       totalTokens += stepResponse.tokens_generated;
 
@@ -460,15 +517,10 @@ ${actions.filter(a => a.tool === 'execute_step').map(a => `- ${a.input}: ${a.out
 
 Provide a final answer summarizing what was accomplished:`;
 
-    const summaryResponse = await this.llmAdapter.execute('generate', {
-      model: request.model || 'gpt-4o',
-      provider: request.provider,
-      api_key: request.api_key,
-      base_url: request.base_url,
-      prompt: summaryPrompt,
+    const summaryResponse = await this.callLlmGenerate(request, summaryPrompt, context, {
       max_tokens: 1024,
       temperature: 0.3,
-    }, context) as { text: string; tokens_generated: number };
+    });
 
     totalTokens += summaryResponse.tokens_generated;
 
@@ -504,15 +556,7 @@ Provide a direct answer to achieve this goal. If you need to use a tool, explain
 
 Response:`;
 
-    const response = await this.llmAdapter.execute('generate', {
-      model: request.model || 'gpt-4o',
-      provider: request.provider,
-      api_key: request.api_key,
-      base_url: request.base_url,
-      prompt,
-      max_tokens: request.max_tokens,
-      temperature: request.temperature,
-    }, context) as { text: string; tokens_generated: number };
+    const response = await this.callLlmGenerate(request, prompt, context);
 
     const securityAlerts: string[] = [];
     if (security_enabled) {

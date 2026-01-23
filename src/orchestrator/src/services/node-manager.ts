@@ -140,6 +140,7 @@ export class NodeManager {
       case 'sandbox_sync_ipfs_result':
       case 'sandbox_restore_ipfs_result':
       case 'pull_model_result':
+      case 'llm_inference_result':
         this.handleSandboxResult(message as any);
         break;
 
@@ -1002,6 +1003,74 @@ export class NodeManager {
       workspace_id: workspaceId,
       cid,
     }, 120000); // 2 minutes for restore
+  }
+
+  // ============ LLM Inference via Node ============
+
+  /**
+   * Execute LLM inference on a node's local Ollama
+   * This is the proper distributed approach - the node calls its own Ollama
+   */
+  async llmInference(
+    nodeId: string,
+    request: {
+      model: string;
+      messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+      max_tokens?: number;
+      temperature?: number;
+    }
+  ): Promise<{
+    success: boolean;
+    response?: {
+      content: string;
+      model: string;
+      tokens_used?: number;
+      finish_reason?: string;
+    };
+    error?: string;
+  }> {
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      return { success: false, error: 'Node not found' };
+    }
+
+    if (!node.capabilities.ollama?.installed) {
+      return { success: false, error: 'Node does not have Ollama installed' };
+    }
+
+    console.log(`[NodeManager] Sending LLM inference to node ${nodeId.slice(0, 8)}: model=${request.model}`);
+
+    return this.sendNodeRequest(nodeId, {
+      type: 'llm_inference',
+      request_id: '', // Will be set by sendNodeRequest
+      model: request.model,
+      messages: request.messages,
+      max_tokens: request.max_tokens || 4096,
+      temperature: request.temperature || 0.7,
+    }, 120000); // 2 minutes timeout for inference
+  }
+
+  /**
+   * Find a node with Ollama capability for a workspace that has a specific model
+   */
+  findNodeWithModel(workspaceId: string, model: string): ConnectedNode | null {
+    const nodes = this.getOllamaNodesForWorkspace(workspaceId);
+
+    // First try exact match
+    const exactMatch = nodes.find(n =>
+      n.available && n.capabilities.ollama?.models?.some(m => m.name === model)
+    );
+    if (exactMatch) return exactMatch;
+
+    // Then try family match (e.g., llama3.2:1b matches request for llama3.2:3b)
+    const modelFamily = model.split(':')[0];
+    const familyMatch = nodes.find(n =>
+      n.available && n.capabilities.ollama?.models?.some(m => m.name.startsWith(modelFamily))
+    );
+    if (familyMatch) return familyMatch;
+
+    // Return any node with Ollama as last resort
+    return nodes.find(n => n.available) || null;
   }
 
   /**

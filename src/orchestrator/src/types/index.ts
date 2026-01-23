@@ -275,13 +275,54 @@ export const NodeMessageSchema = z.discriminatedUnion('type', [
     model: z.string().optional(),
     error: z.string().optional(),
   }),
+  // LLM inference result (node -> orchestrator)
+  z.object({
+    type: z.literal('llm_inference_result'),
+    request_id: z.string(),
+    success: z.boolean(),
+    response: z.object({
+      content: z.string(),
+      model: z.string(),
+      tokens_used: z.number().optional(),
+      finish_reason: z.string().optional(),
+    }).optional(),
+    error: z.string().optional(),
+  }),
 ]);
 
 export type NodeMessage = z.infer<typeof NodeMessageSchema>;
 
 export interface OrchestratorMessage {
-  type: 'registered' | 'job_assignment' | 'cancel_job' | 'config_update' | 'error' | 'workspace_joined' | 'ollama_pull' | 'ollama_pull_status';
+  type: 'registered' | 'job_assignment' | 'cancel_job' | 'config_update' | 'error' | 'workspace_joined' | 'ollama_pull' | 'ollama_pull_status' | 'llm_inference';
   [key: string]: unknown;
+}
+
+// LLM inference request (orchestrator -> node)
+export interface LlmInferenceRequest {
+  type: 'llm_inference';
+  request_id: string;
+  model: string;
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
+  max_tokens?: number;
+  temperature?: number;
+  stream?: boolean; // Future: support streaming
+}
+
+// LLM inference response (node -> orchestrator)
+export interface LlmInferenceResponse {
+  type: 'llm_inference_result';
+  request_id: string;
+  success: boolean;
+  response?: {
+    content: string;
+    model: string;
+    tokens_used?: number;
+    finish_reason?: string;
+  };
+  error?: string;
 }
 
 // Ollama pull request (orchestrator -> node)

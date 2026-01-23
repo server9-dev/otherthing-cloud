@@ -11,6 +11,44 @@
 
 import { AgentAdapter, LlmInferenceAdapter, SecurityScanner, RiskLevel } from '@rhizos-cloud/mcp-adapters';
 import { v4 as uuidv4 } from 'uuid';
+
+// Helper to verify model exists on local Ollama (exact match only)
+async function verifyLocalOllamaModel(model: string, endpoint: string = 'http://localhost:11434'): Promise<{
+  exists: boolean;
+  availableModels: string[];
+}> {
+  try {
+    const response = await fetch(`${endpoint}/api/tags`);
+    if (!response.ok) {
+      return { exists: false, availableModels: [] };
+    }
+    const data = await response.json() as { models: Array<{ name: string }> };
+    const availableModels = data.models?.map(m => m.name) || [];
+    // Exact match only - don't use family matching here
+    const exists = availableModels.includes(model);
+    console.log(`[AgentService] Verifying model ${model} locally: ${exists ? 'found' : 'NOT found'}. Available: ${availableModels.join(', ')}`);
+    return { exists, availableModels };
+  } catch (err) {
+    console.log(`[AgentService] Failed to verify local Ollama: ${err}`);
+    return { exists: false, availableModels: [] };
+  }
+}
+
+// Find best fallback model from available models
+function findFallbackModel(availableModels: string[], category: string): string | null {
+  // Priority order for general tasks
+  const priorities = [
+    'llama3.2', 'llama3.1', 'llama3', 'qwen2.5', 'mistral', 'deepseek'
+  ];
+
+  for (const prefix of priorities) {
+    const match = availableModels.find(m => m.startsWith(prefix));
+    if (match) return match;
+  }
+
+  // Return first available model as last resort
+  return availableModels[0] || null;
+}
 import { modelSelector, ModelRecommendation, ComputeAvailability } from './model-selector.js';
 import { ConnectedNode } from '../types/index.js';
 
@@ -326,11 +364,45 @@ export class AgentService {
     execution.status = 'running';
     this.emitProgress(execution.id, 10, `Running ${execution.agentType} agent with ${execution.model}...`);
 
-    // Build tool context for sandbox operations
-    const toolContext: AgentToolContext = {
+    // Create LLM function for node-based inference (if using Ollama with a node)
+    let llmFunction: ((req: any) => Promise<{ text: string; tokens_generated: number }>) | null = null;
+
+    if (execution.provider === 'ollama' && execution.nodeId && this.nodeManager) {
+      const nodeId = execution.nodeId;
+      const nodeManager = this.nodeManager;
+
+      console.log(`[AgentService] Using node-based LLM inference via node ${nodeId.slice(0, 8)}`);
+
+      llmFunction = async (req: {
+        model: string;
+        messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+        max_tokens?: number;
+        temperature?: number;
+      }) => {
+        const result = await nodeManager.llmInference(nodeId, {
+          model: req.model,
+          messages: req.messages,
+          max_tokens: req.max_tokens,
+          temperature: req.temperature,
+        });
+
+        if (!result.success) {
+          throw new Error(`Node LLM inference failed: ${result.error}`);
+        }
+
+        return {
+          text: result.response?.content || '',
+          tokens_generated: result.response?.tokens_used || 0,
+        };
+      };
+    }
+
+    // Build tool context for sandbox operations (and node-based LLM)
+    const toolContext: AgentToolContext & { llmFunction?: any } = {
       workspaceId: execution.workspaceId,
       nodeId: execution.sandboxNodeId || null,
       nodeManager: this.nodeManager || null,
+      llmFunction, // Pass the node-based LLM function
     };
 
     try {
@@ -340,12 +412,12 @@ export class AgentService {
         model: execution.model,
         provider: execution.provider,
         api_key: apiKey,
-        base_url: execution.ollamaEndpoint, // Pass node's Ollama endpoint for remote access
+        // Don't pass base_url - we're using node-based inference
         max_iterations: request.maxIterations || 10,
         max_tokens: request.maxTokens || 4096,
         temperature: request.temperature || 0.7,
         security_enabled: true,
-        // Pass tool context for sandbox operations
+        // Pass tool context with llmFunction for node-based inference
         tool_context: toolContext,
       }, {
         job_id: execution.id,
