@@ -1,0 +1,91 @@
+{
+  "bpmn_process": {
+    "id": "test_workflow",
+    "name": "Test Workflow",
+    "version": "1.0.0",
+    "isExecutable": true,
+    "processType": "agent_workflow"
+  },
+  "workflow_steps": [
+    {
+      "id": "start_event_1",
+      "name": "Start",
+      "type": "startEvent",
+      "eventType": "none"
+    },
+    {
+      "id": "task_research",
+      "name": "Research Task",
+      "type": "serviceTask",
+      "taskType": "research",
+      "inputs": ["requirements", "context"],
+      "outputs": ["findings"],
+      "duration_minutes": 30
+    },
+    {
+      "id": "gateway_1",
+      "name": "Decision Gateway",
+      "type": "exclusiveGateway"
+    },
+    {
+      "id": "task_design",
+      "name": "Design Task",
+      "type": "serviceTask",
+      "taskType": "design",
+      "inputs": ["findings"],
+      "outputs": ["design_spec"],
+      "duration_minutes": 60
+    },
+    {
+      "id": "task_code",
+      "name": "Code Generation",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "inputs": ["design_spec"],
+      "outputs": ["code"],
+      "duration_minutes": 90
+    },
+    {
+      "id": "end_event_1",
+      "name": "End",
+      "type": "endEvent",
+      "eventType": "none"
+    }
+  ],
+  "sequence_flows": [
+    {
+      "id": "flow_1",
+      "sourceRef": "start_event_1",
+      "targetRef": "task_research"
+    },
+    {
+      "id": "flow_2",
+      "sourceRef": "task_research",
+      "targetRef": "gateway_1"
+    },
+    {
+      "id": "flow_3",
+      "sourceRef": "gateway_1",
+      "targetRef": "task_design",
+      "name": "Design Path",
+      "condition": "design_needed == true"
+    },
+    {
+      "id": "flow_4",
+      "sourceRef": "gateway_1",
+      "targetRef": "task_code",
+      "name": "Direct Code Path",
+      "condition": "design_needed == false"
+    },
+    {
+      "id": "flow_5",
+      "sourceRef": "task_design",
+      "targetRef": "task_code"
+    },
+    {
+      "id": "flow_6",
+      "sourceRef": "task_code",
+      "targetRef": "end_event_1"
+    }
+  ]
+}

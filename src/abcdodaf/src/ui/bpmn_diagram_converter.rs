@@ -222,6 +222,7 @@ impl BpmnDiagramConverter {
                     is_catching: event.is_catching,
                     is_interrupting: event.is_interrupting,
                     is_boundary: event.attached_to_ref.is_some(),
+                    attached_to_activity_id: event.attached_to_ref.clone(),
                 }),
             );
 
@@ -474,6 +475,9 @@ impl BpmnDiagramConverter {
         // Extract process from snarl
         let process = Self::snarl_to_process(snarl, &format!("{}_process", diagram_id), name)?;
 
+        // Extract data stores from snarl (they belong at diagram level)
+        let data_stores = Self::extract_data_stores(snarl);
+
         // Create diagram
         let diagram = BpmnDiagram {
             id: diagram_id.to_string(),
@@ -481,12 +485,31 @@ impl BpmnDiagramConverter {
             documentation: None,
             processes: vec![process],
             collaborations: Vec::new(),
-            data_stores: Vec::new(), // TODO: Extract from snarl
+            data_stores,
             messages: Vec::new(),
             signals: Vec::new(),
         };
 
         Ok(diagram)
+    }
+
+    /// Extract DataStore nodes from Snarl
+    fn extract_data_stores(snarl: &Snarl<EnhancedBpmnNode>) -> Vec<DataStore> {
+        let mut data_stores = Vec::new();
+
+        for (_node_id, node) in snarl.nodes() {
+            if let BpmnNodeType::DataStore(n) = &node.node_type {
+                data_stores.push(DataStore {
+                    id: node.id.clone(),
+                    name: Some(n.name.clone()),
+                    capacity: None,
+                    is_unlimited: false,
+                    data_state: None,
+                });
+            }
+        }
+
+        data_stores
     }
 
     /// Convert Snarl to BpmnProcess
@@ -544,7 +567,7 @@ impl BpmnDiagramConverter {
                         event_definition: n.event_definition.clone(),
                         is_catching: n.is_catching,
                         is_interrupting: n.is_interrupting,
-                        attached_to_ref: None, // TODO: Handle boundary events
+                        attached_to_ref: n.attached_to_activity_id.clone(),
                     });
                 }
                 BpmnNodeType::Task(n) => {
@@ -591,9 +614,9 @@ impl BpmnDiagramConverter {
                         data_state: n.data_state.clone(),
                     });
                 }
-                BpmnNodeType::DataStore(n) => {
-                    // Note: DataStores should be at diagram level, but we can add them to process
-                    // TODO: Add to diagram.data_stores instead
+                BpmnNodeType::DataStore(_n) => {
+                    // DataStores are extracted at diagram level by extract_data_stores()
+                    // They belong to the diagram, not the process, per BPMN 2.0 spec
                 }
                 BpmnNodeType::TextAnnotation(n) => {
                     process.text_annotations.push(TextAnnotation {

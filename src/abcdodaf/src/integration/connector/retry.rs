@@ -35,7 +35,7 @@ impl RetryPolicy {
     pub fn no_retry() -> Self {
         Self {
             strategy: RetryStrategy::NoRetry,
-            max_attempts: 1,
+            max_attempts: 0,
             initial_delay: Duration::from_secs(0),
             max_delay: Duration::from_secs(0),
             backoff_multiplier: 1.0,

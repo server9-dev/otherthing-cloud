@@ -81,6 +81,8 @@ pub struct IntermediateEventNode {
     pub is_catching: bool,
     pub is_interrupting: bool,
     pub is_boundary: bool, // Attached to activity
+    #[serde(default)]
+    pub attached_to_activity_id: Option<String>, // ID of activity for boundary events
 }
 
 // ============================================================================

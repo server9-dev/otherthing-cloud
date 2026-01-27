@@ -49,14 +49,57 @@ impl FileSystemConnector {
             base.join(path)
         };
 
-        // Security check: ensure the path is within base_path
-        if !full_path.starts_with(base) {
-            return Err(ConnectorError::validation(
-                "Path escapes base directory".to_string(),
-            ));
+        // Security check: canonicalize paths to resolve .. and symlinks
+        // Note: canonicalize requires the path to exist, so we'll use a fallback approach
+        let canonical_result = full_path.canonicalize();
+        let base_canonical_result = base.canonicalize();
+
+        match (canonical_result, base_canonical_result) {
+            (Ok(canonical), Ok(base_canonical)) => {
+                // Both paths exist, use canonical comparison
+                if !canonical.starts_with(&base_canonical) {
+                    return Err(ConnectorError::validation(format!(
+                        "Path traversal detected: {:?} is outside base {:?}",
+                        canonical, base_canonical
+                    )));
+                }
+                Ok(canonical)
+            }
+            _ => {
+                // Fallback: normalize path components manually for non-existent paths
+                let normalized = self.normalize_path(&full_path);
+                let base_normalized = self.normalize_path(base);
+
+                if !normalized.starts_with(&base_normalized) {
+                    return Err(ConnectorError::validation(format!(
+                        "Path traversal detected: {:?} is outside base {:?}",
+                        normalized, base_normalized
+                    )));
+                }
+                Ok(full_path)
+            }
+        }
+    }
+
+    /// Normalize a path by resolving .. and . components
+    fn normalize_path(&self, path: &Path) -> PathBuf {
+        let mut components = Vec::new();
+
+        for component in path.components() {
+            match component {
+                std::path::Component::ParentDir => {
+                    components.pop();
+                }
+                std::path::Component::CurDir => {
+                    // Skip current directory
+                }
+                _ => {
+                    components.push(component);
+                }
+            }
         }
 
-        Ok(full_path)
+        components.iter().collect()
     }
 
     /// Check if read operations are allowed

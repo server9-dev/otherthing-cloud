@@ -29,6 +29,9 @@ impl std::fmt::Display for EncryptionAlgorithm {
 pub struct EncryptedData {
     /// Encryption algorithm used
     pub algorithm: EncryptionAlgorithm,
+    /// Key version used for encryption
+    #[serde(default)]
+    pub key_version: u32,
     /// Initialization vector (nonce for GCM)
     pub iv: Vec<u8>,
     /// Authentication tag
@@ -61,6 +64,9 @@ pub trait EncryptionProvider: Send + Sync {
 /// AES-256-GCM encryption provider
 pub struct Aes256GcmProvider {
     key: Vec<u8>,
+    key_version: u32,
+    old_keys: std::collections::HashMap<u32, Vec<u8>>,
+    revoked_versions: std::collections::HashSet<u32>,
 }
 
 impl Aes256GcmProvider {
@@ -68,7 +74,12 @@ impl Aes256GcmProvider {
     pub fn new() -> SecurityResult<Self> {
         // Generate 32 bytes (256 bits) of random data
         let key = Self::generate_random_bytes(32)?;
-        Ok(Self { key })
+        Ok(Self {
+            key,
+            key_version: 1,
+            old_keys: std::collections::HashMap::new(),
+            revoked_versions: std::collections::HashSet::new(),
+        })
     }
 
     /// Create provider with specific key
@@ -78,7 +89,12 @@ impl Aes256GcmProvider {
                 "Key must be 32 bytes for AES-256".to_string(),
             ));
         }
-        Ok(Self { key })
+        Ok(Self {
+            key,
+            key_version: 1,
+            old_keys: std::collections::HashMap::new(),
+            revoked_versions: std::collections::HashSet::new(),
+        })
     }
 
     /// Generate random bytes
@@ -108,6 +124,18 @@ impl Aes256GcmProvider {
         self.key = key;
         Ok(())
     }
+
+    /// Get current key version
+    pub fn key_version(&self) -> u32 {
+        self.key_version
+    }
+
+    /// Revoke a specific key version
+    pub fn revoke_key_version(&mut self, version: u32) -> SecurityResult<()> {
+        self.revoked_versions.insert(version);
+        self.old_keys.remove(&version);
+        Ok(())
+    }
 }
 
 impl Default for Aes256GcmProvider {
@@ -115,7 +143,12 @@ impl Default for Aes256GcmProvider {
         // Use a fixed test key for development
         // In production, keys should be loaded from secure storage
         let key = vec![0u8; 32];
-        Self { key }
+        Self {
+            key,
+            key_version: 1,
+            old_keys: std::collections::HashMap::new(),
+            revoked_versions: std::collections::HashSet::new(),
+        }
     }
 }
 
@@ -147,6 +180,7 @@ impl EncryptionProvider for Aes256GcmProvider {
 
         Ok(EncryptedData {
             algorithm: EncryptionAlgorithm::Aes256Gcm,
+            key_version: self.key_version,
             iv,
             tag,
             ciphertext,
@@ -161,6 +195,24 @@ impl EncryptionProvider for Aes256GcmProvider {
             ));
         }
 
+        // Check if the key version is revoked
+        if self.revoked_versions.contains(&data.key_version) {
+            return Err(SecurityError::DecryptionError(
+                format!("Key version {} has been revoked", data.key_version),
+            ));
+        }
+
+        // Select the appropriate key based on version
+        let key_to_use = if data.key_version == self.key_version {
+            &self.key
+        } else if let Some(old_key) = self.old_keys.get(&data.key_version) {
+            old_key
+        } else {
+            return Err(SecurityError::DecryptionError(
+                format!("Key version {} not found", data.key_version),
+            ));
+        };
+
         // Verify tag (simplified check)
         let mut tag = vec![0u8; 16];
         for (i, &byte) in data.ciphertext.iter().enumerate() {
@@ -173,10 +225,10 @@ impl EncryptionProvider for Aes256GcmProvider {
             ));
         }
 
-        // Decrypt by XORing again with key
+        // Decrypt by XORing again with the appropriate key
         let mut plaintext = Vec::with_capacity(data.ciphertext.len());
         for (i, &byte) in data.ciphertext.iter().enumerate() {
-            let key_byte = self.key[i % self.key.len()];
+            let key_byte = key_to_use[i % key_to_use.len()];
             let iv_byte = data.iv[i % data.iv.len()];
             plaintext.push(byte ^ key_byte ^ iv_byte);
         }
@@ -189,7 +241,13 @@ impl EncryptionProvider for Aes256GcmProvider {
     }
 
     fn rotate_key(&mut self) -> SecurityResult<()> {
+        // Store the current key as an old key
+        self.old_keys.insert(self.key_version, self.key.clone());
+
+        // Increment version and generate new key
+        self.key_version += 1;
         self.key = Self::generate_random_bytes(32)?;
+
         Ok(())
     }
 }
@@ -205,6 +263,7 @@ impl EncryptionProvider for NoOpEncryptionProvider {
     ) -> SecurityResult<EncryptedData> {
         Ok(EncryptedData {
             algorithm: EncryptionAlgorithm::None,
+            key_version: 0,
             iv: Vec::new(),
             tag: Vec::new(),
             ciphertext: plaintext.to_vec(),
@@ -306,16 +365,37 @@ mod tests {
         let mut provider = Aes256GcmProvider::default();
         let plaintext = b"test";
 
-        let encrypted = provider.encrypt(plaintext, None).unwrap();
+        // Encrypt with version 1
+        let encrypted_v1 = provider.encrypt(plaintext, None).unwrap();
+        assert_eq!(encrypted_v1.key_version, 1);
         let old_key = provider.get_key().to_vec();
 
+        // Rotate to version 2
         provider.rotate_key().unwrap();
+        assert_eq!(provider.key_version(), 2);
         let new_key = provider.get_key().to_vec();
-
         assert_ne!(old_key, new_key);
 
-        // Old encrypted data should fail to decrypt with new key
-        assert!(provider.decrypt(&encrypted).is_err());
+        // Old encrypted data should STILL decrypt (backward compatibility)
+        let decrypted_v1 = provider.decrypt(&encrypted_v1).unwrap();
+        assert_eq!(decrypted_v1, plaintext);
+
+        // New data encrypted with version 2
+        let encrypted_v2 = provider.encrypt(plaintext, None).unwrap();
+        assert_eq!(encrypted_v2.key_version, 2);
+
+        // Both should decrypt successfully
+        assert_eq!(provider.decrypt(&encrypted_v2).unwrap(), plaintext);
+        assert_eq!(provider.decrypt(&encrypted_v1).unwrap(), plaintext);
+
+        // Now revoke version 1
+        provider.revoke_key_version(1).unwrap();
+
+        // Version 2 should still work
+        assert_eq!(provider.decrypt(&encrypted_v2).unwrap(), plaintext);
+
+        // Version 1 should now fail (revoked)
+        assert!(provider.decrypt(&encrypted_v1).is_err());
     }
 
     #[test]

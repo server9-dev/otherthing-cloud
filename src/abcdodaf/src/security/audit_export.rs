@@ -216,7 +216,11 @@ pub struct AuditExporter;
 impl AuditExporter {
     /// Export events to JSON format
     pub fn to_json(export: &AuditLogExport) -> SecurityResult<String> {
-        Ok(serde_json::to_string_pretty(export)?)
+        // Wrap in audit_export object for consistency
+        let wrapped = serde_json::json!({
+            "audit_export": export
+        });
+        Ok(serde_json::to_string_pretty(&wrapped)?)
     }
 
     /// Export events to JSON lines format (one event per line)

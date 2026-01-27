@@ -76,6 +76,10 @@ name = "abcdodaf-ui"
 path = "src/bin/abcdodaf-ui.rs"
 required-features = ["ui"]
 
+[[bin]]
+name = "abcdodaf-cli"
+path = "src/bin/abcdodaf_cli.rs"
+
 [[example]]
 name = "simple_workflow"
 path = "examples/simple_workflow.rs"
