@@ -101,11 +101,7 @@ impl TimeSeriesData {
 
     /// Add a data point
     pub fn add_point(&mut self, timestamp: DateTime<Utc>, value: f64) {
-        self.points.push(TimeSeriesPoint {
-            timestamp,
-            value,
-            metadata: None,
-        });
+        self.points.push(TimeSeriesPoint { timestamp, value, metadata: None });
     }
 
     /// Add a point with metadata
@@ -115,11 +111,7 @@ impl TimeSeriesData {
         value: f64,
         metadata: HashMap<String, f64>,
     ) {
-        self.points.push(TimeSeriesPoint {
-            timestamp,
-            value,
-            metadata: Some(metadata),
-        });
+        self.points.push(TimeSeriesPoint { timestamp, value, metadata: Some(metadata) });
     }
 
     /// Sort points by timestamp
@@ -148,10 +140,7 @@ pub struct Series {
 impl CategoricalData {
     /// Create new categorical data
     pub fn new() -> Self {
-        Self {
-            categories: Vec::new(),
-            series: Vec::new(),
-        }
+        Self { categories: Vec::new(), series: Vec::new() }
     }
 
     /// Add category
@@ -161,10 +150,7 @@ impl CategoricalData {
 
     /// Add series
     pub fn add_series(&mut self, name: impl Into<String>, values: Vec<f64>) {
-        self.series.push(Series {
-            name: name.into(),
-            values,
-        });
+        self.series.push(Series { name: name.into(), values });
     }
 }
 
@@ -202,22 +188,12 @@ pub struct HeatmapCell {
 impl HeatmapData {
     /// Create new heatmap
     pub fn new(x_labels: Vec<String>, y_labels: Vec<String>) -> Self {
-        Self {
-            cells: Vec::new(),
-            x_labels,
-            y_labels,
-            color_scheme: "viridis".to_string(),
-        }
+        Self { cells: Vec::new(), x_labels, y_labels, color_scheme: "viridis".to_string() }
     }
 
     /// Add cell
     pub fn add_cell(&mut self, x: usize, y: usize, intensity: f64, value: Option<String>) {
-        self.cells.push(HeatmapCell {
-            x,
-            y,
-            intensity,
-            value,
-        });
+        self.cells.push(HeatmapCell { x, y, intensity, value });
     }
 
     /// Set color scheme
@@ -253,24 +229,21 @@ pub struct GaugeThreshold {
 
 impl GaugeData {
     /// Create new gauge
-    pub fn new(name: impl Into<String>, value: f64, min: f64, max: f64, unit: impl Into<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        value: f64,
+        min: f64,
+        max: f64,
+        unit: impl Into<String>,
+    ) -> Self {
         Self {
             value,
             min,
             max,
             thresholds: vec![
-                GaugeThreshold {
-                    value: min + (max - min) * 0.33,
-                    color: "green".to_string(),
-                },
-                GaugeThreshold {
-                    value: min + (max - min) * 0.66,
-                    color: "yellow".to_string(),
-                },
-                GaugeThreshold {
-                    value: max,
-                    color: "red".to_string(),
-                },
+                GaugeThreshold { value: min + (max - min) * 0.33, color: "green".to_string() },
+                GaugeThreshold { value: min + (max - min) * 0.66, color: "yellow".to_string() },
+                GaugeThreshold { value: max, color: "red".to_string() },
             ],
             unit: unit.into(),
             name: name.into(),
@@ -469,10 +442,7 @@ pub struct MetricVisualization;
 
 impl MetricVisualization {
     /// Create time series visualization
-    pub fn time_series(
-        series_name: impl Into<String>,
-        unit: impl Into<String>,
-    ) -> TimeSeriesData {
+    pub fn time_series(series_name: impl Into<String>, unit: impl Into<String>) -> TimeSeriesData {
         TimeSeriesData::new(series_name, unit)
     }
 

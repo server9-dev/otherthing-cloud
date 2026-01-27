@@ -96,11 +96,11 @@ impl RetryPolicy {
                 let base = self.initial_delay.as_millis() as f64;
                 let exp = (self.backoff_multiplier).powi((attempt - 1) as i32);
                 (base * exp) as u64
-            }
+            },
             RetryStrategy::LinearBackoff => {
                 let base = self.initial_delay.as_millis() as u64;
                 base * (attempt as u64)
-            }
+            },
         };
 
         let capped_delay = std::cmp::min(delay_ms, self.max_delay.as_millis() as u64);
@@ -124,11 +124,7 @@ impl RetryPolicy {
 
 impl Default for RetryPolicy {
     fn default() -> Self {
-        Self::exponential_backoff(
-            3,
-            Duration::from_millis(100),
-            Duration::from_secs(30),
-        )
+        Self::exponential_backoff(3, Duration::from_millis(100), Duration::from_secs(30))
     }
 }
 
@@ -176,11 +172,8 @@ mod tests {
 
     #[test]
     fn test_linear_backoff() {
-        let policy = RetryPolicy::linear_backoff(
-            4,
-            Duration::from_millis(100),
-            Duration::from_secs(10),
-        );
+        let policy =
+            RetryPolicy::linear_backoff(4, Duration::from_millis(100), Duration::from_secs(10));
 
         let delay1 = policy.calculate_delay(1);
         let delay2 = policy.calculate_delay(2);
@@ -191,11 +184,8 @@ mod tests {
 
     #[test]
     fn test_max_delay_capping() {
-        let policy = RetryPolicy::exponential_backoff(
-            10,
-            Duration::from_secs(1),
-            Duration::from_secs(5),
-        );
+        let policy =
+            RetryPolicy::exponential_backoff(10, Duration::from_secs(1), Duration::from_secs(5));
 
         let delay = policy.calculate_delay(10);
         assert!(delay <= Duration::from_secs(5));

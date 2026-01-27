@@ -22,11 +22,7 @@ pub enum ValidationError {
     MissingRequiredInput { node_id: NodeId, node_name: String },
 
     /// VE-006: Invalid connection between incompatible node types
-    InvalidConnection {
-        from_node: NodeId,
-        to_node: NodeId,
-        reason: String,
-    },
+    InvalidConnection { from_node: NodeId, to_node: NodeId, reason: String },
 }
 
 /// Validation warnings (non-critical issues)
@@ -48,10 +44,7 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     pub fn new() -> Self {
-        Self {
-            errors: Vec::new(),
-            warnings: Vec::new(),
-        }
+        Self { errors: Vec::new(), warnings: Vec::new() }
     }
 
     pub fn is_valid(&self) -> bool {
@@ -109,9 +102,9 @@ impl Validator {
 
         // VE-002: Check for multiple start nodes
         if start_nodes.len() > 1 {
-            result.errors.push(ValidationError::MultipleStartNodes {
-                start_nodes: start_nodes.clone(),
-            });
+            result
+                .errors
+                .push(ValidationError::MultipleStartNodes { start_nodes: start_nodes.clone() });
         }
 
         // VE-003: Check for missing end node
@@ -137,7 +130,6 @@ impl Validator {
 
         // VE-005: Check for nodes missing required inputs
         for (node_id, node) in snarl.node_ids() {
-
             // Start events don't need inputs
             if matches!(node.node_type, BpmnNodeType::StartEvent(_)) {
                 continue;
@@ -160,7 +152,6 @@ impl Validator {
 
         // VW-001: Check for unconnected outputs (warnings)
         for (node_id, node) in snarl.node_ids() {
-
             // End events are expected to have no outputs
             if matches!(node.node_type, BpmnNodeType::EndEvent(_)) {
                 continue;
@@ -183,7 +174,6 @@ impl Validator {
 
         // VW-002: Check for missing DoDAF metadata on tasks
         for (node_id, node) in snarl.node_ids() {
-
             if matches!(node.node_type, BpmnNodeType::Task(_)) {
                 // Check if any DoDAF metadata is present
                 let has_metadata = node.dodaf_metadata.is_some();
@@ -202,10 +192,7 @@ impl Validator {
 
     /// Find all nodes of a specific type
     #[allow(dead_code)]
-    fn find_nodes_by_type(
-        snarl: &Snarl<EnhancedBpmnNode>,
-        node_type: BpmnNodeType,
-    ) -> Vec<NodeId> {
+    fn find_nodes_by_type(snarl: &Snarl<EnhancedBpmnNode>, node_type: BpmnNodeType) -> Vec<NodeId> {
         snarl
             .node_ids()
             .filter(|&(_, node)| node.node_type == node_type)
@@ -248,25 +235,22 @@ impl Validator {
         match error {
             ValidationError::MissingStartNode => {
                 "Workflow must have exactly one start event".to_string()
-            }
+            },
             ValidationError::MultipleStartNodes { start_nodes } => {
-                format!(
-                    "Workflow cannot have multiple start events (found {})",
-                    start_nodes.len()
-                )
-            }
+                format!("Workflow cannot have multiple start events (found {})", start_nodes.len())
+            },
             ValidationError::MissingEndNode => {
                 "Workflow must have at least one end event".to_string()
-            }
+            },
             ValidationError::DisconnectedNode { node_name, .. } => {
                 format!("Node '{}' is disconnected from workflow", node_name)
-            }
+            },
             ValidationError::MissingRequiredInput { node_name, .. } => {
                 format!("Node '{}' requires an input connection", node_name)
-            }
+            },
             ValidationError::InvalidConnection { reason, .. } => {
                 format!("Invalid connection: {}", reason)
-            }
+            },
         }
     }
 
@@ -275,10 +259,10 @@ impl Validator {
         match warning {
             ValidationWarning::UnconnectedOutput { node_name, .. } => {
                 format!("Node '{}' has no outgoing connections", node_name)
-            }
+            },
             ValidationWarning::MissingDodafMetadata { node_name, .. } => {
                 format!("Task '{}' has no DoDAF metadata", node_name)
-            }
+            },
         }
     }
 
@@ -289,7 +273,7 @@ impl Validator {
             ValidationError::MissingRequiredInput { node_id: id, .. } => *id == node_id,
             ValidationError::InvalidConnection { from_node, to_node, .. } => {
                 *from_node == node_id || *to_node == node_id
-            }
+            },
             ValidationError::MultipleStartNodes { start_nodes } => start_nodes.contains(&node_id),
             _ => false,
         })
@@ -313,10 +297,10 @@ impl Validator {
                 ValidationError::MissingRequiredInput { node_id: id, .. } => *id == node_id,
                 ValidationError::InvalidConnection { from_node, to_node, .. } => {
                     *from_node == node_id || *to_node == node_id
-                }
+                },
                 ValidationError::MultipleStartNodes { start_nodes } => {
                     start_nodes.contains(&node_id)
-                }
+                },
                 _ => false,
             })
             .collect()
@@ -338,8 +322,8 @@ impl Validator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ui::enhanced_nodes::TaskNode;
     use crate::bpmn::elements::BpmnTaskType;
+    use crate::ui::enhanced_nodes::TaskNode;
 
     #[test]
     fn test_empty_workflow() {
@@ -354,13 +338,16 @@ mod tests {
         let mut snarl = Snarl::<EnhancedBpmnNode>::new();
         snarl.insert_node(
             egui::Pos2::ZERO,
-            EnhancedBpmnNode::new("task1".to_string(), BpmnNodeType::Task(TaskNode {
-                name: "Task 1".to_string(),
-                documentation: None,
-                task_type: BpmnTaskType::User { implementation: None, rendering: None },
-                loop_characteristics: None,
-                is_for_compensation: false,
-            })),
+            EnhancedBpmnNode::new(
+                "task1".to_string(),
+                BpmnNodeType::Task(TaskNode {
+                    name: "Task 1".to_string(),
+                    documentation: None,
+                    task_type: BpmnTaskType::User { implementation: None, rendering: None },
+                    loop_characteristics: None,
+                    is_for_compensation: false,
+                }),
+            ),
         );
 
         let result = Validator::validate_workflow(&snarl);

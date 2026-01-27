@@ -1,4 +1,4 @@
-use crate::ui::workspace::{Workspace, WorkflowId};
+use crate::ui::workspace::{WorkflowId, Workspace};
 
 pub struct TabBar {
     tabs: Vec<TabInfo>,
@@ -14,10 +14,7 @@ struct TabInfo {
 
 impl TabBar {
     pub fn new() -> Self {
-        Self {
-            tabs: Vec::new(),
-            active_tab: None,
-        }
+        Self { tabs: Vec::new(), active_tab: None }
     }
 
     /// Update tabs from workspace state
@@ -117,11 +114,7 @@ impl TabBar {
         }
 
         if let Some(current) = self.active_tab {
-            let prev_idx = if current == 0 {
-                self.tabs.len() - 1
-            } else {
-                current - 1
-            };
+            let prev_idx = if current == 0 { self.tabs.len() - 1 } else { current - 1 };
             self.active_tab = Some(prev_idx);
             Some(self.tabs[prev_idx].workflow_id)
         } else {

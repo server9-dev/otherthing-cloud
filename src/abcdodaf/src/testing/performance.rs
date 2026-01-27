@@ -324,10 +324,7 @@ pub struct PerfTimer {
 impl PerfTimer {
     /// Start a performance timer
     pub fn start(name: impl Into<String>) -> Self {
-        Self {
-            start: Instant::now(),
-            name: name.into(),
-        }
+        Self { start: Instant::now(), name: name.into() }
     }
 
     /// Get elapsed time in milliseconds
@@ -360,9 +357,7 @@ pub struct PerfTestBuilder {
 impl PerfTestBuilder {
     /// Create new performance test builder
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            suite: BenchmarkSuite::new(name),
-        }
+        Self { suite: BenchmarkSuite::new(name) }
     }
 
     /// Add benchmark

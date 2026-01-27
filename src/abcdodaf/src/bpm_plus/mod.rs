@@ -12,20 +12,20 @@
 //! - DMN provides reusable decision logic for both
 
 pub mod bpmn;
+pub mod bpmn_cmmn_integration;
 pub mod cmmn;
+pub mod cmmn_discretionary;
 pub mod cmmn_runtime;
 pub mod cmmn_xml;
-pub mod cmmn_discretionary;
-pub mod bpmn_cmmn_integration;
 pub mod dmn;
 pub mod integration;
 
 pub use bpmn::*;
+pub use bpmn_cmmn_integration::*;
 pub use cmmn::*;
+pub use cmmn_discretionary::*;
 pub use cmmn_runtime::*;
 pub use cmmn_xml::*;
-pub use cmmn_discretionary::*;
-pub use bpmn_cmmn_integration::*;
 pub use dmn::*;
 pub use integration::*;
 

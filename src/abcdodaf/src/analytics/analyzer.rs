@@ -74,16 +74,9 @@ impl AnalyticsEngine {
             return 0.0;
         }
 
-        let total_completed: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.completed_instances)
-            .sum();
-        let total: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.total_instances)
-            .sum();
+        let total_completed: u64 =
+            snapshot.process_metrics.values().map(|m| m.completed_instances).sum();
+        let total: u64 = snapshot.process_metrics.values().map(|m| m.total_instances).sum();
 
         if total == 0 {
             0.0
@@ -97,11 +90,7 @@ impl AnalyticsEngine {
         let now = Utc::now();
         let one_min_ago = now - Duration::minutes(1);
 
-        let count = snapshot
-            .recent_metrics
-            .iter()
-            .filter(|m| m.timestamp > one_min_ago)
-            .count();
+        let count = snapshot.recent_metrics.iter().filter(|m| m.timestamp > one_min_ago).count();
 
         count as f64
     }
@@ -117,11 +106,7 @@ impl AnalyticsEngine {
             .map(|m| m.avg_execution_time_ms * m.completed_instances as f64)
             .sum();
 
-        let total: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.completed_instances)
-            .sum();
+        let total: u64 = snapshot.process_metrics.values().map(|m| m.completed_instances).sum();
 
         if total == 0 {
             0.0
@@ -135,11 +120,7 @@ impl AnalyticsEngine {
         let resource_util = self.calculate_resource_utilization(snapshot);
 
         // Health score based on completion rate and resource efficiency
-        let efficiency = if resource_util > 100.0 {
-            0.0
-        } else {
-            100.0 - resource_util
-        };
+        let efficiency = if resource_util > 100.0 { 0.0 } else { 100.0 - resource_util };
 
         (completion_rate * 0.7 + efficiency * 0.3).min(100.0).max(0.0)
     }
@@ -190,12 +171,10 @@ impl BottleneckAnalyzer {
                 bottlenecks.push(Bottleneck {
                     process_id: process_id.clone(),
                     severity: (metrics.avg_execution_time_ms / 10000.0 * 100.0).min(100.0),
-                    reason: format!(
-                        "High execution time: {:.0}ms",
-                        metrics.avg_execution_time_ms
-                    ),
+                    reason: format!("High execution time: {:.0}ms", metrics.avg_execution_time_ms),
                     detected_at: Utc::now(),
-                    recommendation: "Optimize process logic or increase parallelization".to_string(),
+                    recommendation: "Optimize process logic or increase parallelization"
+                        .to_string(),
                 });
             }
 
@@ -420,12 +399,7 @@ impl HeatmapAnalyzer {
             })
             .collect();
 
-        ActivityHeatmap {
-            cells,
-            max_count,
-            min_count,
-            period: "Weekly".to_string(),
-        }
+        ActivityHeatmap { cells, max_count, min_count, period: "Weekly".to_string() }
     }
 }
 
@@ -481,11 +455,8 @@ impl PerformanceAnalyzer {
 
     /// Analyze performance metrics
     pub fn analyze(&self, snapshot: &MetricSnapshot) -> PerformanceAnalysis {
-        let response_times: Vec<f64> = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.avg_execution_time_ms)
-            .collect();
+        let response_times: Vec<f64> =
+            snapshot.process_metrics.values().map(|m| m.avg_execution_time_ms).collect();
 
         let response_time_percentiles = self.calculate_percentiles(&response_times);
 
@@ -493,11 +464,7 @@ impl PerformanceAnalyzer {
 
         let error_analysis = self.calculate_error_analysis(snapshot);
 
-        PerformanceAnalysis {
-            response_time_percentiles,
-            throughput_stats,
-            error_analysis,
-        }
+        PerformanceAnalysis { response_time_percentiles, throughput_stats, error_analysis }
     }
 
     fn calculate_percentiles(&self, values: &[f64]) -> ResponseTimePercentiles {
@@ -532,48 +499,27 @@ impl PerformanceAnalyzer {
             .collect();
 
         if completion_times.is_empty() {
-            return ThroughputStats {
-                mean: 0.0,
-                stddev: 0.0,
-                min: 0.0,
-                max: 0.0,
-            };
+            return ThroughputStats { mean: 0.0, stddev: 0.0, min: 0.0, max: 0.0 };
         }
 
         let mean = completion_times.iter().sum::<f64>() / completion_times.len() as f64;
-        let variance = completion_times
-            .iter()
-            .map(|t| (t - mean).powi(2))
-            .sum::<f64>()
+        let variance = completion_times.iter().map(|t| (t - mean).powi(2)).sum::<f64>()
             / completion_times.len() as f64;
         let stddev = variance.sqrt();
 
         ThroughputStats {
             mean,
             stddev,
-            min: completion_times
-                .iter()
-                .cloned()
-                .fold(f64::INFINITY, f64::min),
-            max: completion_times
-                .iter()
-                .cloned()
-                .fold(0.0, f64::max),
+            min: completion_times.iter().cloned().fold(f64::INFINITY, f64::min),
+            max: completion_times.iter().cloned().fold(0.0, f64::max),
         }
     }
 
     fn calculate_error_analysis(&self, snapshot: &MetricSnapshot) -> ErrorAnalysis {
-        let total_errors: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.failed_instances)
-            .sum();
+        let total_errors: u64 = snapshot.process_metrics.values().map(|m| m.failed_instances).sum();
 
-        let total_instances: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.total_instances)
-            .sum();
+        let total_instances: u64 =
+            snapshot.process_metrics.values().map(|m| m.total_instances).sum();
 
         let error_rate = if total_instances > 0 {
             (total_errors as f64 / total_instances as f64) * 100.0
@@ -588,11 +534,7 @@ impl PerformanceAnalyzer {
             }
         }
 
-        ErrorAnalysis {
-            total_errors,
-            error_rate,
-            top_errors,
-        }
+        ErrorAnalysis { total_errors, error_rate, top_errors }
     }
 }
 
@@ -647,11 +589,7 @@ impl CostAnalyzer {
             }
         }
 
-        CostAnalysis {
-            costs_by_resource,
-            costs_by_category,
-            trends: Vec::new(),
-        }
+        CostAnalysis { costs_by_resource, costs_by_category, trends: Vec::new() }
     }
 }
 

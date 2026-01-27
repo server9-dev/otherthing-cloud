@@ -160,17 +160,11 @@ impl TemplateLibrary {
         self.templates.insert(id.clone(), template.clone());
 
         // Add to category index
-        self.categories
-            .entry(category)
-            .or_insert_with(Vec::new)
-            .push(id.clone());
+        self.categories.entry(category).or_insert_with(Vec::new).push(id.clone());
 
         // Add to search index
         for tag in &template.metadata.tags {
-            self.search_index
-                .entry(tag.clone())
-                .or_insert_with(Vec::new)
-                .push(id.clone());
+            self.search_index.entry(tag.clone()).or_insert_with(Vec::new).push(id.clone());
         }
 
         self.updated_at = chrono::Utc::now();
@@ -186,11 +180,7 @@ impl TemplateLibrary {
     pub fn get_by_category(&self, category: TemplateCategory) -> Vec<&Template> {
         self.categories
             .get(&category)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| self.templates.get(id))
-                    .collect()
-            })
+            .map(|ids| ids.iter().filter_map(|id| self.templates.get(id)).collect())
             .unwrap_or_default()
     }
 
@@ -202,19 +192,14 @@ impl TemplateLibrary {
             .filter(|t| {
                 t.metadata.name.to_lowercase().contains(&query_lower)
                     || t.metadata.description.to_lowercase().contains(&query_lower)
-                    || t.metadata.tags.iter().any(|tag| {
-                        tag.to_lowercase().contains(&query_lower)
-                    })
+                    || t.metadata.tags.iter().any(|tag| tag.to_lowercase().contains(&query_lower))
             })
             .collect()
     }
 
     /// Get templates by complexity level
     pub fn get_by_complexity(&self, level: &str) -> Vec<&Template> {
-        self.templates
-            .values()
-            .filter(|t| t.metadata.complexity == level)
-            .collect()
+        self.templates.values().filter(|t| t.metadata.complexity == level).collect()
     }
 
     /// List all template IDs
@@ -226,7 +211,8 @@ impl TemplateLibrary {
     pub fn get_statistics(&self) -> LibraryStatistics {
         LibraryStatistics {
             total_templates: self.templates.len(),
-            templates_by_category: self.categories
+            templates_by_category: self
+                .categories
                 .iter()
                 .map(|(cat, ids)| (format!("{:?}", cat), ids.len()))
                 .collect(),

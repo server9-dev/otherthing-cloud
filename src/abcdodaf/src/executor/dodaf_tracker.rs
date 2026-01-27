@@ -10,9 +10,9 @@
 //! - Security markings
 //! - Cost/duration estimates
 
-use crate::dodaf::{OperationalActivity, CapabilityView, ServiceView};
-use crate::executor::database::DatabaseManager;
+use crate::dodaf::{CapabilityView, OperationalActivity, ServiceView};
 use crate::error::Result;
+use crate::executor::database::DatabaseManager;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 use std::collections::HashMap;
@@ -40,11 +40,7 @@ impl DodafTracker {
     }
 
     /// Track resource flow
-    pub async fn track_resource_flow(
-        &self,
-        workflow_id: Uuid,
-        flow: &ResourceFlow,
-    ) -> Result<()> {
+    pub async fn track_resource_flow(&self, workflow_id: Uuid, flow: &ResourceFlow) -> Result<()> {
         // Get existing OV-3 data
         let existing = self.db.get_dodaf_metadata(workflow_id, Some("OV-3")).await?;
 
@@ -166,29 +162,32 @@ impl DodafTracker {
             match record.view_type.as_str() {
                 "OV-5" => {
                     view.operational_activity = serde_json::from_value(record.metadata).ok();
-                }
+                },
                 "OV-3" => {
-                    view.resource_flows = serde_json::from_value(record.metadata).unwrap_or_default();
-                }
+                    view.resource_flows =
+                        serde_json::from_value(record.metadata).unwrap_or_default();
+                },
                 "OV-4" => {
                     view.performers = serde_json::from_value(record.metadata).unwrap_or_default();
-                }
+                },
                 "CV-6" => {
                     view.capability_mapping = serde_json::from_value(record.metadata).ok();
-                }
+                },
                 "SV-1" => {
                     view.system_mapping = serde_json::from_value(record.metadata).ok();
-                }
+                },
                 "SECURITY" => {
-                    view.security_markings = serde_json::from_value(record.metadata).unwrap_or_default();
-                }
+                    view.security_markings =
+                        serde_json::from_value(record.metadata).unwrap_or_default();
+                },
                 "TRACEABILITY" => {
-                    view.traceability_links = serde_json::from_value(record.metadata).unwrap_or_default();
-                }
+                    view.traceability_links =
+                        serde_json::from_value(record.metadata).unwrap_or_default();
+                },
                 "OV-5-METRICS" => {
                     view.cost_duration = serde_json::from_value(record.metadata).ok();
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
@@ -196,7 +195,10 @@ impl DodafTracker {
     }
 
     /// Generate compliance report for stored workflow
-    pub async fn generate_compliance_report(&self, workflow_id: Uuid) -> Result<DodafComplianceReport> {
+    pub async fn generate_compliance_report(
+        &self,
+        workflow_id: Uuid,
+    ) -> Result<DodafComplianceReport> {
         let view = self.get_dodaf_view(workflow_id).await?;
 
         let mut report = DodafComplianceReport {
@@ -214,28 +216,24 @@ impl DodafTracker {
         } else {
             report.view_compliance.insert("OV-5".to_string(), 0.0);
             report.missing_views.push("OV-5".to_string());
-            report.recommendations.push("Add operational activity metadata to workflow".to_string());
+            report
+                .recommendations
+                .push("Add operational activity metadata to workflow".to_string());
         }
 
         // Check OV-3 (Resource Flows)
-        let resource_flow_score = if !view.resource_flows.is_empty() {
-            100.0
-        } else {
-            0.0
-        };
+        let resource_flow_score = if !view.resource_flows.is_empty() { 100.0 } else { 0.0 };
         report.view_compliance.insert("OV-3".to_string(), resource_flow_score);
 
         if view.resource_flows.is_empty() {
             report.missing_views.push("OV-3".to_string());
-            report.recommendations.push("Define resource flows between activities".to_string());
+            report
+                .recommendations
+                .push("Define resource flows between activities".to_string());
         }
 
         // Check OV-4 (Performers)
-        let performer_score = if !view.performers.is_empty() {
-            100.0
-        } else {
-            0.0
-        };
+        let performer_score = if !view.performers.is_empty() { 100.0 } else { 0.0 };
         report.view_compliance.insert("OV-4".to_string(), performer_score);
 
         if view.performers.is_empty() {
@@ -249,7 +247,9 @@ impl DodafTracker {
         } else {
             report.view_compliance.insert("CV-6".to_string(), 0.0);
             report.missing_views.push("CV-6".to_string());
-            report.recommendations.push("Map workflow to organizational capabilities".to_string());
+            report
+                .recommendations
+                .push("Map workflow to organizational capabilities".to_string());
         }
 
         // Check SV-1 (System Mapping)
@@ -283,10 +283,10 @@ pub struct DodafView {
 }
 
 // Re-export types from dodaf modules
+pub use crate::dodaf::performers::{Performer, PerformerAssignment, PerformerType};
 pub use crate::dodaf::resource_flows::{ResourceFlow, ResourceFlowType};
-pub use crate::dodaf::performers::{Performer, PerformerType, PerformerAssignment};
-pub use crate::dodaf::security::{SecurityMarking};
-pub use crate::dodaf::traceability::{TraceabilityLink};
+pub use crate::dodaf::security::SecurityMarking;
+pub use crate::dodaf::traceability::TraceabilityLink;
 
 // Simplified types for tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]

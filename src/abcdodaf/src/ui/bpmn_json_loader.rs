@@ -52,9 +52,7 @@ pub struct BpmnJsonConverter {
 impl BpmnJsonConverter {
     /// Create a new converter with default layout
     pub fn new() -> Self {
-        Self {
-            layout_config: LayoutConfig::default(),
-        }
+        Self { layout_config: LayoutConfig::default() }
     }
 
     /// Create a new converter with custom layout
@@ -78,11 +76,10 @@ impl BpmnJsonConverter {
     pub fn load_from_string(&self, json_content: &str) -> Result<WorkflowFile, String> {
         debug!("Parsing BPMN JSON content");
 
-        let bpmn_workflow: BpmnJsonWorkflow =
-            serde_json::from_str(json_content).map_err(|e| {
-                error!("Failed to parse BPMN JSON: {}", e);
-                format!("Failed to parse JSON: {}", e)
-            })?;
+        let bpmn_workflow: BpmnJsonWorkflow = serde_json::from_str(json_content).map_err(|e| {
+            error!("Failed to parse BPMN JSON: {}", e);
+            format!("Failed to parse JSON: {}", e)
+        })?;
 
         self.convert(bpmn_workflow)
     }
@@ -102,10 +99,9 @@ impl BpmnJsonConverter {
             debug!("Processing step: {} ({})", step.name, step.step_type);
 
             let node = self.create_node_from_step(step)?;
-            let position = layout_positions
-                .get(&step.id)
-                .copied()
-                .unwrap_or_else(|| Pos2::new(self.layout_config.start_x, self.layout_config.start_y));
+            let position = layout_positions.get(&step.id).copied().unwrap_or_else(|| {
+                Pos2::new(self.layout_config.start_x, self.layout_config.start_y)
+            });
 
             let node_id = snarl.insert_node(position, node);
             node_id_map.insert(step.id.clone(), node_id);
@@ -139,10 +135,7 @@ impl BpmnJsonConverter {
             // Create the wire
             snarl.connect(out_pin_id, in_pin_id);
 
-            debug!(
-                "Connected {} -> {} (flow: {})",
-                flow.source_ref, flow.target_ref, flow.id
-            );
+            debug!("Connected {} -> {} (flow: {})", flow.source_ref, flow.target_ref, flow.id);
         }
 
         info!(
@@ -233,7 +226,8 @@ impl BpmnJsonConverter {
         // Calculate position based on level and count at this level
         let count_at_level = level_counts.entry(level).or_insert(0);
         let x = self.layout_config.start_x + (level as f32) * self.layout_config.horizontal_spacing;
-        let y = self.layout_config.start_y + (*count_at_level as f32) * self.layout_config.vertical_spacing;
+        let y = self.layout_config.start_y
+            + (*count_at_level as f32) * self.layout_config.vertical_spacing;
 
         positions.insert(node_id.to_string(), Pos2::new(x, y));
         *count_at_level += 1;
@@ -241,14 +235,7 @@ impl BpmnJsonConverter {
         // Process children
         if let Some(children) = adjacency.get(node_id) {
             for child_id in children {
-                self.layout_node(
-                    child_id,
-                    level + 1,
-                    adjacency,
-                    visited,
-                    level_counts,
-                    positions,
-                );
+                self.layout_node(child_id, level + 1, adjacency, visited, level_counts, positions);
             }
         }
     }
@@ -261,12 +248,17 @@ impl BpmnJsonConverter {
             "serviceTask" => {
                 // Determine specific task type
                 match step.task_type.as_deref() {
-                    Some("research") | Some("design") | Some("code_generation") | Some("testing")
-                    | Some("documentation") | Some("integration") | Some("debugging")
+                    Some("research")
+                    | Some("design")
+                    | Some("code_generation")
+                    | Some("testing")
+                    | Some("documentation")
+                    | Some("integration")
+                    | Some("debugging")
                     | Some("optimization") => EnhancedBpmnNode::service_task(&step.id, &step.name),
                     _ => EnhancedBpmnNode::service_task(&step.id, &step.name),
                 }
-            }
+            },
             "userTask" => EnhancedBpmnNode::user_task(&step.id, &step.name),
             "exclusiveGateway" => EnhancedBpmnNode::exclusive_gateway(&step.id, &step.name),
             "parallelGateway" => {
@@ -280,7 +272,7 @@ impl BpmnJsonConverter {
                         gateway_direction: GatewayDirection::Unspecified,
                     }),
                 )
-            }
+            },
             "inclusiveGateway" => {
                 // Create inclusive gateway
                 EnhancedBpmnNode::new(
@@ -292,7 +284,7 @@ impl BpmnJsonConverter {
                         gateway_direction: GatewayDirection::Unspecified,
                     }),
                 )
-            }
+            },
             "task" => {
                 // Generic task (abstract)
                 EnhancedBpmnNode::new(
@@ -305,7 +297,7 @@ impl BpmnJsonConverter {
                         is_for_compensation: false,
                     }),
                 )
-            }
+            },
             "scriptTask" => {
                 // Script task
                 EnhancedBpmnNode::new(
@@ -324,7 +316,7 @@ impl BpmnJsonConverter {
                         is_for_compensation: false,
                     }),
                 )
-            }
+            },
             "manualTask" => {
                 // Manual task
                 EnhancedBpmnNode::new(
@@ -337,7 +329,7 @@ impl BpmnJsonConverter {
                         is_for_compensation: false,
                     }),
                 )
-            }
+            },
             "businessRuleTask" => {
                 // Business rule task
                 EnhancedBpmnNode::new(
@@ -353,7 +345,7 @@ impl BpmnJsonConverter {
                         is_for_compensation: false,
                     }),
                 )
-            }
+            },
             "intermediateCatchEvent" | "intermediateThrowEvent" => {
                 // Intermediate event
                 use crate::ui::enhanced_nodes::{BpmnNodeType, IntermediateEventNode};
@@ -366,9 +358,10 @@ impl BpmnJsonConverter {
                         is_catching: step.step_type == "intermediateCatchEvent",
                         is_interrupting: true,
                         is_boundary: false,
+                        attached_to_activity_id: None,
                     }),
                 )
-            }
+            },
             unknown => {
                 warn!("Unknown step type '{}', creating as generic task", unknown);
                 EnhancedBpmnNode::new(
@@ -381,7 +374,7 @@ impl BpmnJsonConverter {
                         is_for_compensation: false,
                     }),
                 )
-            }
+            },
         };
 
         Ok(node)

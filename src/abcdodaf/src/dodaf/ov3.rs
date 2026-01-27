@@ -264,7 +264,11 @@ impl InformationElement {
 
 impl ExchangePair {
     /// Create a new exchange pair
-    pub fn new(id: impl Into<String>, source: impl Into<String>, target: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        source: impl Into<String>,
+        target: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             source: source.into(),
@@ -348,7 +352,11 @@ impl ExchangeAttributes {
     }
 
     /// Add custom attribute
-    pub fn add_custom_attribute(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+    pub fn add_custom_attribute(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
         self.custom_attributes.insert(key.into(), value.into());
         self
     }

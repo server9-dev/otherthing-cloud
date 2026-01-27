@@ -1,8 +1,10 @@
 //! Test data generation and fixtures
 
 use crate::bpmn::{Process, ProcessBuilder};
-use crate::workforce::{AgentTask, HumanTask, SystemTask, AgentCapability, HumanRole, SystemOperation};
 use crate::dodaf::OperationalContext;
+use crate::workforce::{
+    AgentCapability, AgentTask, HumanRole, HumanTask, SystemOperation, SystemTask,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -66,9 +68,7 @@ pub struct FixtureBuilder {
 impl FixtureBuilder {
     /// Create new builder
     pub fn new(id: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            fixture: TestFixture::new(id, name),
-        }
+        Self { fixture: TestFixture::new(id, name) }
     }
 
     /// Add variable
@@ -181,9 +181,11 @@ impl SampleDataGenerator {
 
         for i in 0..num_tasks {
             if i % 2 == 0 {
-                builder = builder.add_user_task(&format!("task_{}", i), &format!("User Task {}", i));
+                builder =
+                    builder.add_user_task(&format!("task_{}", i), &format!("User Task {}", i));
             } else {
-                builder = builder.add_service_task(&format!("task_{}", i), &format!("Service Task {}", i));
+                builder = builder
+                    .add_service_task(&format!("task_{}", i), &format!("Service Task {}", i));
             }
         }
 
@@ -218,10 +220,13 @@ impl SampleDataGenerator {
             .with_description("Sample user input for testing")
             .with_variable("user_id", serde_json::json!(Uuid::new_v4().to_string()))
             .with_variable("input_text", serde_json::json!("Test input from user"))
-            .with_variable("metadata", serde_json::json!({
-                "source": "web",
-                "timestamp": chrono::Utc::now().to_rfc3339()
-            }))
+            .with_variable(
+                "metadata",
+                serde_json::json!({
+                    "source": "web",
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                }),
+            )
             .with_tag("input")
             .with_tag("user")
             .build()
@@ -234,10 +239,13 @@ impl SampleDataGenerator {
             .with_variable("status", serde_json::json!("success"))
             .with_variable("result", serde_json::json!("Task completed"))
             .with_variable("duration_ms", serde_json::json!(1234))
-            .with_variable("output_data", serde_json::json!({
-                "processed": true,
-                "items_count": 42
-            }))
+            .with_variable(
+                "output_data",
+                serde_json::json!({
+                    "processed": true,
+                    "items_count": 42
+                }),
+            )
             .with_tag("output")
             .with_tag("result")
             .build()
@@ -286,9 +294,7 @@ pub struct FixturePool {
 impl FixturePool {
     /// Create new fixture pool
     pub fn new() -> Self {
-        Self {
-            fixtures: HashMap::new(),
-        }
+        Self { fixtures: HashMap::new() }
     }
 
     /// Add fixture to pool
@@ -304,10 +310,7 @@ impl FixturePool {
 
     /// Get fixtures by tag
     pub fn get_by_tag(&self, tag: &str) -> Vec<&TestFixture> {
-        self.fixtures
-            .values()
-            .filter(|f| f.tags.contains(&tag.to_string()))
-            .collect()
+        self.fixtures.values().filter(|f| f.tags.contains(&tag.to_string())).collect()
     }
 
     /// List all fixture IDs

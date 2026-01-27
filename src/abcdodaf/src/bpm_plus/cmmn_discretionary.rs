@@ -106,19 +106,14 @@ impl DiscretionaryItemManager {
 
     /// List all available discretionary items
     pub fn list_available_items(&self) -> Vec<&DiscretionaryItem> {
-        self.items
-            .values()
-            .filter(|item| item.is_available)
-            .collect()
+        self.items.values().filter(|item| item.is_available).collect()
     }
 
     /// Check if a user can activate a discretionary item
-    pub fn can_activate(
-        &self,
-        item_id: &str,
-        user_role: &str,
-    ) -> Result<bool> {
-        let item = self.items.get(item_id)
+    pub fn can_activate(&self, item_id: &str, user_role: &str) -> Result<bool> {
+        let item = self
+            .items
+            .get(item_id)
             .ok_or_else(|| AbcdodafError::WorkflowError(format!("Item {} not found", item_id)))?;
 
         if !item.is_available {
@@ -143,9 +138,10 @@ impl DiscretionaryItemManager {
     ) -> Result<DiscretionaryActivation> {
         // Check authorization
         if !self.can_activate(item_id, &user_role)? {
-            return Err(AbcdodafError::WorkflowError(
-                format!("User {} is not authorized to activate item {}", user_id, item_id)
-            ));
+            return Err(AbcdodafError::WorkflowError(format!(
+                "User {} is not authorized to activate item {}",
+                user_id, item_id
+            )));
         }
 
         // Create activation record
@@ -178,11 +174,7 @@ impl DiscretionaryItemManager {
     }
 
     /// Set activation policy for an item
-    pub fn set_activation_policy(
-        &mut self,
-        item_id: &str,
-        policy: ActivationPolicy,
-    ) -> &mut Self {
+    pub fn set_activation_policy(&mut self, item_id: &str, policy: ActivationPolicy) -> &mut Self {
         self.policies.insert(item_id.to_string(), policy);
         self
     }
@@ -194,9 +186,7 @@ impl DiscretionaryItemManager {
     ) -> Vec<&DiscretionaryItem> {
         self.items
             .values()
-            .filter(|item| {
-                item.is_available && self.matches_context(item, case_context)
-            })
+            .filter(|item| item.is_available && self.matches_context(item, case_context))
             .collect()
     }
 
@@ -297,7 +287,8 @@ impl DiscretionaryItemBuilder {
 
     /// Build the discretionary item
     pub fn build(self) -> Result<DiscretionaryItem> {
-        let plan_item = self.plan_item
+        let plan_item = self
+            .plan_item
             .ok_or_else(|| AbcdodafError::WorkflowError("Plan item is required".to_string()))?;
 
         Ok(DiscretionaryItem {
@@ -387,12 +378,14 @@ mod tests {
 
         manager.add_discretionary_item(item);
 
-        let activation = manager.activate_item(
-            "item1",
-            "user1".to_string(),
-            "case_worker".to_string(),
-            Some("Quality check required".to_string()),
-        ).unwrap();
+        let activation = manager
+            .activate_item(
+                "item1",
+                "user1".to_string(),
+                "case_worker".to_string(),
+                Some("Quality check required".to_string()),
+            )
+            .unwrap();
 
         assert_eq!(activation.discretionary_item_id, "item1");
         assert_eq!(activation.activated_by, "user1");

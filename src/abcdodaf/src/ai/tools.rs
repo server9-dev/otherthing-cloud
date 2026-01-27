@@ -82,10 +82,7 @@ pub trait ToolExecutor: Send + Sync {
 impl ToolRegistry {
     /// Create a new tool registry
     pub fn new() -> Self {
-        Self {
-            tools: HashMap::new(),
-            executors: HashMap::new(),
-        }
+        Self { tools: HashMap::new(), executors: HashMap::new() }
     }
 
     /// Register a tool
@@ -151,15 +148,13 @@ impl ToolRegistry {
         let calc_def = ToolDefinition {
             name: "calculator".to_string(),
             description: "Perform arithmetic calculations".to_string(),
-            parameters: vec![
-                ParameterDefinition {
-                    name: "expression".to_string(),
-                    param_type: "string".to_string(),
-                    description: "Mathematical expression to evaluate".to_string(),
-                    required: true,
-                    default: None,
-                },
-            ],
+            parameters: vec![ParameterDefinition {
+                name: "expression".to_string(),
+                param_type: "string".to_string(),
+                description: "Mathematical expression to evaluate".to_string(),
+                required: true,
+                default: None,
+            }],
             returns: "number".to_string(),
             category: Some("math".to_string()),
         };

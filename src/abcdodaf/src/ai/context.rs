@@ -45,12 +45,7 @@ pub struct ContextManager {
 impl ContextWindow {
     /// Create a new context window
     pub fn new(max_tokens: usize, strategy: ContextStrategy) -> Self {
-        Self {
-            max_tokens,
-            messages: VecDeque::new(),
-            estimated_tokens: 0,
-            strategy,
-        }
+        Self { max_tokens, messages: VecDeque::new(), estimated_tokens: 0, strategy }
     }
 
     /// Add a message to the context
@@ -111,7 +106,7 @@ impl ContextWindow {
                         self.estimated_tokens = self.estimated_tokens.saturating_sub(tokens);
                     }
                 }
-            }
+            },
             ContextStrategy::Summarization => {
                 // Summarize older messages (simplified implementation)
                 if self.messages.len() > 2 {
@@ -121,7 +116,7 @@ impl ContextWindow {
 
                     // Create summary message
                     let summary = ChatMessage::system(
-                        "[Previous conversation summarized for context efficiency]"
+                        "[Previous conversation summarized for context efficiency]",
                     );
 
                     self.messages.clear();
@@ -136,7 +131,7 @@ impl ContextWindow {
                     // Recalculate tokens
                     self.recalculate_tokens();
                 }
-            }
+            },
             ContextStrategy::HeadTail { head_count, tail_count } => {
                 if self.messages.len() > head_count + tail_count {
                     let mut new_messages = VecDeque::new();
@@ -149,9 +144,7 @@ impl ContextWindow {
                     }
 
                     // Add marker
-                    new_messages.push_back(ChatMessage::system(
-                        "[Middle messages truncated]"
-                    ));
+                    new_messages.push_back(ChatMessage::system("[Middle messages truncated]"));
 
                     // Keep last N messages
                     let start = self.messages.len() - tail_count;
@@ -164,24 +157,15 @@ impl ContextWindow {
                     self.messages = new_messages;
                     self.recalculate_tokens();
                 }
-            }
+            },
             ContextStrategy::Priority => {
                 // Keep system messages and recent messages
-                let system_messages: Vec<_> = self
-                    .messages
-                    .iter()
-                    .filter(|m| m.role == "system")
-                    .cloned()
-                    .collect();
+                let system_messages: Vec<_> =
+                    self.messages.iter().filter(|m| m.role == "system").cloned().collect();
 
                 let recent_count = (self.max_tokens / 4) / 100; // Rough estimate
-                let recent_messages: Vec<_> = self
-                    .messages
-                    .iter()
-                    .rev()
-                    .take(recent_count)
-                    .cloned()
-                    .collect();
+                let recent_messages: Vec<_> =
+                    self.messages.iter().rev().take(recent_count).cloned().collect();
 
                 self.messages.clear();
                 for msg in system_messages {
@@ -192,7 +176,7 @@ impl ContextWindow {
                 }
 
                 self.recalculate_tokens();
-            }
+            },
         }
 
         Ok(())
@@ -200,11 +184,8 @@ impl ContextWindow {
 
     /// Recalculate token count
     fn recalculate_tokens(&mut self) {
-        self.estimated_tokens = self
-            .messages
-            .iter()
-            .map(|m| Self::estimate_tokens(&m.content))
-            .sum();
+        self.estimated_tokens =
+            self.messages.iter().map(|m| Self::estimate_tokens(&m.content)).sum();
     }
 
     /// Estimate tokens in text (rough approximation)
@@ -230,20 +211,14 @@ impl ContextWindow {
 impl ContextManager {
     /// Create a new context manager
     pub fn new(default_max_tokens: usize, default_strategy: ContextStrategy) -> Self {
-        Self {
-            contexts: std::collections::HashMap::new(),
-            default_max_tokens,
-            default_strategy,
-        }
+        Self { contexts: std::collections::HashMap::new(), default_max_tokens, default_strategy }
     }
 
     /// Get or create a context for a conversation
     pub fn get_or_create(&mut self, conversation_id: &str) -> &mut ContextWindow {
-        self.contexts
-            .entry(conversation_id.to_string())
-            .or_insert_with(|| {
-                ContextWindow::new(self.default_max_tokens, self.default_strategy.clone())
-            })
+        self.contexts.entry(conversation_id.to_string()).or_insert_with(|| {
+            ContextWindow::new(self.default_max_tokens, self.default_strategy.clone())
+        })
     }
 
     /// Get a context (read-only)

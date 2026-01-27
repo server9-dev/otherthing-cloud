@@ -1,9 +1,9 @@
 //! Decision executor for running decision tables and decision graphs
 
 use crate::dmn::decision_table::{DecisionTable, HitPolicy};
+use crate::dmn::errors::{DmnError, DmnResult};
 use crate::dmn::expression::ExpressionEvaluator;
 use crate::dmn::feel::FeelValue;
-use crate::dmn::errors::{DmnError, DmnResult};
 use std::collections::HashMap;
 
 /// Result of executing a decision rule
@@ -32,9 +32,7 @@ pub struct DecisionExecutor {
 impl DecisionExecutor {
     /// Create a new executor
     pub fn new() -> Self {
-        Self {
-            context: HashMap::new(),
-        }
+        Self { context: HashMap::new() }
     }
 
     /// Create with initial context
@@ -79,10 +77,7 @@ impl DecisionExecutor {
                 return Err(DmnError::NoMatchingRules);
             }
 
-            return Ok(DecisionTableResult {
-                results: Vec::new(),
-                final_output,
-            });
+            return Ok(DecisionTableResult { results: Vec::new(), final_output });
         }
 
         // Consolidate results based on hit policy
@@ -98,9 +93,10 @@ impl DecisionExecutor {
         table: &DecisionTable,
     ) -> DmnResult<Vec<DecisionRuleResult>> {
         if matching_rules.len() != 1 {
-            return Err(DmnError::AmbiguousRules(
-                format!("UNIQUE policy requires exactly one match, got {}", matching_rules.len())
-            ));
+            return Err(DmnError::AmbiguousRules(format!(
+                "UNIQUE policy requires exactly one match, got {}",
+                matching_rules.len()
+            )));
         }
 
         let rule_idx = matching_rules[0];
@@ -113,10 +109,7 @@ impl DecisionExecutor {
             outputs.insert(output.id.clone(), value);
         }
 
-        Ok(vec![DecisionRuleResult {
-            rule_index: rule_idx,
-            outputs,
-        }])
+        Ok(vec![DecisionRuleResult { rule_index: rule_idx, outputs }])
     }
 
     /// Apply FIRST hit policy - first matching rule wins
@@ -139,10 +132,7 @@ impl DecisionExecutor {
             outputs.insert(output.id.clone(), value);
         }
 
-        Ok(vec![DecisionRuleResult {
-            rule_index: rule_idx,
-            outputs,
-        }])
+        Ok(vec![DecisionRuleResult { rule_index: rule_idx, outputs }])
     }
 
     /// Apply PRIORITY hit policy - highest priority output wins
@@ -182,17 +172,14 @@ impl DecisionExecutor {
             if let Some(ref first) = first_output {
                 if &outputs != first {
                     return Err(DmnError::AmbiguousRules(
-                        "ANY policy requires all matching rules to produce same output".to_string()
+                        "ANY policy requires all matching rules to produce same output".to_string(),
                     ));
                 }
             } else {
                 first_output = Some(outputs.clone());
             }
 
-            all_results.push(DecisionRuleResult {
-                rule_index: *rule_idx,
-                outputs,
-            });
+            all_results.push(DecisionRuleResult { rule_index: *rule_idx, outputs });
         }
 
         Ok(all_results)
@@ -216,10 +203,7 @@ impl DecisionExecutor {
                 outputs.insert(output.id.clone(), value);
             }
 
-            all_results.push(DecisionRuleResult {
-                rule_index: *rule_idx,
-                outputs,
-            });
+            all_results.push(DecisionRuleResult { rule_index: *rule_idx, outputs });
         }
 
         Ok(all_results)
@@ -278,10 +262,7 @@ impl DecisionExecutor {
             }
 
             if !values.is_empty() {
-                consolidated.insert(
-                    output.id.clone(),
-                    FeelValue::List(values),
-                );
+                consolidated.insert(output.id.clone(), FeelValue::List(values));
             }
         }
 

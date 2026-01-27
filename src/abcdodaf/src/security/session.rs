@@ -216,10 +216,7 @@ impl SessionManager {
 
         // Map subject to session
         let mut subject_sessions = self.subject_sessions.write().await;
-        subject_sessions
-            .entry(subject_id)
-            .or_insert_with(Vec::new)
-            .push(session_id);
+        subject_sessions.entry(subject_id).or_insert_with(Vec::new).push(session_id);
 
         Ok(session)
     }
@@ -259,10 +256,7 @@ impl SessionManager {
                 Err(SecurityError::InvalidSession("Session is not valid".to_string()))
             }
         } else {
-            Err(SecurityError::InvalidSession(format!(
-                "Session {} not found",
-                session_id
-            )))
+            Err(SecurityError::InvalidSession(format!("Session {} not found", session_id)))
         }
     }
 
@@ -284,10 +278,7 @@ impl SessionManager {
 
             Ok(())
         } else {
-            Err(SecurityError::InvalidSession(format!(
-                "Session {} not found",
-                session_id
-            )))
+            Err(SecurityError::InvalidSession(format!("Session {} not found", session_id)))
         }
     }
 
@@ -299,10 +290,7 @@ impl SessionManager {
             session.suspend();
             Ok(())
         } else {
-            Err(SecurityError::InvalidSession(format!(
-                "Session {} not found",
-                session_id
-            )))
+            Err(SecurityError::InvalidSession(format!("Session {} not found", session_id)))
         }
     }
 
@@ -315,25 +303,17 @@ impl SessionManager {
                 session.state = SessionState::Active;
                 Ok(())
             } else {
-                Err(SecurityError::Other(
-                    "Can only resume suspended sessions".to_string(),
-                ))
+                Err(SecurityError::Other("Can only resume suspended sessions".to_string()))
             }
         } else {
-            Err(SecurityError::InvalidSession(format!(
-                "Session {} not found",
-                session_id
-            )))
+            Err(SecurityError::InvalidSession(format!("Session {} not found", session_id)))
         }
     }
 
     /// Get all active sessions for a subject
     pub async fn get_subject_sessions(&self, subject_id: &str) -> SecurityResult<Vec<Session>> {
         let subject_sessions = self.subject_sessions.read().await;
-        let session_ids = subject_sessions
-            .get(subject_id)
-            .cloned()
-            .unwrap_or_default();
+        let session_ids = subject_sessions.get(subject_id).cloned().unwrap_or_default();
 
         let sessions = self.sessions.read().await;
         let mut result = Vec::new();
@@ -352,10 +332,7 @@ impl SessionManager {
     /// Terminate all sessions for a subject
     pub async fn terminate_subject_sessions(&self, subject_id: &str) -> SecurityResult<usize> {
         let subject_sessions = self.subject_sessions.read().await;
-        let session_ids = subject_sessions
-            .get(subject_id)
-            .cloned()
-            .unwrap_or_default();
+        let session_ids = subject_sessions.get(subject_id).cloned().unwrap_or_default();
         drop(subject_sessions);
 
         let mut sessions = self.sessions.write().await;

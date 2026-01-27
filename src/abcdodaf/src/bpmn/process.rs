@@ -198,11 +198,7 @@ impl ProcessBuilder {
         name: impl Into<String>,
         gateway_type: GatewayType,
     ) -> Self {
-        let gateway = Gateway {
-            id: id.into(),
-            name: name.into(),
-            gateway_type,
-        };
+        let gateway = Gateway { id: id.into(), name: name.into(), gateway_type };
         self.process.gateways.push(gateway);
         self
     }
@@ -217,9 +213,7 @@ impl ProcessBuilder {
     pub fn build(self) -> Result<Process> {
         // Validate the process
         if self.process.tasks.is_empty() {
-            return Err(AbcdodafError::BpmnError(
-                "Process must have at least one task".into(),
-            ));
+            return Err(AbcdodafError::BpmnError("Process must have at least one task".into()));
         }
 
         Ok(self.process)

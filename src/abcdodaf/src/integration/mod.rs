@@ -3,22 +3,21 @@
 //! Provides integration capabilities with RhizOS MCP protocol, REST APIs, databases,
 //! message queues, webhooks, and file systems
 
+pub mod bpmn_dodaf_mapping;
 pub mod connector;
 pub mod connectors;
 pub mod mcp;
-pub mod bpmn_dodaf_mapping;
 
+pub use bpmn_dodaf_mapping::*;
 pub use connector::{
-    Connector, ConnectorRequest, ConnectorResponse, ConnectorConfig, ConnectorRegistry,
-    ConnectionStatus, HealthStatus, AuthConfig,
+    AuthConfig, ConnectionStatus, Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest,
+    ConnectorResponse, HealthStatus,
 };
 pub use connectors::{
-    RestApiConnector, PostgresConnector, MySqlConnector, SqliteConnector,
-    OutgoingWebhookConnector, IncomingWebhookConnector, WebhookEvent,
-    FileSystemConnector,
+    FileSystemConnector, IncomingWebhookConnector, MySqlConnector, OutgoingWebhookConnector,
+    PostgresConnector, RestApiConnector, SqliteConnector, WebhookEvent,
 };
 pub use mcp::McpIntegration;
-pub use bpmn_dodaf_mapping::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -47,11 +46,7 @@ pub struct CustomIntegration {
 impl IntegrationConfig {
     /// Create default integration config
     pub fn new() -> Self {
-        Self {
-            mcp_enabled: false,
-            mcp_endpoint: None,
-            custom_integrations: Vec::new(),
-        }
+        Self { mcp_enabled: false, mcp_endpoint: None, custom_integrations: Vec::new() }
     }
 
     /// Enable MCP integration

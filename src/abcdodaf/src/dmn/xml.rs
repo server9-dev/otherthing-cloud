@@ -6,9 +6,9 @@
 //! Note: Full XML support requires a dedicated XML library (xml-rs, quick-xml, etc.)
 //! For now, we provide the infrastructure and basic serialization.
 
-use crate::dmn::errors::{DmnError, DmnResult};
-use crate::dmn::decision_table::DecisionTable;
 use crate::dmn::decision_graph::DecisionGraph;
+use crate::dmn::decision_table::DecisionTable;
+use crate::dmn::errors::{DmnError, DmnResult};
 use serde_json::json;
 
 /// DMN XML serializer/deserializer
@@ -49,20 +49,27 @@ impl DmnXmlManager {
 
     /// Export a decision graph to JSON representation
     pub fn export_graph_json(graph: &DecisionGraph) -> DmnResult<String> {
-        let nodes: Vec<_> = graph.nodes().map(|node| {
-            json!({
-                "id": node.id(),
-                "name": node.name(),
-                "type": node.node_type()
+        let nodes: Vec<_> = graph
+            .nodes()
+            .map(|node| {
+                json!({
+                    "id": node.id(),
+                    "name": node.name(),
+                    "type": node.node_type()
+                })
             })
-        }).collect();
+            .collect();
 
-        let requirements: Vec<_> = graph.requirements().iter().map(|req| {
-            json!({
-                "source": req.source_id,
-                "target": req.target_id
+        let requirements: Vec<_> = graph
+            .requirements()
+            .iter()
+            .map(|req| {
+                json!({
+                    "source": req.source_id,
+                    "target": req.target_id
+                })
             })
-        }).collect();
+            .collect();
 
         let json_obj = json!({
             "id": graph.id,
@@ -93,7 +100,10 @@ impl DmnXmlManager {
 
         // Output columns
         for output in &table.outputs {
-            xml.push_str(&format!("      <output id=\"{}\" label=\"{}\" />\n", output.id, output.label));
+            xml.push_str(&format!(
+                "      <output id=\"{}\" label=\"{}\" />\n",
+                output.id, output.label
+            ));
         }
 
         // Rules
@@ -135,13 +145,13 @@ impl DmnXmlManager {
     pub fn validate_xml(xml: &str) -> DmnResult<()> {
         if !xml.contains("<?xml") {
             return Err(DmnError::XmlParsingError(
-                "Invalid XML: missing XML declaration".to_string()
+                "Invalid XML: missing XML declaration".to_string(),
             ));
         }
 
         if !xml.contains("<definitions") {
             return Err(DmnError::XmlParsingError(
-                "Invalid DMN: missing definitions element".to_string()
+                "Invalid DMN: missing definitions element".to_string(),
             ));
         }
 

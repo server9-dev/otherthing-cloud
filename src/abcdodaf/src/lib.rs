@@ -69,20 +69,20 @@
 //! }
 //! ```
 
-pub mod bpmn;
-pub mod dodaf;
-pub mod workforce;
-pub mod bpm_plus;
-pub mod integration;
-pub mod dmn;
-pub mod dev_logger;
-pub mod analytics;
-pub mod documentation;
-pub mod testing;
-pub mod security;
 pub mod ai;
-pub mod validation;
+pub mod analytics;
+pub mod bpm_plus;
+pub mod bpmn;
+pub mod dev_logger;
+pub mod dmn;
+pub mod documentation;
+pub mod dodaf;
 pub mod executor;
+pub mod integration;
+pub mod security;
+pub mod testing;
+pub mod validation;
+pub mod workforce;
 
 #[cfg(feature = "ui")]
 pub mod ui;
@@ -90,58 +90,44 @@ pub mod ui;
 pub mod prelude {
     //! Convenience re-exports for common types and traits
 
-    pub use crate::bpmn::{Process, ProcessBuilder, ProcessExecutor};
-    pub use crate::bpmn::executor::TaskHandler;
-    pub use crate::dodaf::{
-        OperationalActivity, OperationalContext, CapabilityView, ServiceView,
-    };
-    pub use crate::workforce::{
-        AgentTask, HumanTask, SystemTask, WorkflowBuilder,
-        AgentCapability, HumanRole, SystemOperation, AgentType,
+    pub use crate::analytics::{
+        Alert, AlertLevel, AlertingSystem, AnalyticsDashboard, AnalyticsEngine, ChartData,
+        CostMetrics, CustomMetricDefinition, ExportFormat, ExportManager, MetricsCollector,
+        PerformanceMetrics, ProcessMetrics, SlaPolicy, SlaViolation, VisualizationData,
     };
     pub use crate::bpm_plus::BpmPlusModel;
-    pub use crate::integration::McpIntegration;
+    pub use crate::bpmn::executor::TaskHandler;
+    pub use crate::bpmn::{Process, ProcessBuilder, ProcessExecutor};
     pub use crate::dmn::{
-        Decision, DecisionTable, DecisionGraph, DecisionExecutor,
-        FeelValue, FeelExpression, FeelEvaluator, Expression,
-        HitPolicy, DmnError, DmnResult,
+        Decision, DecisionExecutor, DecisionGraph, DecisionTable, DmnError, DmnResult, Expression,
+        FeelEvaluator, FeelExpression, FeelValue, HitPolicy,
     };
-    pub use crate::analytics::{
-        AnalyticsDashboard, MetricsCollector, AnalyticsEngine,
-        AlertingSystem, ExportFormat, ExportManager,
-        Alert, AlertLevel, SlaPolicy, SlaViolation,
-        ProcessMetrics, PerformanceMetrics, CostMetrics,
-        VisualizationData, ChartData, CustomMetricDefinition,
-    };
-    pub use crate::security::{
-        SecurityContext, RoleManager, Role, Subject, SubjectType,
-        PermissionModel, Permission, ResourceType,
-        AuditLogger, AuditEvent, AuditLevel,
-        ComplianceValidator, ComplianceRule, ComplianceReport,
-        SecretManager, SecretValue,
-        SessionManager, Session,
-        SecurityPolicyEngine,
-        AuditExporter,
-    };
+    pub use crate::dodaf::{CapabilityView, OperationalActivity, OperationalContext, ServiceView};
+    pub use crate::integration::McpIntegration;
     pub use crate::security::audit::EventCategory;
-    pub use crate::security::session::SessionState;
-    pub use crate::security::security_policy::{SecurityPolicy, PolicyType};
     pub use crate::security::audit_export::ExportFormat as AuditExportFormat;
+    pub use crate::security::security_policy::{PolicyType, SecurityPolicy};
+    pub use crate::security::session::SessionState;
+    pub use crate::security::{
+        AuditEvent, AuditExporter, AuditLevel, AuditLogger, ComplianceReport, ComplianceRule,
+        ComplianceValidator, Permission, PermissionModel, ResourceType, Role, RoleManager,
+        SecretManager, SecretValue, SecurityContext, SecurityPolicyEngine, Session, SessionManager,
+        Subject, SubjectType,
+    };
+    pub use crate::workforce::{
+        AgentCapability, AgentTask, AgentType, HumanRole, HumanTask, SystemOperation, SystemTask,
+        WorkflowBuilder,
+    };
 
     // AI/LLM exports
     pub use crate::ai::{
-        OllamaClient, OllamaConfig, ModelInfo,
-        PromptTemplate, PromptManager, PromptVariable,
-        ContextWindow, ContextManager, ContextStrategy,
-        AgentMemory, MemoryStore, ConversationHistory,
-        StreamingResponse, StreamHandler,
-        ModelSelector, ModelStrategy, FallbackStrategy,
-        MultiAgentCoordinator, AgentCollaboration, CollaborationPattern,
-        ToolRegistry, ToolDefinition, ToolCall, ToolExecutor,
-        AgentMetrics, PerformanceTracker, CostTracker,
-        ResponseCache, CacheStrategy, CacheKey,
-        EnhancedAgentType, EnhancedCapability,
-        AgentConfig, AgentRequest, AgentResponse,
+        AgentCollaboration, AgentConfig, AgentMemory, AgentMetrics, AgentRequest, AgentResponse,
+        CacheKey, CacheStrategy, CollaborationPattern, ContextManager, ContextStrategy,
+        ContextWindow, ConversationHistory, CostTracker, EnhancedAgentType, EnhancedCapability,
+        FallbackStrategy, MemoryStore, ModelInfo, ModelSelector, ModelStrategy,
+        MultiAgentCoordinator, OllamaClient, OllamaConfig, PerformanceTracker, PromptManager,
+        PromptTemplate, PromptVariable, ResponseCache, StreamHandler, StreamingResponse, ToolCall,
+        ToolDefinition, ToolExecutor, ToolRegistry,
     };
 }
 

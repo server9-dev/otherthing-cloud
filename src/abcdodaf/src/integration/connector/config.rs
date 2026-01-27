@@ -1,6 +1,6 @@
 //! Connector configuration
 
-use super::auth::{ApiKeyConfig, OAuthConfig, JwtConfig, BasicAuthConfig};
+use super::auth::{ApiKeyConfig, BasicAuthConfig, JwtConfig, OAuthConfig};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -285,10 +285,7 @@ mod tests {
         assert_eq!(config.name, "test");
         assert_eq!(config.connector_type, "rest_api");
         assert_eq!(config.timeout_secs, Some(60));
-        assert_eq!(
-            config.params.get("url"),
-            Some(&json!("https://example.com"))
-        );
+        assert_eq!(config.params.get("url"), Some(&json!("https://example.com")));
     }
 
     #[test]

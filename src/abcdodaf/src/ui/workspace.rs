@@ -1,7 +1,7 @@
 use crate::bpmn::elements::BpmnDiagram;
-use crate::ui::enhanced_nodes::EnhancedBpmnNode;
-use crate::ui::diagram_converter::BpmnDiagramConverter;
 use crate::ui::bpmn_json_loader;
+use crate::ui::diagram_converter::BpmnDiagramConverter;
+use crate::ui::enhanced_nodes::EnhancedBpmnNode;
 use egui_snarl::Snarl;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,8 +16,8 @@ pub type WorkflowId = usize;
 pub struct WorkflowDocument {
     pub id: WorkflowId,
     pub file_path: Option<PathBuf>,
-    pub diagram: BpmnDiagram,  // Canonical BPMN storage format
-    pub snarl: Snarl<EnhancedBpmnNode>,  // Visual editor state
+    pub diagram: BpmnDiagram,           // Canonical BPMN storage format
+    pub snarl: Snarl<EnhancedBpmnNode>, // Visual editor state
     pub is_modified: bool,
     pub validation_errors: Vec<crate::ui::validation::ValidationError>,
     pub name: String,
@@ -63,8 +63,8 @@ impl WorkflowDocument {
         if let Some(path) = &self.file_path {
             path.file_name()
                 .and_then(|n| n.to_str())
-                .unwrap_or("Untitled")
-                .to_string()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "Untitled".to_string())
         } else {
             self.name.clone()
         }
@@ -115,11 +115,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new() -> Self {
-        Self {
-            workflows: HashMap::new(),
-            active_workflow: None,
-            next_id: 1,
-        }
+        Self { workflows: HashMap::new(), active_workflow: None, next_id: 1 }
     }
 
     /// Create a new empty workflow
@@ -155,11 +151,10 @@ impl Workspace {
 
         // Load from file
         debug!("Reading file from disk...");
-        let content = fs::read_to_string(&path)
-            .map_err(|e| {
-                error!("Failed to read file {:?}: {}", path, e);
-                format!("Failed to read file: {}", e)
-            })?;
+        let content = fs::read_to_string(&path).map_err(|e| {
+            error!("Failed to read file {:?}: {}", path, e);
+            format!("Failed to read file: {}", e)
+        })?;
 
         debug!("File read successfully, {} bytes", content.len());
 
@@ -169,18 +164,15 @@ impl Workspace {
 
         // Load based on format
         let (diagram, snarl, name) = match format {
-            FileFormat::BpmnDiagram => {
-                self.load_bpmn_diagram_format(&content)?
-            }
-            FileFormat::BpmnJson => {
-                self.load_bpmn_json_format(&content, &path)?
-            }
-            FileFormat::SnarlFormat => {
-                self.load_snarl_format(&content)?
-            }
+            FileFormat::BpmnDiagram => self.load_bpmn_diagram_format(&content)?,
+            FileFormat::BpmnJson => self.load_bpmn_json_format(&content, &path)?,
+            FileFormat::SnarlFormat => self.load_snarl_format(&content)?,
             FileFormat::Xml => {
-                return Err("XML BPMN format not yet supported. Please convert to JSON format first.".to_string());
-            }
+                return Err(
+                    "XML BPMN format not yet supported. Please convert to JSON format first."
+                        .to_string(),
+                );
+            },
         };
 
         // Create new workflow document
@@ -210,12 +202,11 @@ impl Workspace {
         }
 
         // Try to parse as JSON
-        let json_value: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| format!("Not a valid JSON file: {}", e))?;
+        let json_value: serde_json::Value =
+            serde_json::from_str(content).map_err(|e| format!("Not a valid JSON file: {}", e))?;
 
         // Check for BPMN JSON format (has workflow_steps)
-        if json_value.get("workflow_steps").is_some()
-            || json_value.get("bpmn_process").is_some() {
+        if json_value.get("workflow_steps").is_some() || json_value.get("bpmn_process").is_some() {
             debug!("Detected BPMN JSON format (workflow_steps field present)");
             return Ok(FileFormat::BpmnJson);
         }
@@ -232,67 +223,71 @@ impl Workspace {
             return Ok(FileFormat::SnarlFormat);
         }
 
-        Err("Unknown file format. Expected 'diagram', 'workflow_steps', or 'snarl' field.".to_string())
+        Err("Unknown file format. Expected 'diagram', 'workflow_steps', or 'snarl' field."
+            .to_string())
     }
 
     /// Load BpmnDiagram format (version 2.0+)
-    fn load_bpmn_diagram_format(&self, content: &str) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
+    fn load_bpmn_diagram_format(
+        &self,
+        content: &str,
+    ) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
         debug!("Parsing BpmnDiagram format...");
-        let workflow_file: WorkflowFile = serde_json::from_str(content)
-            .map_err(|e| {
-                error!("Failed to parse BpmnDiagram JSON: {}", e);
-                format!("Failed to parse BpmnDiagram JSON: {}", e)
-            })?;
+        let workflow_file: WorkflowFile = serde_json::from_str(content).map_err(|e| {
+            error!("Failed to parse BpmnDiagram JSON: {}", e);
+            format!("Failed to parse BpmnDiagram JSON: {}", e)
+        })?;
 
-        let diagram_name = workflow_file.diagram.name.clone()
-            .unwrap_or_else(|| "Untitled".to_string());
+        let diagram_name =
+            workflow_file.diagram.name.clone().unwrap_or_else(|| "Untitled".to_string());
         debug!("BpmnDiagram parsed successfully, workflow name: {}", diagram_name);
 
         // Convert BpmnDiagram to Snarl for editing
         debug!("Converting BpmnDiagram to Snarl...");
-        let snarl = BpmnDiagramConverter::to_snarl(&workflow_file.diagram)
-            .map_err(|e| {
-                error!("Failed to convert diagram to snarl: {}", e);
-                format!("Failed to convert diagram: {}", e)
-            })?;
+        let snarl = BpmnDiagramConverter::to_snarl(&workflow_file.diagram).map_err(|e| {
+            error!("Failed to convert diagram to snarl: {}", e);
+            format!("Failed to convert diagram: {}", e)
+        })?;
 
         Ok((workflow_file.diagram, snarl, diagram_name))
     }
 
     /// Load BPMN JSON format (with workflow_steps)
-    fn load_bpmn_json_format(&self, content: &str, path: &PathBuf) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
+    fn load_bpmn_json_format(
+        &self,
+        content: &str,
+        path: &PathBuf,
+    ) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
         debug!("Parsing BPMN JSON format (workflow_steps)...");
 
         // Use BpmnJsonConverter to load and convert to Snarl
         let converter = bpmn_json_loader::BpmnJsonConverter::new();
-        let workflow_file = converter.load_from_string(content)
-            .map_err(|e| {
-                error!("Failed to convert BPMN JSON: {}", e);
-                format!("Failed to convert BPMN JSON: {}", e)
-            })?;
+        let workflow_file = converter.load_from_string(content).map_err(|e| {
+            error!("Failed to convert BPMN JSON: {}", e);
+            format!("Failed to convert BPMN JSON: {}", e)
+        })?;
 
         info!("BPMN JSON loaded successfully: {}", workflow_file.name);
 
         // Convert the Snarl back to BpmnDiagram for canonical storage
         debug!("Converting Snarl to BpmnDiagram for canonical storage...");
-        let diagram_id = path.file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("workflow");
+        let diagram_id = path.file_stem().and_then(|s| s.to_str()).unwrap_or("workflow");
 
-        let diagram = BpmnDiagramConverter::from_snarl(
-            &workflow_file.snarl,
-            diagram_id,
-            &workflow_file.name
-        ).map_err(|e| {
-            error!("Failed to convert Snarl to BpmnDiagram: {}", e);
-            format!("Failed to convert to BpmnDiagram: {}", e)
-        })?;
+        let diagram =
+            BpmnDiagramConverter::from_snarl(&workflow_file.snarl, diagram_id, &workflow_file.name)
+                .map_err(|e| {
+                    error!("Failed to convert Snarl to BpmnDiagram: {}", e);
+                    format!("Failed to convert to BpmnDiagram: {}", e)
+                })?;
 
         Ok((diagram, workflow_file.snarl, workflow_file.name))
     }
 
     /// Load Snarl format (legacy)
-    fn load_snarl_format(&self, content: &str) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
+    fn load_snarl_format(
+        &self,
+        content: &str,
+    ) -> Result<(BpmnDiagram, Snarl<EnhancedBpmnNode>, String), String> {
         debug!("Parsing Snarl format (legacy)...");
         warn!("Loading legacy Snarl format. Consider converting to BpmnDiagram format.");
 
@@ -305,11 +300,10 @@ impl Workspace {
             snarl: Snarl<EnhancedBpmnNode>,
         }
 
-        let legacy_file: LegacyWorkflowFile = serde_json::from_str(content)
-            .map_err(|e| {
-                error!("Failed to parse legacy Snarl format: {}", e);
-                format!("Failed to parse Snarl format: {}", e)
-            })?;
+        let legacy_file: LegacyWorkflowFile = serde_json::from_str(content).map_err(|e| {
+            error!("Failed to parse legacy Snarl format: {}", e);
+            format!("Failed to parse Snarl format: {}", e)
+        })?;
 
         debug!("Snarl format parsed successfully, workflow name: {}", legacy_file.name);
 
@@ -318,8 +312,9 @@ impl Workspace {
         let diagram = BpmnDiagramConverter::from_snarl(
             &legacy_file.snarl,
             &format!("legacy_{}", self.next_id),
-            &legacy_file.name
-        ).map_err(|e| {
+            &legacy_file.name,
+        )
+        .map_err(|e| {
             error!("Failed to convert Snarl to BpmnDiagram: {}", e);
             format!("Failed to convert to BpmnDiagram: {}", e)
         })?;
@@ -329,10 +324,11 @@ impl Workspace {
 
     /// Save a workflow to disk
     pub fn save_workflow(&mut self, id: WorkflowId) -> Result<(), String> {
-        let doc = self.workflows.get_mut(&id)
-            .ok_or_else(|| "Workflow not found".to_string())?;
+        let doc = self.workflows.get_mut(&id).ok_or_else(|| "Workflow not found".to_string())?;
 
-        let path = doc.file_path.clone()
+        let path = doc
+            .file_path
+            .clone()
             .ok_or_else(|| "No file path set. Use save_workflow_as instead.".to_string())?;
 
         self.save_workflow_to_path(id, path)
@@ -344,38 +340,34 @@ impl Workspace {
     }
 
     fn save_workflow_to_path(&mut self, id: WorkflowId, path: PathBuf) -> Result<(), String> {
-        let doc = self.workflows.get_mut(&id)
-            .ok_or_else(|| {
-                error!("Attempted to save non-existent workflow with id: {}", id);
-                "Workflow not found".to_string()
-            })?;
+        let doc = self.workflows.get_mut(&id).ok_or_else(|| {
+            error!("Attempted to save non-existent workflow with id: {}", id);
+            "Workflow not found".to_string()
+        })?;
 
         debug!("Saving workflow {} to {:?}", doc.name, path);
 
         // Sync diagram from snarl before saving
         debug!("Syncing diagram from snarl changes...");
-        doc.sync_from_snarl()
-            .map_err(|e| {
-                error!("Failed to sync diagram from snarl: {}", e);
-                format!("Failed to sync diagram: {}", e)
-            })?;
+        doc.sync_from_snarl().map_err(|e| {
+            error!("Failed to sync diagram from snarl: {}", e);
+            format!("Failed to sync diagram: {}", e)
+        })?;
 
         let workflow_file = WorkflowFile {
-            version: "2.0".to_string(),  // Updated version for new format
+            version: "2.0".to_string(), // Updated version for new format
             diagram: doc.diagram.clone(),
         };
 
-        let json = serde_json::to_string_pretty(&workflow_file)
-            .map_err(|e| {
-                error!("Failed to serialize workflow {}: {}", doc.name, e);
-                format!("Failed to serialize: {}", e)
-            })?;
+        let json = serde_json::to_string_pretty(&workflow_file).map_err(|e| {
+            error!("Failed to serialize workflow {}: {}", doc.name, e);
+            format!("Failed to serialize: {}", e)
+        })?;
 
-        fs::write(&path, json)
-            .map_err(|e| {
-                error!("Failed to write workflow {} to {:?}: {}", doc.name, path, e);
-                format!("Failed to write file: {}", e)
-            })?;
+        fs::write(&path, json).map_err(|e| {
+            error!("Failed to write workflow {} to {:?}: {}", doc.name, path, e);
+            format!("Failed to write file: {}", e)
+        })?;
 
         doc.file_path = Some(path.clone());
         doc.is_modified = false;

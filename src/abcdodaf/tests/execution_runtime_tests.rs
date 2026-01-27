@@ -1,8 +1,6 @@
 //! Integration tests for enhanced execution runtime
 
-use abcdodaf::bpmn::{
-    EnhancedRuntime, ExecutionEvent, ExecutionMode, ProcessBuilder, TaskHandler,
-};
+use abcdodaf::bpmn::{EnhancedRuntime, ExecutionEvent, ExecutionMode, ProcessBuilder, TaskHandler};
 use abcdodaf::error::Result;
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -100,9 +98,7 @@ async fn test_execution_events() {
 
     // Check events
     assert!(!events.is_empty());
-    assert!(events
-        .iter()
-        .any(|e| matches!(e, ExecutionEvent::ProcessStarted { .. })));
+    assert!(events.iter().any(|e| matches!(e, ExecutionEvent::ProcessStarted { .. })));
 }
 
 #[tokio::test]
@@ -114,10 +110,7 @@ async fn test_pause_resume() {
 
     let runtime = EnhancedRuntime::new().register_handler("user", Arc::new(TestHandler));
 
-    let instance_id = runtime
-        .start_process(&process, ExecutionMode::Continuous)
-        .await
-        .unwrap();
+    let instance_id = runtime.start_process(&process, ExecutionMode::Continuous).await.unwrap();
 
     // Pause
     runtime.pause(instance_id).await.unwrap();
@@ -223,8 +216,6 @@ async fn test_bottleneck_analysis() {
 
     // Check ordering (descending by avg duration)
     for i in 1..bottlenecks.len() {
-        assert!(
-            bottlenecks[i - 1].1.avg_duration_ms >= bottlenecks[i].1.avg_duration_ms
-        );
+        assert!(bottlenecks[i - 1].1.avg_duration_ms >= bottlenecks[i].1.avg_duration_ms);
     }
 }

@@ -88,9 +88,7 @@ impl ConnectorError {
 
     /// Create a timeout error
     pub fn timeout(secs: u64) -> Self {
-        Self::Timeout {
-            timeout_secs: secs,
-        }
+        Self::Timeout { timeout_secs: secs }
     }
 
     /// Create an auth error

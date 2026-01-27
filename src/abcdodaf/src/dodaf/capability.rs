@@ -18,10 +18,7 @@ pub struct CapabilityView {
 impl CapabilityView {
     /// Create a new capability view
     pub fn new() -> Self {
-        Self {
-            capabilities: Vec::new(),
-            mappings: Vec::new(),
-        }
+        Self { capabilities: Vec::new(), mappings: Vec::new() }
     }
 
     /// Add a capability
@@ -167,8 +164,11 @@ mod tests {
 
     #[test]
     fn test_capability_view() {
-        let view = CapabilityView::new()
-            .add_capability(Capability::new("c1", "Cap1", CapabilityType::Cognitive));
+        let view = CapabilityView::new().add_capability(Capability::new(
+            "c1",
+            "Cap1",
+            CapabilityType::Cognitive,
+        ));
 
         assert_eq!(view.capabilities.len(), 1);
         assert!(view.get_capability("c1").is_some());

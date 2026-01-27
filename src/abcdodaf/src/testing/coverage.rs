@@ -111,11 +111,8 @@ impl CoverageTracker {
 
         let total_paths = paths.len();
         let covered_paths = paths.values().filter(|p| p.execution_count > 0).count();
-        let coverage_percent = if total_paths > 0 {
-            (covered_paths as f64) / (total_paths as f64)
-        } else {
-            0.0
-        };
+        let coverage_percent =
+            if total_paths > 0 { (covered_paths as f64) / (total_paths as f64) } else { 0.0 };
 
         let mut path_list: Vec<_> = paths.values().cloned().collect();
         path_list.sort_by(|a, b| b.execution_count.cmp(&a.execution_count));
@@ -206,10 +203,7 @@ impl CoverageAnalyzer {
 
         if report.coverage_percent < 0.95 {
             let uncovered = report.total_paths - report.covered_paths;
-            recs.push(format!(
-                "Consider adding tests for {} uncovered paths",
-                uncovered
-            ));
+            recs.push(format!("Consider adding tests for {} uncovered paths", uncovered));
         }
 
         recs
@@ -296,9 +290,7 @@ pub struct BranchInfo {
 impl BranchCoverage {
     /// Create new branch coverage tracker
     pub fn new() -> Self {
-        Self {
-            branches: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { branches: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Register a branch
@@ -338,12 +330,7 @@ impl BranchCoverage {
 
     /// Get all branch info
     pub async fn get_branches(&self) -> Vec<BranchInfo> {
-        self.branches
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect()
+        self.branches.read().await.values().cloned().collect()
     }
 }
 

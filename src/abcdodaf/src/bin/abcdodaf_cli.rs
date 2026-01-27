@@ -32,8 +32,7 @@
 //! ```
 
 use abcdodaf::bpmn::{
-    validate_bpmn_json, BpmnJsonWorkflow, ValidationError,
-    ErrorSeverity, ValidationSummary,
+    validate_bpmn_json, BpmnJsonWorkflow, ErrorSeverity, ValidationError, ValidationSummary,
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::*;
@@ -247,19 +246,19 @@ fn main() {
     let exit_code = match cli.command {
         Commands::Validate { file, errors_only, warn_as_success } => {
             handle_validate(&file, errors_only, warn_as_success, cli.json)
-        }
+        },
         Commands::Convert { input, output, format, force } => {
             handle_convert(&input, &output, format, force, cli.json)
-        }
+        },
         Commands::Info { file, detailed, stats_only } => {
             handle_info(&file, detailed, stats_only, cli.json)
-        }
+        },
         Commands::Fix { file, in_place, output, categories } => {
             handle_fix(&file, in_place, output, categories, cli.json)
-        }
+        },
         Commands::List { directory, recursive, errors_only, validate } => {
             handle_list(&directory, recursive, errors_only, validate, cli.json)
-        }
+        },
     };
 
     process::exit(exit_code);
@@ -279,10 +278,15 @@ fn handle_validate(
             if json_output {
                 eprintln!("{{\"error\": \"Failed to read file: {}\"}}", e);
             } else {
-                eprintln!("{} Failed to read file '{}': {}", "Error:".red().bold(), file.display(), e);
+                eprintln!(
+                    "{} Failed to read file '{}': {}",
+                    "Error:".red().bold(),
+                    file.display(),
+                    e
+                );
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Validate the workflow
@@ -295,18 +299,20 @@ fn handle_validate(
                     success: true,
                     file: file.display().to_string(),
                     errors: Vec::new(),
-                    summary: ValidationSummaryOutput {
-                        errors: 0,
-                        warnings: 0,
-                        info: 0,
-                    },
+                    summary: ValidationSummaryOutput { errors: 0, warnings: 0, info: 0 },
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                match serde_json::to_string_pretty(&output) {
+                    Ok(json) => println!("{}", json),
+                    Err(e) => {
+                        eprintln!("{{\"error\": \"Failed to serialize output: {}\"}}", e);
+                        return EXIT_FILE_ERROR;
+                    }
+                }
             } else {
                 println!("{} Workflow '{}' is valid!", "Success:".green().bold(), file.display());
             }
             EXIT_SUCCESS
-        }
+        },
         Err(errors) => {
             let summary = ValidationSummary::from_errors(&errors);
 
@@ -321,7 +327,13 @@ fn handle_validate(
                         info: summary.info,
                     },
                 };
-                println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                match serde_json::to_string_pretty(&output) {
+                    Ok(json) => println!("{}", json),
+                    Err(e) => {
+                        eprintln!("{{\"error\": \"Failed to serialize output: {}\"}}", e);
+                        return EXIT_FILE_ERROR;
+                    }
+                }
             } else {
                 print_validation_errors(&errors, errors_only);
                 println!("\n{}", summary.format());
@@ -335,7 +347,7 @@ fn handle_validate(
             } else {
                 EXIT_VALIDATION_ERROR
             }
-        }
+        },
     }
 }
 
@@ -381,8 +393,11 @@ fn handle_convert(
         if json_output {
             eprintln!("{{\"error\": \"Output file exists. Use --force to overwrite.\"}}");
         } else {
-            eprintln!("{} Output file '{}' already exists. Use --force to overwrite.",
-                "Error:".red().bold(), output.display());
+            eprintln!(
+                "{} Output file '{}' already exists. Use --force to overwrite.",
+                "Error:".red().bold(),
+                output.display()
+            );
         }
         return EXIT_FILE_ERROR;
     }
@@ -397,7 +412,7 @@ fn handle_convert(
                 eprintln!("{} Failed to read input file: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Parse the workflow
@@ -410,7 +425,7 @@ fn handle_convert(
                 eprintln!("{} Failed to parse workflow: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Convert based on format
@@ -426,43 +441,50 @@ fn handle_convert(
                         eprintln!("{} Failed to serialize workflow: {}", "Error:".red().bold(), e);
                     }
                     return EXIT_FILE_ERROR;
-                }
+                },
             }
-        }
+        },
         ConversionFormat::Snarl | ConversionFormat::Diagram => {
             if json_output {
-                eprintln!("{{\"error\": \"Format conversion to {:?} is not yet implemented\"}}",
-                    format);
+                eprintln!(
+                    "{{\"error\": \"Format conversion to {:?} is not yet implemented\"}}",
+                    format
+                );
             } else {
-                eprintln!("{} Format conversion to {:?} is not yet implemented",
-                    "Error:".red().bold(), format);
+                eprintln!(
+                    "{} Format conversion to {:?} is not yet implemented",
+                    "Error:".red().bold(),
+                    format
+                );
                 eprintln!("Currently only 'bpmn-json' format is supported for output.");
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Write output file
     match fs::write(output, output_content) {
         Ok(_) => {
             if json_output {
-                println!("{{\"success\": true, \"output\": \"{}\"}}",
-                    output.display());
+                println!("{{\"success\": true, \"output\": \"{}\"}}", output.display());
             } else {
-                println!("{} Converted '{}' to '{}'",
-                    "Success:".green().bold(), input.display(), output.display());
+                println!(
+                    "{} Converted '{}' to '{}'",
+                    "Success:".green().bold(),
+                    input.display(),
+                    output.display()
+                );
             }
             EXIT_SUCCESS
-        }
+        },
         Err(e) => {
             if json_output {
                 eprintln!("{{\"error\": \"Failed to write output file: {}\"}}", e);
             } else {
-                eprintln!("{} Failed to write output file: {}",
-                    "Error:".red().bold(), e);
+                eprintln!("{} Failed to write output file: {}", "Error:".red().bold(), e);
             }
             EXIT_FILE_ERROR
-        }
+        },
     }
 }
 
@@ -478,7 +500,7 @@ fn handle_info(file: &Path, detailed: bool, stats_only: bool, json_output: bool)
                 eprintln!("{} Failed to read file: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Parse the workflow
@@ -491,7 +513,7 @@ fn handle_info(file: &Path, detailed: bool, stats_only: bool, json_output: bool)
                 eprintln!("{} Failed to parse workflow: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Calculate statistics
@@ -509,7 +531,7 @@ fn handle_info(file: &Path, detailed: bool, stats_only: bool, json_output: bool)
             "endEvent" => end_events += 1,
             t if t.ends_with("Task") => tasks += 1,
             t if t.ends_with("Gateway") => gateways += 1,
-            _ => {}
+            _ => {},
         }
     }
 
@@ -553,7 +575,13 @@ fn handle_info(file: &Path, detailed: bool, stats_only: bool, json_output: bool)
             nodes,
         };
 
-        println!("{}", serde_json::to_string_pretty(&output).unwrap());
+        match serde_json::to_string_pretty(&output) {
+            Ok(json) => println!("{}", json),
+            Err(e) => {
+                eprintln!("{{\"error\": \"Failed to serialize output: {}\"}}", e);
+                return EXIT_FILE_ERROR;
+            }
+        }
     } else {
         if !stats_only {
             println!("{}", "Workflow Information".bold().underline());
@@ -629,7 +657,7 @@ fn handle_fix(
                 eprintln!("{} Failed to read file: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Parse the workflow
@@ -642,7 +670,7 @@ fn handle_fix(
                 eprintln!("{} Failed to parse workflow: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Apply fixes
@@ -667,7 +695,7 @@ fn handle_fix(
                 eprintln!("{} Failed to serialize fixed workflow: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     // Determine output destination
@@ -676,14 +704,21 @@ fn handle_fix(
         match fs::write(file, fixed_content) {
             Ok(_) => {
                 if json_output {
-                    println!("{{\"fixes_applied\": {}, \"output\": \"{}\"}}",
-                        fixes_applied, file.display());
+                    println!(
+                        "{{\"fixes_applied\": {}, \"output\": \"{}\"}}",
+                        fixes_applied,
+                        file.display()
+                    );
                 } else {
-                    println!("{} Applied {} fix(es) to '{}'",
-                        "Success:".green().bold(), fixes_applied, file.display());
+                    println!(
+                        "{} Applied {} fix(es) to '{}'",
+                        "Success:".green().bold(),
+                        fixes_applied,
+                        file.display()
+                    );
                 }
                 EXIT_SUCCESS
-            }
+            },
             Err(e) => {
                 if json_output {
                     eprintln!("{{\"error\": \"Failed to write file: {}\"}}", e);
@@ -691,21 +726,28 @@ fn handle_fix(
                     eprintln!("{} Failed to write file: {}", "Error:".red().bold(), e);
                 }
                 EXIT_FILE_ERROR
-            }
+            },
         }
     } else if let Some(output_path) = output {
         // Write to specified output file
         match fs::write(&output_path, fixed_content) {
             Ok(_) => {
                 if json_output {
-                    println!("{{\"fixes_applied\": {}, \"output\": \"{}\"}}",
-                        fixes_applied, output_path.display());
+                    println!(
+                        "{{\"fixes_applied\": {}, \"output\": \"{}\"}}",
+                        fixes_applied,
+                        output_path.display()
+                    );
                 } else {
-                    println!("{} Applied {} fix(es), saved to '{}'",
-                        "Success:".green().bold(), fixes_applied, output_path.display());
+                    println!(
+                        "{} Applied {} fix(es), saved to '{}'",
+                        "Success:".green().bold(),
+                        fixes_applied,
+                        output_path.display()
+                    );
                 }
                 EXIT_SUCCESS
-            }
+            },
             Err(e) => {
                 if json_output {
                     eprintln!("{{\"error\": \"Failed to write output file: {}\"}}", e);
@@ -713,7 +755,7 @@ fn handle_fix(
                     eprintln!("{} Failed to write output file: {}", "Error:".red().bold(), e);
                 }
                 EXIT_FILE_ERROR
-            }
+            },
         }
     } else {
         // Output to stdout
@@ -782,11 +824,9 @@ fn handle_list(
 ) -> i32 {
     if !directory.is_dir() {
         if json_output {
-            eprintln!("{{\"error\": \"Not a directory: {}\"}}",
-                directory.display());
+            eprintln!("{{\"error\": \"Not a directory: {}\"}}", directory.display());
         } else {
-            eprintln!("{} '{}' is not a directory",
-                "Error:".red().bold(), directory.display());
+            eprintln!("{} '{}' is not a directory", "Error:".red().bold(), directory.display());
         }
         return EXIT_FILE_ERROR;
     }
@@ -801,15 +841,14 @@ fn handle_list(
                 eprintln!("{} Failed to scan directory: {}", "Error:".red().bold(), e);
             }
             return EXIT_FILE_ERROR;
-        }
+        },
     };
 
     if files.is_empty() {
         if json_output {
             println!("{{\"total_files\": 0, \"message\": \"No JSON files found\"}}");
         } else {
-            println!("{} No JSON files found in '{}'",
-                "Info:".blue().bold(), directory.display());
+            println!("{} No JSON files found in '{}'", "Info:".blue().bold(), directory.display());
         }
         return EXIT_SUCCESS;
     }
@@ -830,7 +869,7 @@ fn handle_list(
                     warnings: None,
                 });
                 continue;
-            }
+            },
         };
 
         if validate {
@@ -845,7 +884,7 @@ fn handle_list(
                             warnings: Some(0),
                         });
                     }
-                }
+                },
                 Err(errors) => {
                     let summary = ValidationSummary::from_errors(&errors);
                     if summary.has_errors() {
@@ -856,11 +895,12 @@ fn handle_list(
 
                     entries.push(FileListEntry {
                         path: file.display().to_string(),
-                        status: if summary.has_errors() { "invalid" } else { "warnings" }.to_string(),
+                        status: if summary.has_errors() { "invalid" } else { "warnings" }
+                            .to_string(),
                         errors: Some(summary.errors),
                         warnings: Some(summary.warnings),
                     });
-                }
+                },
             }
         } else {
             // Just check if it's valid JSON
@@ -875,7 +915,7 @@ fn handle_list(
                             warnings: None,
                         });
                     }
-                }
+                },
                 Err(_) => {
                     files_with_errors += 1;
                     entries.push(FileListEntry {
@@ -884,7 +924,7 @@ fn handle_list(
                         errors: None,
                         warnings: None,
                     });
-                }
+                },
             }
         }
     }
@@ -897,14 +937,22 @@ fn handle_list(
             files_with_errors,
             files: entries,
         };
-        println!("{}", serde_json::to_string_pretty(&output).unwrap());
+        match serde_json::to_string_pretty(&output) {
+            Ok(json) => println!("{}", json),
+            Err(e) => {
+                eprintln!("{{\"error\": \"Failed to serialize output: {}\"}}", e);
+                return EXIT_FILE_ERROR;
+            }
+        }
     } else {
         println!("{}", "Workflow Files".bold().underline());
         println!();
         println!("{}: {}", "Directory".cyan(), directory.display());
         println!("{}: {}", "Total Files".cyan(), files.len());
         println!("{}: {}", "Valid".cyan(), valid_files.to_string().green());
-        println!("{}: {}", "With Errors".cyan(),
+        println!(
+            "{}: {}",
+            "With Errors".cyan(),
             if files_with_errors > 0 {
                 files_with_errors.to_string().red()
             } else {

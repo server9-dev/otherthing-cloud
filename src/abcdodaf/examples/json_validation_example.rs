@@ -91,10 +91,10 @@ fn example_valid_workflow() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 
@@ -133,10 +133,10 @@ fn example_missing_start_event() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 
@@ -180,10 +180,10 @@ fn example_broken_references() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 
@@ -215,10 +215,10 @@ fn example_duplicate_ids() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 
@@ -250,10 +250,10 @@ fn example_invalid_node_types() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 
@@ -354,10 +354,10 @@ fn example_complex_workflow() {
     match validate_bpmn_json(json) {
         Ok(()) => {
             println!("✓ Validation passed!");
-        }
+        },
         Err(errors) => {
             print_validation_errors(&errors);
-        }
+        },
     }
 }
 

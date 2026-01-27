@@ -25,11 +25,7 @@ pub struct ResourceFlow {
 #[serde(tag = "category")]
 pub enum ResourceFlowType {
     /// Information/data flow
-    Information {
-        data_type: InformationType,
-        format: Option<String>,
-        schema: Option<String>,
-    },
+    Information { data_type: InformationType, format: Option<String>, schema: Option<String> },
 
     /// Financial resources
     Funding {
@@ -40,31 +36,16 @@ pub enum ResourceFlowType {
     },
 
     /// Personnel movement/assignment
-    Personnel {
-        personnel_type: PersonnelType,
-        count: Option<u32>,
-        duration: Option<String>,
-    },
+    Personnel { personnel_type: PersonnelType, count: Option<u32>, duration: Option<String> },
 
     /// Physical materials
-    Materiel {
-        materiel_type: MaterielType,
-        quantity: Option<u32>,
-        unit_of_measure: Option<String>,
-    },
+    Materiel { materiel_type: MaterielType, quantity: Option<u32>, unit_of_measure: Option<String> },
 
     /// Service invocation/consumption
-    Service {
-        service_name: String,
-        service_type: String,
-        protocol: Option<String>,
-    },
+    Service { service_name: String, service_type: String, protocol: Option<String> },
 
     /// Energy/power
-    Energy {
-        energy_type: EnergyType,
-        power_rating: Option<String>,
-    },
+    Energy { energy_type: EnergyType, power_rating: Option<String> },
 
     /// Communication/signal
     Communication {
@@ -217,7 +198,7 @@ impl ResourceFlowMapper {
     ) -> ResourceFlow {
         ResourceFlow {
             id: flow_id.to_string(),
-            name: message_name.unwrap_or(flow_id).to_string(),
+            name: message_name.map(|s| s.to_string()).unwrap_or_else(|| flow_id.to_string()),
             description: None,
             source_activity: source.to_string(),
             target_activity: target.to_string(),
@@ -305,12 +286,7 @@ mod tests {
 
     #[test]
     fn test_resource_flow_attributes() {
-        let flow = ResourceFlowMapper::from_bpmn_message_flow(
-            "flow_1",
-            "task_a",
-            "task_b",
-            None,
-        );
+        let flow = ResourceFlowMapper::from_bpmn_message_flow("flow_1", "task_a", "task_b", None);
 
         assert!(flow.attributes.timeliness.is_some());
         assert_eq!(flow.attributes.availability, Some(0.99));

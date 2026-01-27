@@ -9,9 +9,9 @@
 //! - Secret management
 //! - Security policy enforcement
 
-use abcdodaf::security::*;
 use abcdodaf::security::audit::EventCategory;
 use abcdodaf::security::secrets::SecretType;
+use abcdodaf::security::*;
 use std::sync::Arc;
 
 #[tokio::main]
@@ -56,14 +56,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup permission checking
     println!("4. Setting up Permission Model");
     let permission_model = PermissionModel::new(role_manager.clone());
-    let admin_role = role_manager.get_role("admin").await?
+    let admin_role = role_manager
+        .get_role("admin")
+        .await?
         .ok_or_else(|| anyhow::anyhow!("Admin role not found"))?;
-    let editor_role = role_manager.get_role("editor").await?
+    let editor_role = role_manager
+        .get_role("editor")
+        .await?
         .ok_or_else(|| anyhow::anyhow!("Editor role not found"))?;
-    let _admin_ctx = SecurityContext::new(admin_user.clone())
-        .with_role(admin_role);
-    let _editor_ctx = SecurityContext::new(editor_user.clone())
-        .with_role(editor_role);
+    let _admin_ctx = SecurityContext::new(admin_user.clone()).with_role(admin_role);
+    let _editor_ctx = SecurityContext::new(editor_user.clone()).with_role(editor_role);
 
     // Check permissions
     match permission_model
@@ -148,9 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Retrieve and log access
-    let _password = secret_manager
-        .get_secret_string("db_password", "admin1")
-        .await?;
+    let _password = secret_manager.get_secret_string("db_password", "admin1").await?;
     let access_log = secret_manager.get_access_log("db_password").await?;
     println!("   Access log for db_password: {} accesses", access_log.len());
     println!();
@@ -161,10 +161,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Generate compliance report
     let report = compliance_validator
-        .generate_report(vec![
-            ComplianceStandard::SOC2TypeII,
-            ComplianceStandard::ISO27001,
-        ])
+        .generate_report(vec![ComplianceStandard::SOC2TypeII, ComplianceStandard::ISO27001])
         .await?;
 
     println!("   Compliance Report:");
@@ -220,5 +217,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // Note: This example uses the following types from the security module
 // These are imported at the top using the security module exports
 
-use abcdodaf::security::audit_export::{AuditEventExport, AuditExporter, AuditLogExport, ExportMetadata};
+use abcdodaf::security::audit_export::{
+    AuditEventExport, AuditExporter, AuditLogExport, ExportMetadata,
+};
 use abcdodaf::security::compliance::ComplianceStandard;

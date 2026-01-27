@@ -24,10 +24,7 @@ pub enum MockBehavior {
     /// Always succeeds with specific output
     FixedResponse(HashMap<String, serde_json::Value>),
     /// Simulates a delay (in milliseconds)
-    SlowResponse {
-        delay_ms: u64,
-        output: HashMap<String, serde_json::Value>,
-    },
+    SlowResponse { delay_ms: u64, output: HashMap<String, serde_json::Value> },
     /// Simulates failure
     Failure(String),
     /// Returns different outputs based on input
@@ -54,18 +51,12 @@ pub struct ExecutionRecord {
 impl MockTaskHandler {
     /// Create a new mock handler with pass-through behavior
     pub fn new() -> Self {
-        Self {
-            behavior: MockBehavior::PassThrough,
-            executions: Arc::new(RwLock::new(Vec::new())),
-        }
+        Self { behavior: MockBehavior::PassThrough, executions: Arc::new(RwLock::new(Vec::new())) }
     }
 
     /// Create with specific behavior
     pub fn with_behavior(behavior: MockBehavior) -> Self {
-        Self {
-            behavior,
-            executions: Arc::new(RwLock::new(Vec::new())),
-        }
+        Self { behavior, executions: Arc::new(RwLock::new(Vec::new())) }
     }
 
     /// Get all recorded executions
@@ -108,11 +99,11 @@ impl TaskHandler for MockTaskHandler {
             MockBehavior::SlowResponse { delay_ms, output } => {
                 tokio::time::sleep(std::time::Duration::from_millis(*delay_ms)).await;
                 Ok(output.clone())
-            }
+            },
 
             MockBehavior::Failure(msg) => {
                 Err(crate::error::AbcdodafError::WorkflowError(msg.clone()))
-            }
+            },
 
             MockBehavior::Conditional(conditions) => {
                 let mut matched = None;
@@ -127,10 +118,10 @@ impl TaskHandler for MockTaskHandler {
                     Some(MockBehavior::FixedResponse(output)) => Ok(output.clone()),
                     Some(MockBehavior::Failure(msg)) => {
                         Err(crate::error::AbcdodafError::WorkflowError(msg.clone()))
-                    }
+                    },
                     _ => Ok(variables.clone()),
                 }
-            }
+            },
         };
 
         let duration_ms = start.elapsed().as_millis() as u64;
@@ -160,9 +151,7 @@ pub struct MockHandlerBuilder {
 impl MockHandlerBuilder {
     /// Create a new builder
     pub fn new() -> Self {
-        Self {
-            behavior: MockBehavior::PassThrough,
-        }
+        Self { behavior: MockBehavior::PassThrough }
     }
 
     /// Set pass-through behavior
@@ -178,7 +167,11 @@ impl MockHandlerBuilder {
     }
 
     /// Set response with a single key-value
-    pub fn fixed_response_value(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
+    pub fn fixed_response_value(
+        mut self,
+        key: impl Into<String>,
+        value: serde_json::Value,
+    ) -> Self {
         let mut response = HashMap::new();
         response.insert(key.into(), value);
         self.behavior = MockBehavior::FixedResponse(response);
@@ -282,11 +275,7 @@ impl RecordingMockHandler {
 
     /// Assert that a task was called
     pub async fn assert_called(&self, task_id: &str) -> bool {
-        self.history
-            .read()
-            .await
-            .iter()
-            .any(|c| c.task_id == task_id)
+        self.history.read().await.iter().any(|c| c.task_id == task_id)
     }
 
     /// Assert call order

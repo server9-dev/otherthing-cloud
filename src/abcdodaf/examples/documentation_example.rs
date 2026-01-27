@@ -7,13 +7,11 @@
 //! 4. Create and search the template library
 //! 5. Generate SVG diagrams
 
-use abcdodaf::documentation::{
-    DocumentationGenerator,
-    create_builtin_library,
-    MarkdownExporter, HtmlExporter, PlainTextExporter, Exporter,
-    DiagramGenerator, DiagramFormat,
-};
 use abcdodaf::bpmn::ProcessBuilder;
+use abcdodaf::documentation::{
+    create_builtin_library, DiagramFormat, DiagramGenerator, DocumentationGenerator, Exporter,
+    HtmlExporter, MarkdownExporter, PlainTextExporter,
+};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== ABCDODAF Documentation and Template System Demo ===\n");
@@ -67,17 +65,24 @@ fn demonstrate_documentation_generation() -> Result<(), Box<dyn std::error::Erro
     println!("\nExporting to HTML...");
     let html_exporter = HtmlExporter::new();
     let html_content = html_exporter.export(&doc)?;
-    println!("HTML export (contains <!DOCTYPE html>): {}", html_content.contains("<!DOCTYPE html>"));
+    println!(
+        "HTML export (contains <!DOCTYPE html>): {}",
+        html_content.contains("<!DOCTYPE html>")
+    );
 
     // Export to PlainText
     println!("\nExporting to PlainText...");
     let plaintext_exporter = PlainTextExporter;
     let plaintext_content = plaintext_exporter.export(&doc)?;
-    println!("PlainText export (first 200 chars): {}", &plaintext_content[..200.min(plaintext_content.len())]);
+    println!(
+        "PlainText export (first 200 chars): {}",
+        &plaintext_content[..200.min(plaintext_content.len())]
+    );
 
     // Save to files (demonstration only, will create in current directory)
     println!("\nSaving documentation files...");
-    markdown_exporter.export_to_file(&doc, "process_doc.md")
+    markdown_exporter
+        .export_to_file(&doc, "process_doc.md")
         .unwrap_or_else(|e| println!("Note: {}", e));
 
     Ok(())
@@ -105,10 +110,10 @@ fn demonstrate_template_library() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nAvailable Templates:");
     for id in library.list_ids() {
         if let Some(template) = library.get_template(&id) {
-            println!("  - {} ({}): {}",
-                template.metadata.name,
-                template.metadata.complexity,
-                template.metadata.description);
+            println!(
+                "  - {} ({}): {}",
+                template.metadata.name, template.metadata.complexity, template.metadata.description
+            );
         }
     }
 
@@ -137,10 +142,12 @@ fn demonstrate_template_library() -> Result<(), Box<dyn std::error::Error>> {
         println!("  Use cases: {}", template.metadata.use_cases.join(", "));
         println!("  Parameters: {}", template.parameters.len());
         for (param_name, param) in &template.parameters {
-            println!("    - {}: {} ({})",
+            println!(
+                "    - {}: {} ({})",
                 param_name,
                 param.param_type,
-                if param.required { "required" } else { "optional" });
+                if param.required { "required" } else { "optional" }
+            );
         }
     }
 
@@ -150,9 +157,11 @@ fn demonstrate_template_library() -> Result<(), Box<dyn std::error::Error>> {
         let cloned = template.clone_with_new_id();
         println!("  Original ID: {}", template.metadata.id);
         println!("  Cloned ID: {}", cloned.metadata.id);
-        println!("  Both have same name: {} == {}",
+        println!(
+            "  Both have same name: {} == {}",
             template.metadata.name == cloned.metadata.name,
-            template.metadata.name == cloned.metadata.name);
+            template.metadata.name == cloned.metadata.name
+        );
     }
 
     Ok(())
@@ -160,8 +169,7 @@ fn demonstrate_template_library() -> Result<(), Box<dyn std::error::Error>> {
 
 fn demonstrate_diagram_generation() -> Result<(), Box<dyn std::error::Error>> {
     // Create a sample process
-    let process = ProcessBuilder::new("simple_process", "Simple Process")
-        .build()?;
+    let process = ProcessBuilder::new("simple_process", "Simple Process").build()?;
 
     // Generate ASCII diagram
     println!("ASCII Diagram:");
@@ -180,4 +188,3 @@ fn demonstrate_diagram_generation() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

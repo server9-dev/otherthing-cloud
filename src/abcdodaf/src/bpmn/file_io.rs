@@ -17,11 +17,7 @@ pub enum FileError {
     /// Directory not found
     DirectoryNotFound(PathBuf),
     /// Invalid file extension
-    InvalidExtension {
-        path: PathBuf,
-        expected: &'static str,
-        found: String,
-    },
+    InvalidExtension { path: PathBuf, expected: &'static str, found: String },
     /// IO error
     Io(String),
     /// XML parsing/serialization error
@@ -36,7 +32,9 @@ impl std::fmt::Display for FileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FileError::NotFound(path) => write!(f, "File not found: {}", path.display()),
-            FileError::DirectoryNotFound(path) => write!(f, "Directory not found: {}", path.display()),
+            FileError::DirectoryNotFound(path) => {
+                write!(f, "Directory not found: {}", path.display())
+            },
             FileError::InvalidExtension { path, expected, found } => {
                 write!(
                     f,
@@ -45,7 +43,7 @@ impl std::fmt::Display for FileError {
                     expected,
                     found
                 )
-            }
+            },
             FileError::Io(msg) => write!(f, "IO error: {}", msg),
             FileError::Xml(msg) => write!(f, "XML error: {}", msg),
             FileError::AlreadyExists(path) => write!(f, "File already exists: {}", path.display()),
@@ -62,7 +60,7 @@ impl From<io::Error> for FileError {
             io::ErrorKind::NotFound => FileError::Io(err.to_string()),
             io::ErrorKind::PermissionDenied => {
                 FileError::PermissionDenied(PathBuf::from("unknown"))
-            }
+            },
             _ => FileError::Io(err.to_string()),
         }
     }
@@ -127,7 +125,10 @@ impl BpmnFileIo {
     }
 
     /// Load with custom options
-    pub fn load_with_options<P: AsRef<Path>>(path: P, _options: FileOptions) -> FileResult<BpmnDiagram> {
+    pub fn load_with_options<P: AsRef<Path>>(
+        path: P,
+        _options: FileOptions,
+    ) -> FileResult<BpmnDiagram> {
         let path = path.as_ref();
 
         // Validate extension
@@ -139,11 +140,10 @@ impl BpmnFileIo {
         }
 
         // Read file
-        let xml = fs::read_to_string(path)
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::PermissionDenied => FileError::PermissionDenied(path.to_path_buf()),
-                _ => FileError::Io(e.to_string()),
-            })?;
+        let xml = fs::read_to_string(path).map_err(|e| match e.kind() {
+            io::ErrorKind::PermissionDenied => FileError::PermissionDenied(path.to_path_buf()),
+            _ => FileError::Io(e.to_string()),
+        })?;
 
         // Parse XML
         BpmnXmlSerializer::from_string(&xml).map_err(|e| FileError::Xml(e.to_string()))
@@ -209,8 +209,8 @@ impl BpmnFileIo {
         }
 
         // Serialize to XML
-        let xml = BpmnXmlSerializer::to_string(diagram)
-            .map_err(|e| FileError::Xml(e.to_string()))?;
+        let xml =
+            BpmnXmlSerializer::to_string(diagram).map_err(|e| FileError::Xml(e.to_string()))?;
 
         // Write to file
         fs::write(path, xml).map_err(|e| match e.kind() {
@@ -229,9 +229,7 @@ impl BpmnFileIo {
     /// Get the absolute path to a file
     pub fn absolute_path<P: AsRef<Path>>(path: P) -> FileResult<PathBuf> {
         let path = path.as_ref();
-        std::fs::canonicalize(path).map_err(|_| {
-            FileError::NotFound(path.to_path_buf())
-        })
+        std::fs::canonicalize(path).map_err(|_| FileError::NotFound(path.to_path_buf()))
     }
 
     /// Get file metadata (size, modification time, etc.)
@@ -308,7 +306,7 @@ impl BpmnFileIo {
                 } else {
                     Ok(())
                 }
-            }
+            },
             None => Err(FileError::InvalidExtension {
                 path: path.to_path_buf(),
                 expected: ".bpmn",
@@ -318,14 +316,10 @@ impl BpmnFileIo {
     }
 
     fn create_backup(path: &Path, backup_ext: &str) -> FileResult<()> {
-        let backup_path = path.with_extension(format!(
-            "bpmn{}",
-            backup_ext
-        ));
+        let backup_path = path.with_extension(format!("bpmn{}", backup_ext));
 
-        fs::copy(path, &backup_path).map_err(|e| {
-            FileError::Io(format!("Failed to create backup: {}", e))
-        })?;
+        fs::copy(path, &backup_path)
+            .map_err(|e| FileError::Io(format!("Failed to create backup: {}", e)))?;
 
         Ok(())
     }

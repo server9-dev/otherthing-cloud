@@ -64,7 +64,11 @@ pub struct PromptManager {
 
 impl PromptTemplate {
     /// Create a new prompt template
-    pub fn new(id: impl Into<String>, name: impl Into<String>, template: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        template: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -214,9 +218,7 @@ impl PromptVariable {
 impl PromptManager {
     /// Create a new prompt manager
     pub fn new() -> Self {
-        Self {
-            templates: HashMap::new(),
-        }
+        Self { templates: HashMap::new() }
     }
 
     /// Register a prompt template
@@ -348,8 +350,7 @@ Provide a clear, factual answer."#,
         )
         .add_variable(PromptVariable::new("question", "User question", VariableType::String))
         .add_variable(
-            PromptVariable::new("context", "Additional context", VariableType::String)
-                .optional(""),
+            PromptVariable::new("context", "Additional context", VariableType::String).optional(""),
         )
         .with_category("qa");
 
@@ -366,8 +367,7 @@ Provide a {{style}} summary."#,
         )
         .add_variable(PromptVariable::new("text", "Text to summarize", VariableType::String))
         .add_variable(
-            PromptVariable::new("length", "Summary length", VariableType::String)
-                .optional("brief"),
+            PromptVariable::new("length", "Summary length", VariableType::String).optional("brief"),
         )
         .add_variable(
             PromptVariable::new("style", "Summary style", VariableType::String)
@@ -419,11 +419,9 @@ mod tests {
 
     #[test]
     fn test_default_values() {
-        let template = PromptTemplate::new("greeting", "Greeting", "Hello {{name}}!")
-            .add_variable(
-                PromptVariable::new("name", "User name", VariableType::String)
-                    .optional("World"),
-            );
+        let template = PromptTemplate::new("greeting", "Greeting", "Hello {{name}}!").add_variable(
+            PromptVariable::new("name", "User name", VariableType::String).optional("World"),
+        );
 
         let values = HashMap::new();
         let rendered = template.render(&values).unwrap();

@@ -54,22 +54,25 @@ pub mod resource_flows;
 pub mod security;
 pub mod traceability;
 
+pub use capability::{
+    Capability as BaseCapability, CapabilityMapping, CapabilityType as BaseCapabilityType,
+    CapabilityView,
+};
+pub use cv1::{CapabilityIncrement, CapabilityVision, StrategicObjective};
+pub use cv2::{Capability, CapabilityMeasure, CapabilityTaxonomy};
 pub use operational::{
-    OperationalActivity, OperationalContext, OperationalView,
-    ActivityType, MissionArea, InformationExchange,
+    ActivityType, InformationExchange, MissionArea, OperationalActivity, OperationalContext,
+    OperationalView,
 };
 pub use ov1::{OperationalConceptGraphic, OperationalOrganization, OrganizationType};
-pub use ov2::{OperationalNodeConnectivity, OperationalNode, Needline, Criticality};
-pub use ov3::{InformationExchangeMatrix, InformationElement, ExchangePair};
+pub use ov2::{Criticality, Needline, OperationalNode, OperationalNodeConnectivity};
+pub use ov3::{ExchangePair, InformationElement, InformationExchangeMatrix};
 pub use ov5::*;
-pub use ov6::{OperationalRulesModel, StateTransitionDescription, OperationalRule, RuleType};
-pub use sv1::{SystemsInterfaceDescription, System, SystemInterface, SystemPort};
-pub use sv2::{SystemsResourceFlowDescription, CommunicationSystem, CommunicationLink};
-pub use sv4::{SystemsFunctionalityDescription, SystemFunction, FunctionDataFlow};
-pub use cv1::{CapabilityVision, StrategicObjective, CapabilityIncrement};
-pub use cv2::{CapabilityTaxonomy, Capability, CapabilityMeasure};
-pub use capability::{Capability as BaseCapability, CapabilityView, CapabilityMapping, CapabilityType as BaseCapabilityType};
-pub use services::{Service, ServiceView, ServiceSpecification, ServiceType};
+pub use ov6::{OperationalRule, OperationalRulesModel, RuleType, StateTransitionDescription};
+pub use services::{Service, ServiceSpecification, ServiceType, ServiceView};
+pub use sv1::{System, SystemInterface, SystemPort, SystemsInterfaceDescription};
+pub use sv2::{CommunicationLink, CommunicationSystem, SystemsResourceFlowDescription};
+pub use sv4::{FunctionDataFlow, SystemFunction, SystemsFunctionalityDescription};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

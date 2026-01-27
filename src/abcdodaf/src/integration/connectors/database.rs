@@ -1,12 +1,22 @@
 //! Database connectors for PostgreSQL, MySQL, and SQLite
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
     ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
 use serde_json::json;
 use std::time::Instant;
+
+/// URL-encode a string for use in connection strings
+fn url_encode(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
+            _ => format!("%{:02X}", c as u8),
+        })
+        .collect()
+}
 
 /// PostgreSQL connector
 pub struct PostgresConnector {
@@ -17,13 +27,15 @@ pub struct PostgresConnector {
 impl PostgresConnector {
     /// Create a new PostgreSQL connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-        }
+        Self { config, status: ConnectionStatus::Disconnected }
     }
 
     /// Get connection string
+    ///
+    /// SECURITY: Password is retrieved from config params. In production:
+    /// - Store passwords in environment variables or secret management system
+    /// - Use urlencoding for special characters in passwords
+    /// - Never log connection strings containing passwords
     fn get_connection_string(&self) -> ConnectorResult<String> {
         let host = self
             .config
@@ -32,12 +44,7 @@ impl PostgresConnector {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ConnectorError::config("Host not configured"))?;
 
-        let port = self
-            .config
-            .params
-            .get("port")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(5432);
+        let port = self.config.params.get("port").and_then(|v| v.as_u64()).unwrap_or(5432);
 
         let database = self
             .config
@@ -53,17 +60,27 @@ impl PostgresConnector {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ConnectorError::config("User not configured"))?;
 
-        let password = self
-            .config
-            .params
-            .get("password")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ConnectorError::config("Password not configured"))?;
+        // Try to get password from environment variable first, then fall back to config
+        let password =
+            std::env::var(format!("POSTGRES_PASSWORD_{}", self.config.name.to_uppercase()))
+                .or_else(|_| std::env::var("POSTGRES_PASSWORD"))
+                .or_else(|_| {
+                    self.config
+                        .params
+                        .get("password")
+                        .and_then(|v| v.as_str())
+                        .map(String::from)
+                        .ok_or_else(|| {
+                            ConnectorError::config(
+                        "Password not configured (set via POSTGRES_PASSWORD env var or config)",
+                    )
+                        })
+                })?;
 
-        Ok(format!(
-            "postgresql://{}:{}@{}:{}/{}",
-            user, password, host, port, database
-        ))
+        // URL-encode password to handle special characters
+        let encoded_password = url_encode(&password);
+
+        Ok(format!("postgresql://{}:{}@{}:{}/{}", user, encoded_password, host, port, database))
     }
 }
 
@@ -122,7 +139,7 @@ impl Connector for PostgresConnector {
                     "rows_affected": 0,
                     "results": []
                 })
-            }
+            },
             "INSERT" => {
                 let table = request
                     .parameters
@@ -135,7 +152,7 @@ impl Connector for PostgresConnector {
                     "table": table,
                     "rows_affected": 1
                 })
-            }
+            },
             "UPDATE" => {
                 let table = request
                     .parameters
@@ -148,7 +165,7 @@ impl Connector for PostgresConnector {
                     "table": table,
                     "rows_affected": 1
                 })
-            }
+            },
             "DELETE" => {
                 let table = request
                     .parameters
@@ -161,13 +178,13 @@ impl Connector for PostgresConnector {
                     "table": table,
                     "rows_affected": 1
                 })
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -179,10 +196,7 @@ impl Connector for PostgresConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "Database status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("Database status: {}", self.status)));
         }
 
         // In a real implementation, you would execute a simple query like "SELECT 1"
@@ -199,13 +213,15 @@ pub struct MySqlConnector {
 impl MySqlConnector {
     /// Create a new MySQL connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-        }
+        Self { config, status: ConnectionStatus::Disconnected }
     }
 
     /// Get connection string
+    ///
+    /// SECURITY: Password is retrieved from config params. In production:
+    /// - Store passwords in environment variables or secret management system
+    /// - Use urlencoding for special characters in passwords
+    /// - Never log connection strings containing passwords
     fn get_connection_string(&self) -> ConnectorResult<String> {
         let host = self
             .config
@@ -214,12 +230,7 @@ impl MySqlConnector {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ConnectorError::config("Host not configured"))?;
 
-        let port = self
-            .config
-            .params
-            .get("port")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(3306);
+        let port = self.config.params.get("port").and_then(|v| v.as_u64()).unwrap_or(3306);
 
         let database = self
             .config
@@ -235,17 +246,26 @@ impl MySqlConnector {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ConnectorError::config("User not configured"))?;
 
-        let password = self
-            .config
-            .params
-            .get("password")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ConnectorError::config("Password not configured"))?;
+        // Try to get password from environment variable first, then fall back to config
+        let password = std::env::var(format!("MYSQL_PASSWORD_{}", self.config.name.to_uppercase()))
+            .or_else(|_| std::env::var("MYSQL_PASSWORD"))
+            .or_else(|_| {
+                self.config
+                    .params
+                    .get("password")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+                    .ok_or_else(|| {
+                        ConnectorError::config(
+                            "Password not configured (set via MYSQL_PASSWORD env var or config)",
+                        )
+                    })
+            })?;
 
-        Ok(format!(
-            "mysql://{}:{}@{}:{}/{}",
-            user, password, host, port, database
-        ))
+        // URL-encode password to handle special characters
+        let encoded_password = url_encode(&password);
+
+        Ok(format!("mysql://{}:{}@{}:{}/{}", user, encoded_password, host, port, database))
     }
 }
 
@@ -302,19 +322,19 @@ impl Connector for MySqlConnector {
                     "rows_affected": 0,
                     "results": []
                 })
-            }
+            },
             "INSERT" | "UPDATE" | "DELETE" => {
                 json!({
                     "operation": request.operation,
                     "rows_affected": 1
                 })
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -326,10 +346,7 @@ impl Connector for MySqlConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "Database status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("Database status: {}", self.status)));
         }
 
         Ok(HealthStatus::Healthy)
@@ -345,10 +362,7 @@ pub struct SqliteConnector {
 impl SqliteConnector {
     /// Create a new SQLite connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-        }
+        Self { config, status: ConnectionStatus::Disconnected }
     }
 
     /// Get database path
@@ -415,19 +429,19 @@ impl Connector for SqliteConnector {
                     "rows_affected": 0,
                     "results": []
                 })
-            }
+            },
             "INSERT" | "UPDATE" | "DELETE" => {
                 json!({
                     "operation": request.operation,
                     "rows_affected": 1
                 })
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -439,10 +453,7 @@ impl Connector for SqliteConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "Database status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("Database status: {}", self.status)));
         }
 
         Ok(HealthStatus::Healthy)
@@ -484,8 +495,8 @@ mod tests {
 
     #[test]
     fn test_sqlite_path() {
-        let config = ConnectorConfig::new("test_sqlite", "sqlite")
-            .with_param("path", json!("/tmp/test.db"));
+        let config =
+            ConnectorConfig::new("test_sqlite", "sqlite").with_param("path", json!("/tmp/test.db"));
 
         let connector = SqliteConnector::new(config);
         let path = connector.get_db_path().unwrap();

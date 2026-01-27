@@ -109,12 +109,7 @@ pub struct TraceabilityMatrix {
 impl TraceabilityMatrix {
     /// Create a new traceability matrix
     pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            description: None,
-            links: Vec::new(),
-            elements: HashMap::new(),
-        }
+        Self { name: name.into(), description: None, links: Vec::new(), elements: HashMap::new() }
     }
 
     /// Add an element to track
@@ -137,26 +132,17 @@ impl TraceabilityMatrix {
 
     /// Get all links from a source element
     pub fn get_links_from(&self, source_id: &str) -> Vec<&TraceabilityLink> {
-        self.links
-            .iter()
-            .filter(|link| link.source.id == source_id)
-            .collect()
+        self.links.iter().filter(|link| link.source.id == source_id).collect()
     }
 
     /// Get all links to a target element
     pub fn get_links_to(&self, target_id: &str) -> Vec<&TraceabilityLink> {
-        self.links
-            .iter()
-            .filter(|link| link.target.id == target_id)
-            .collect()
+        self.links.iter().filter(|link| link.target.id == target_id).collect()
     }
 
     /// Get all links of a specific type
     pub fn get_links_by_type(&self, link_type: LinkType) -> Vec<&TraceabilityLink> {
-        self.links
-            .iter()
-            .filter(|link| link.link_type == link_type)
-            .collect()
+        self.links.iter().filter(|link| link.link_type == link_type).collect()
     }
 
     /// Find all elements that implement a capability
@@ -176,9 +162,7 @@ impl TraceabilityMatrix {
     pub fn get_satisfied_requirements(&self, activity_id: &str) -> Vec<&TraceabilityElement> {
         self.links
             .iter()
-            .filter(|link| {
-                link.source.id == activity_id && link.link_type == LinkType::Satisfies
-            })
+            .filter(|link| link.source.id == activity_id && link.link_type == LinkType::Satisfies)
             .map(|link| &link.target)
             .collect()
     }
@@ -188,9 +172,10 @@ impl TraceabilityMatrix {
         self.elements
             .values()
             .filter(|element| {
-                !self.links.iter().any(|link| {
-                    link.source.id == element.id || link.target.id == element.id
-                })
+                !self
+                    .links
+                    .iter()
+                    .any(|link| link.source.id == element.id || link.target.id == element.id)
             })
             .collect()
     }

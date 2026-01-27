@@ -52,14 +52,11 @@ async fn unit_testing_example() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     let handler_with_delay = MockHandlerBuilder::new()
-        .slow_response(
-            100,
-            {
-                let mut map = HashMap::new();
-                map.insert("result".to_string(), serde_json::json!("processed"));
-                map
-            },
-        )
+        .slow_response(100, {
+            let mut map = HashMap::new();
+            map.insert("result".to_string(), serde_json::json!("processed"));
+            map
+        })
         .build();
 
     // Register handlers
@@ -99,10 +96,9 @@ async fn unit_testing_example() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get summary
     let summary = harness.get_summary().await;
-    println!("\n  Summary: {} passed, {} failed out of {}",
-        summary.passed_tests,
-        summary.failed_tests,
-        summary.total_tests
+    println!(
+        "\n  Summary: {} passed, {} failed out of {}",
+        summary.passed_tests, summary.failed_tests, summary.total_tests
     );
 
     println!();
@@ -173,20 +169,14 @@ fn dsl_example() -> Result<(), Box<dyn std::error::Error>> {
     println!("    Execution steps: {}", simple.execution_steps.len());
 
     // Example 2: Workflow with retries
-    let retry_workflow = ScenarioDsl::workflow_with_retries(
-        "retry_workflow_test",
-        "critical_task",
-        3,
-    );
+    let retry_workflow =
+        ScenarioDsl::workflow_with_retries("retry_workflow_test", "critical_task", 3);
 
     println!("\n  Retry Workflow Scenario: {}", retry_workflow.name);
     println!("    Retry attempts: {}", retry_workflow.execution_steps.len());
 
     // Example 3: Parallel execution
-    let parallel = ScenarioDsl::parallel_workflow(
-        "parallel_workflow_test",
-        4,
-    );
+    let parallel = ScenarioDsl::parallel_workflow("parallel_workflow_test", 4);
 
     println!("\n  Parallel Workflow Scenario: {}", parallel.name);
     println!("    Parallel tasks: {}", parallel.execution_steps.len());
@@ -302,9 +292,10 @@ async fn report_generation_example() -> Result<(), Box<dyn std::error::Error>> {
         status: abcdodaf::testing::reporting::TestStatus::Passed,
         duration_ms: 250,
         error: None,
-        assertions: vec![
-            AssertionResult::passed("Workflow created", "Workflow initialized successfully"),
-        ],
+        assertions: vec![AssertionResult::passed(
+            "Workflow created",
+            "Workflow initialized successfully",
+        )],
         tags: vec!["setup".to_string()],
     };
 
@@ -314,15 +305,14 @@ async fn report_generation_example() -> Result<(), Box<dyn std::error::Error>> {
         status: abcdodaf::testing::reporting::TestStatus::Passed,
         duration_ms: 500,
         error: None,
-        assertions: vec![
-            AssertionResult::passed("Task completed", "Task finished with expected output"),
-        ],
+        assertions: vec![AssertionResult::passed(
+            "Task completed",
+            "Task finished with expected output",
+        )],
         tags: vec!["execution".to_string()],
     };
 
-    report = report
-        .with_test_result(result1)
-        .with_test_result(result2);
+    report = report.with_test_result(result1).with_test_result(result2);
 
     // Generate HTML report
     let html = ReportGenerator::generate_html(&report);

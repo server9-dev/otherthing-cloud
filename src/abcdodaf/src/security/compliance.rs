@@ -218,9 +218,7 @@ pub struct ComplianceValidator {
 impl ComplianceValidator {
     /// Create a new compliance validator
     pub fn new() -> Self {
-        Self {
-            rules: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { rules: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Initialize with standard rules
@@ -315,11 +313,7 @@ impl ComplianceValidator {
         standard: ComplianceStandard,
     ) -> SecurityResult<Vec<ComplianceRule>> {
         let rules = self.rules.read().await;
-        Ok(rules
-            .values()
-            .filter(|r| r.standards.contains(&standard))
-            .cloned()
-            .collect())
+        Ok(rules.values().filter(|r| r.standards.contains(&standard)).cloned().collect())
     }
 
     /// Generate compliance report
@@ -332,11 +326,7 @@ impl ComplianceValidator {
         let rules = self.rules.read().await;
         let applicable_rules: Vec<_> = rules
             .values()
-            .filter(|r| {
-                standards
-                    .iter()
-                    .any(|s| r.standards.contains(s))
-            })
+            .filter(|r| standards.iter().any(|s| r.standards.contains(s)))
             .cloned()
             .collect();
 
@@ -348,9 +338,9 @@ impl ComplianceValidator {
                 RuleStatus::NonCompliant => {
                     report.non_compliant_rules += 1;
                     report.add_finding(format!("Non-compliant: {}", rule.name));
-                }
+                },
                 RuleStatus::Unknown => report.unknown_rules += 1,
-                RuleStatus::NotApplicable => {}
+                RuleStatus::NotApplicable => {},
             }
         }
 
@@ -369,10 +359,7 @@ impl ComplianceValidator {
     /// Count compliant rules
     pub async fn count_compliant(&self) -> SecurityResult<usize> {
         let rules = self.rules.read().await;
-        Ok(rules
-            .values()
-            .filter(|r| r.status == RuleStatus::Compliant)
-            .count())
+        Ok(rules.values().filter(|r| r.status == RuleStatus::Compliant).count())
     }
 }
 
@@ -429,10 +416,7 @@ mod tests {
     async fn test_compliance_report_generation() {
         let validator = ComplianceValidator::with_standard_rules().await;
 
-        let report = validator
-            .generate_report(vec![ComplianceStandard::SOC2TypeII])
-            .await
-            .unwrap();
+        let report = validator.generate_report(vec![ComplianceStandard::SOC2TypeII]).await.unwrap();
 
         assert!(!report.rules.is_empty());
         assert!(report.compliance_score >= 0.0 && report.compliance_score <= 100.0);

@@ -3,8 +3,8 @@
 //! This module provides a unified expression interface that can wrap
 //! FEEL expressions and other expression languages.
 
-use crate::dmn::feel::{FeelExpression, FeelValue};
 use crate::dmn::errors::{DmnError, DmnResult};
+use crate::dmn::feel::{FeelExpression, FeelValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -61,9 +61,7 @@ pub struct ExpressionEvaluator {
 impl ExpressionEvaluator {
     /// Create a new evaluator
     pub fn new() -> Self {
-        Self {
-            context: HashMap::new(),
-        }
+        Self { context: HashMap::new() }
     }
 
     /// Create with initial context
@@ -92,15 +90,11 @@ impl ExpressionEvaluator {
             Expression::Literal(val) => Ok(val.clone()),
 
             Expression::Feel(feel_expr) => {
-                let evaluator = crate::dmn::feel::FeelEvaluator::with_context(
-                    self.context.clone(),
-                );
+                let evaluator = crate::dmn::feel::FeelEvaluator::with_context(self.context.clone());
                 evaluator.evaluate(feel_expr)
-            }
+            },
 
-            Expression::Comparison(comp) => {
-                self.evaluate_comparison(comp)
-            }
+            Expression::Comparison(comp) => self.evaluate_comparison(comp),
         }
     }
 
@@ -131,11 +125,7 @@ impl ExpressionEvaluator {
         Ok(FeelValue::String(comp.to_string()))
     }
 
-    fn create_comparison_expr(
-        &self,
-        operator: &str,
-        value_str: &str,
-    ) -> DmnResult<FeelExpression> {
+    fn create_comparison_expr(&self, operator: &str, value_str: &str) -> DmnResult<FeelExpression> {
         use crate::dmn::feel::{ComparisonOp, FeelExpression};
 
         let op = match operator {
@@ -145,9 +135,7 @@ impl ExpressionEvaluator {
             "<=" => ComparisonOp::LessEqual,
             ">" => ComparisonOp::GreaterThan,
             ">=" => ComparisonOp::GreaterEqual,
-            _ => return Err(DmnError::OperationError(
-                format!("Unknown operator: {}", operator)
-            )),
+            _ => return Err(DmnError::OperationError(format!("Unknown operator: {}", operator))),
         };
 
         // Parse the right-hand side value
@@ -159,7 +147,7 @@ impl ExpressionEvaluator {
                     "Cannot parse nested comparison: {}",
                     comp
                 )))
-            }
+            },
             Expression::Feel(expr) => expr,
         };
 

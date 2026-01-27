@@ -11,23 +11,11 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DecisionNode {
     /// A decision that depends on inputs and other decisions
-    Decision {
-        id: String,
-        name: String,
-        description: Option<String>,
-    },
+    Decision { id: String, name: String, description: Option<String> },
     /// An input data source
-    InputData {
-        id: String,
-        name: String,
-        description: Option<String>,
-    },
+    InputData { id: String, name: String, description: Option<String> },
     /// A business knowledge model
-    BusinessKnowledge {
-        id: String,
-        name: String,
-        description: Option<String>,
-    },
+    BusinessKnowledge { id: String, name: String, description: Option<String> },
 }
 
 impl DecisionNode {
@@ -82,20 +70,14 @@ pub struct DecisionGraph {
 impl DecisionGraph {
     /// Create a new decision graph
     pub fn new(id: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            nodes: HashMap::new(),
-            requirements: Vec::new(),
-        }
+        Self { id: id.into(), nodes: HashMap::new(), requirements: Vec::new() }
     }
 
     /// Add a node to the graph
     pub fn add_node(&mut self, node: DecisionNode) -> DmnResult<()> {
         let node_id = node.id().to_string();
         if self.nodes.contains_key(&node_id) {
-            return Err(DmnError::InvalidDecisionGraph(
-                format!("Node {} already exists", node_id)
-            ));
+            return Err(DmnError::InvalidDecisionGraph(format!("Node {} already exists", node_id)));
         }
         self.nodes.insert(node_id, node);
         Ok(())
@@ -115,27 +97,27 @@ impl DecisionGraph {
     pub fn add_requirement(&mut self, source_id: String, target_id: String) -> DmnResult<()> {
         // Verify both nodes exist
         if !self.nodes.contains_key(&source_id) {
-            return Err(DmnError::InvalidDecisionGraph(
-                format!("Source node {} not found", source_id)
-            ));
+            return Err(DmnError::InvalidDecisionGraph(format!(
+                "Source node {} not found",
+                source_id
+            )));
         }
         if !self.nodes.contains_key(&target_id) {
-            return Err(DmnError::InvalidDecisionGraph(
-                format!("Target node {} not found", target_id)
-            ));
+            return Err(DmnError::InvalidDecisionGraph(format!(
+                "Target node {} not found",
+                target_id
+            )));
         }
 
         // Check for circular dependencies
         if self.would_create_cycle(&source_id, &target_id) {
-            return Err(DmnError::CircularDependency(
-                format!("Adding requirement {} -> {} would create a cycle", source_id, target_id)
-            ));
+            return Err(DmnError::CircularDependency(format!(
+                "Adding requirement {} -> {} would create a cycle",
+                source_id, target_id
+            )));
         }
 
-        let req = Requirement {
-            source_id,
-            target_id,
-        };
+        let req = Requirement { source_id, target_id };
 
         if !self.requirements.contains(&req) {
             self.requirements.push(req);
@@ -151,10 +133,7 @@ impl DecisionGraph {
 
     /// Get all requirements for a specific target node
     pub fn requirements_for(&self, target_id: &str) -> Vec<&Requirement> {
-        self.requirements
-            .iter()
-            .filter(|r| r.target_id == target_id)
-            .collect()
+        self.requirements.iter().filter(|r| r.target_id == target_id).collect()
     }
 
     /// Get all nodes that depend on a given node
@@ -202,9 +181,10 @@ impl DecisionGraph {
         }
 
         if visiting.contains(node_id) {
-            return Err(DmnError::CircularDependency(
-                format!("Circular dependency detected at {}", node_id)
-            ));
+            return Err(DmnError::CircularDependency(format!(
+                "Circular dependency detected at {}",
+                node_id
+            )));
         }
 
         visiting.insert(node_id.to_string());
@@ -253,14 +233,16 @@ impl DecisionGraph {
         // Check that all requirements reference existing nodes
         for req in &self.requirements {
             if !self.nodes.contains_key(&req.source_id) {
-                return Err(DmnError::InvalidDecisionGraph(
-                    format!("Source node {} not found", req.source_id)
-                ));
+                return Err(DmnError::InvalidDecisionGraph(format!(
+                    "Source node {} not found",
+                    req.source_id
+                )));
             }
             if !self.nodes.contains_key(&req.target_id) {
-                return Err(DmnError::InvalidDecisionGraph(
-                    format!("Target node {} not found", req.target_id)
-                ));
+                return Err(DmnError::InvalidDecisionGraph(format!(
+                    "Target node {} not found",
+                    req.target_id
+                )));
             }
         }
 

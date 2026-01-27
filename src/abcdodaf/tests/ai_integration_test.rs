@@ -23,22 +23,23 @@ async fn test_ollama_list_models() {
         Ok(models) => {
             println!("Found {} models", models.len());
             assert!(!models.is_empty(), "Should have at least one model");
-        }
+        },
         Err(e) => {
             println!("Note: Ollama not running or not accessible: {}", e);
             // Don't fail the test if Ollama isn't running
-        }
+        },
     }
 }
 
 #[test]
 fn test_prompt_template_creation() {
-    let template = PromptTemplate::new("test", "Test Template", "Hello {{name}}!")
-        .add_variable(abcdodaf::ai::PromptVariable::new(
+    let template = PromptTemplate::new("test", "Test Template", "Hello {{name}}!").add_variable(
+        abcdodaf::ai::PromptVariable::new(
             "name",
             "User name",
             abcdodaf::ai::prompt::VariableType::String,
-        ));
+        ),
+    );
 
     assert_eq!(template.id, "test");
     assert_eq!(template.variables.len(), 1);
@@ -46,17 +47,18 @@ fn test_prompt_template_creation() {
 
 #[test]
 fn test_prompt_template_rendering() {
-    let template = PromptTemplate::new("greeting", "Greeting", "Hello {{name}}, you are {{age}} years old!")
-        .add_variable(abcdodaf::ai::PromptVariable::new(
-            "name",
-            "Name",
-            abcdodaf::ai::prompt::VariableType::String,
-        ))
-        .add_variable(abcdodaf::ai::PromptVariable::new(
-            "age",
-            "Age",
-            abcdodaf::ai::prompt::VariableType::Integer,
-        ));
+    let template =
+        PromptTemplate::new("greeting", "Greeting", "Hello {{name}}, you are {{age}} years old!")
+            .add_variable(abcdodaf::ai::PromptVariable::new(
+                "name",
+                "Name",
+                abcdodaf::ai::prompt::VariableType::String,
+            ))
+            .add_variable(abcdodaf::ai::PromptVariable::new(
+                "age",
+                "Age",
+                abcdodaf::ai::prompt::VariableType::Integer,
+            ));
 
     let mut values = HashMap::new();
     values.insert("name".to_string(), "Alice".to_string());
@@ -115,14 +117,11 @@ fn test_agent_memory() {
 
     let mut memory = AgentMemory::new(50);
 
-    memory.add_short_term(
-        MemoryEntry::new("m1", MemoryType::Fact, "Test fact")
-            .with_importance(0.5)
-    );
+    memory
+        .add_short_term(MemoryEntry::new("m1", MemoryType::Fact, "Test fact").with_importance(0.5));
 
     memory.add_long_term(
-        MemoryEntry::new("m2", MemoryType::Preference, "User prefers Rust")
-            .with_importance(0.9)
+        MemoryEntry::new("m2", MemoryType::Preference, "User prefers Rust").with_importance(0.9),
     );
 
     assert_eq!(memory.short_term_memories().len(), 1);
@@ -223,7 +222,7 @@ fn test_performance_tracker() {
 
 #[test]
 fn test_response_cache() {
-    use abcdodaf::ai::cache::{ResponseCache, CacheKey, CacheMetadata};
+    use abcdodaf::ai::cache::{CacheKey, CacheMetadata, ResponseCache};
 
     let mut cache = ResponseCache::new(CacheStrategy::LRU, 100);
 
@@ -232,11 +231,7 @@ fn test_response_cache() {
     cache.put(
         key.clone(),
         "test response".to_string(),
-        CacheMetadata {
-            tokens: 50,
-            latency_ms: 100,
-            cost_saved: 0.01,
-        },
+        CacheMetadata { tokens: 50, latency_ms: 100, cost_saved: 0.01 },
     );
 
     let retrieved = cache.get(&key);

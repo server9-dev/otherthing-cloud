@@ -3,29 +3,29 @@
 //! Provides comprehensive AI agent capabilities with Ollama integration,
 //! prompt management, context handling, and advanced agent features.
 
-pub mod ollama;
-pub mod prompt;
+pub mod cache;
+pub mod collaboration;
 pub mod context;
 pub mod memory;
-pub mod streaming;
-pub mod selection;
-pub mod collaboration;
-pub mod tools;
 pub mod metrics;
-pub mod cache;
+pub mod ollama;
+pub mod prompt;
+pub mod selection;
+pub mod streaming;
+pub mod tools;
 
-pub use ollama::{OllamaClient, OllamaConfig, ModelInfo};
-pub use prompt::{PromptTemplate, PromptManager, PromptVariable};
-pub use context::{ContextWindow, ContextManager, ContextStrategy};
-pub use memory::{AgentMemory, MemoryStore, ConversationHistory};
-pub use streaming::{StreamingResponse, StreamHandler};
-pub use selection::{ModelSelector, ModelStrategy, FallbackStrategy};
-pub use collaboration::{MultiAgentCoordinator, AgentCollaboration, CollaborationPattern};
-pub use tools::{ToolRegistry, ToolDefinition, ToolCall, ToolExecutor};
-pub use metrics::{AgentMetrics, PerformanceTracker, CostTracker};
-pub use cache::{ResponseCache, CacheStrategy, CacheKey};
+pub use cache::{CacheKey, CacheStrategy, ResponseCache};
+pub use collaboration::{AgentCollaboration, CollaborationPattern, MultiAgentCoordinator};
+pub use context::{ContextManager, ContextStrategy, ContextWindow};
+pub use memory::{AgentMemory, ConversationHistory, MemoryStore};
+pub use metrics::{AgentMetrics, CostTracker, PerformanceTracker};
+pub use ollama::{ModelInfo, OllamaClient, OllamaConfig};
+pub use prompt::{PromptManager, PromptTemplate, PromptVariable};
+pub use selection::{FallbackStrategy, ModelSelector, ModelStrategy};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+pub use streaming::{StreamHandler, StreamingResponse};
+pub use tools::{ToolCall, ToolDefinition, ToolExecutor, ToolRegistry};
 
 /// Enhanced agent type with AI/LLM capabilities
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -392,9 +392,6 @@ mod tests {
     #[test]
     fn test_enhanced_agent_types() {
         let agent_type = EnhancedAgentType::Researcher;
-        assert_eq!(
-            serde_json::to_string(&agent_type).unwrap(),
-            "\"Researcher\""
-        );
+        assert_eq!(serde_json::to_string(&agent_type).unwrap(), "\"Researcher\"");
     }
 }

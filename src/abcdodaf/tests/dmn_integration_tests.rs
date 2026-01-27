@@ -18,17 +18,11 @@ mod dmn_tests {
 
         // Strings
         let expr = FeelExpression::Literal(FeelValue::String("hello".to_string()));
-        assert_eq!(
-            evaluator.evaluate(&expr).unwrap(),
-            FeelValue::String("hello".to_string())
-        );
+        assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::String("hello".to_string()));
 
         // Booleans
         let expr = FeelExpression::Literal(FeelValue::Boolean(true));
-        assert_eq!(
-            evaluator.evaluate(&expr).unwrap(),
-            FeelValue::Boolean(true)
-        );
+        assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::Boolean(true));
 
         // Null
         let expr = FeelExpression::Literal(FeelValue::Null);
@@ -175,20 +169,14 @@ mod dmn_tests {
             name: "uppercase".to_string(),
             arguments: vec![FeelExpression::Literal(FeelValue::String("hello".to_string()))],
         };
-        assert_eq!(
-            evaluator.evaluate(&expr).unwrap(),
-            FeelValue::String("HELLO".to_string())
-        );
+        assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::String("HELLO".to_string()));
 
         // lowercase
         let expr = FeelExpression::FunctionCall {
             name: "lowercase".to_string(),
             arguments: vec![FeelExpression::Literal(FeelValue::String("HELLO".to_string()))],
         };
-        assert_eq!(
-            evaluator.evaluate(&expr).unwrap(),
-            FeelValue::String("hello".to_string())
-        );
+        assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::String("hello".to_string()));
     }
 
     #[test]
@@ -201,10 +189,7 @@ mod dmn_tests {
         assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::Number(25.0));
 
         let expr = FeelExpression::Variable("name".to_string());
-        assert_eq!(
-            evaluator.evaluate(&expr).unwrap(),
-            FeelValue::String("Alice".to_string())
-        );
+        assert_eq!(evaluator.evaluate(&expr).unwrap(), FeelValue::String("Alice".to_string()));
     }
 
     #[test]
@@ -221,7 +206,7 @@ mod dmn_tests {
             FeelValue::List(items) => {
                 assert_eq!(items.len(), 3);
                 assert_eq!(items[0], FeelValue::Number(1.0));
-            }
+            },
             _ => panic!("Expected list"),
         }
     }
@@ -240,7 +225,7 @@ mod dmn_tests {
                 assert_eq!(map.len(), 2);
                 assert_eq!(map.get("name"), Some(&FeelValue::String("Bob".to_string())));
                 assert_eq!(map.get("age"), Some(&FeelValue::Number(30.0)));
-            }
+            },
             _ => panic!("Expected context"),
         }
     }
@@ -315,7 +300,10 @@ mod dmn_tests {
         let result = executor.execute_table(&table).unwrap();
         assert_eq!(result.results.len(), 1);
         assert_eq!(result.results[0].rule_index, 0);
-        assert_eq!(result.final_output.get("category"), Some(&FeelValue::String("Minor".to_string())));
+        assert_eq!(
+            result.final_output.get("category"),
+            Some(&FeelValue::String("Minor".to_string()))
+        );
     }
 
     #[test]
@@ -326,7 +314,10 @@ mod dmn_tests {
 
         let result = executor.execute_table(&table).unwrap();
         assert_eq!(result.results.len(), 1);
-        assert_eq!(result.final_output.get("category"), Some(&FeelValue::String("Adult".to_string())));
+        assert_eq!(
+            result.final_output.get("category"),
+            Some(&FeelValue::String("Adult".to_string()))
+        );
     }
 
     #[test]

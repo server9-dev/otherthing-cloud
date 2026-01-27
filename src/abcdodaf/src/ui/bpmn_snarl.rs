@@ -6,52 +6,38 @@
 //! - Context menus
 //! - Node properties
 
-use crate::bpmn::process::{TaskType, GatewayType};
+use crate::bpmn::process::{GatewayType, TaskType};
 use egui::{Color32, Ui};
 use egui_snarl::{
-    InPin, NodeId, OutPin, Snarl,
     ui::{PinInfo, SnarlStyle, SnarlViewer},
+    InPin, NodeId, OutPin, Snarl,
 };
 
 // BPMN standard colors
-const TASK_COLOR: Color32 = Color32::from_rgb(173, 216, 230);      // Light blue
-const SERVICE_COLOR: Color32 = Color32::from_rgb(255, 228, 181);   // Moccasin
-const GATEWAY_COLOR: Color32 = Color32::from_rgb(255, 255, 153);   // Light yellow
+const TASK_COLOR: Color32 = Color32::from_rgb(173, 216, 230); // Light blue
+const SERVICE_COLOR: Color32 = Color32::from_rgb(255, 228, 181); // Moccasin
+const GATEWAY_COLOR: Color32 = Color32::from_rgb(255, 255, 153); // Light yellow
 const START_EVENT_COLOR: Color32 = Color32::from_rgb(144, 238, 144); // Light green
 const END_EVENT_COLOR: Color32 = Color32::from_rgb(255, 160, 160); // Light red
-const FLOW_COLOR: Color32 = Color32::from_rgb(100, 100, 100);      // Gray
+const FLOW_COLOR: Color32 = Color32::from_rgb(100, 100, 100); // Gray
 
 /// BPMN Node types for the node graph
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum BpmnNode {
     /// Start Event - process begins
-    StartEvent {
-        name: String,
-    },
+    StartEvent { name: String },
 
     /// End Event - process ends
-    EndEvent {
-        name: String,
-    },
+    EndEvent { name: String },
 
     /// Task node with specific type
-    Task {
-        name: String,
-        task_type: TaskType,
-        description: Option<String>,
-    },
+    Task { name: String, task_type: TaskType, description: Option<String> },
 
     /// Gateway for flow control
-    Gateway {
-        name: String,
-        gateway_type: GatewayType,
-    },
+    Gateway { name: String, gateway_type: GatewayType },
 
     /// Intermediate Event
-    IntermediateEvent {
-        name: String,
-        event_type: String,
-    },
+    IntermediateEvent { name: String, event_type: String },
 }
 
 impl BpmnNode {
@@ -101,7 +87,7 @@ impl BpmnNode {
                     GatewayType::Inclusive => 2, // OR - one or more
                     GatewayType::EventBased => 2,
                 }
-            }
+            },
             BpmnNode::IntermediateEvent { .. } => 1,
         }
     }
@@ -156,9 +142,7 @@ pub struct BpmnViewer {
 
 impl BpmnViewer {
     pub fn new() -> Self {
-        Self {
-            selected_nodes: Vec::new(),
-        }
+        Self { selected_nodes: Vec::new() }
     }
 }
 
@@ -193,17 +177,17 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
         match node {
             BpmnNode::EndEvent { .. } => {
                 ui.label("incoming");
-            }
+            },
             BpmnNode::Task { .. } => {
                 ui.label("in");
-            }
+            },
             BpmnNode::Gateway { .. } => {
                 ui.label("in");
-            }
+            },
             BpmnNode::IntermediateEvent { .. } => {
                 ui.label("in");
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         PinInfo::circle().with_fill(FLOW_COLOR)
@@ -221,10 +205,10 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
         match node {
             BpmnNode::StartEvent { .. } => {
                 ui.label("outgoing");
-            }
+            },
             BpmnNode::Task { .. } => {
                 ui.label("out");
-            }
+            },
             BpmnNode::Gateway { gateway_type, .. } => {
                 match pin.id.output {
                     0 => match gateway_type {
@@ -239,11 +223,11 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                     },
                     _ => ui.label("out"),
                 };
-            }
+            },
             BpmnNode::IntermediateEvent { .. } => {
                 ui.label("out");
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         PinInfo::circle().with_fill(FLOW_COLOR)
@@ -261,7 +245,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
             // Can't connect to start event (no inputs)
             (_, BpmnNode::StartEvent { .. }) => return,
             // All other connections are valid
-            _ => {}
+            _ => {},
         }
 
         // Disconnect existing connections to this input if needed
@@ -301,17 +285,17 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                         ui.label(desc);
                     }
                 }
-            }
+            },
             BpmnNode::Gateway { gateway_type, .. } => {
                 ui.label(format!("{:?}", gateway_type));
-            }
+            },
             BpmnNode::IntermediateEvent { event_type, .. } => {
                 ui.label(format!("Event: {}", event_type));
-            }
+            },
             _ => {
                 // Start and End events just show their type
                 ui.label(bpmn_node.type_name());
-            }
+            },
         }
     }
 
@@ -319,27 +303,18 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
         true
     }
 
-    fn show_graph_menu(
-        &mut self,
-        pos: egui::Pos2,
-        ui: &mut Ui,
-        snarl: &mut Snarl<BpmnNode>,
-    ) {
+    fn show_graph_menu(&mut self, pos: egui::Pos2, ui: &mut Ui, snarl: &mut Snarl<BpmnNode>) {
         ui.label("Add Node:");
         ui.separator();
 
         if ui.button("▶ Start Event").clicked() {
-            let node = BpmnNode::StartEvent {
-                name: "Start".to_string(),
-            };
+            let node = BpmnNode::StartEvent { name: "Start".to_string() };
             snarl.insert_node(pos, node);
             ui.close();
         }
 
         if ui.button("⏹ End Event").clicked() {
-            let node = BpmnNode::EndEvent {
-                name: "End".to_string(),
-            };
+            let node = BpmnNode::EndEvent { name: "End".to_string() };
             snarl.insert_node(pos, node);
             ui.close();
         }
@@ -475,59 +450,46 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 ui.menu_button("Change Type", |ui| {
                     if ui.button("User Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
-                            snarl[node] = BpmnNode::Task {
-                                name,
-                                task_type: TaskType::User,
-                                description,
-                            };
+                            snarl[node] =
+                                BpmnNode::Task { name, task_type: TaskType::User, description };
                         }
                         ui.close();
                     }
                     if ui.button("Service Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
-                            snarl[node] = BpmnNode::Task {
-                                name,
-                                task_type: TaskType::Service,
-                                description,
-                            };
+                            snarl[node] =
+                                BpmnNode::Task { name, task_type: TaskType::Service, description };
                         }
                         ui.close();
                     }
                     if ui.button("Script Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
-                            snarl[node] = BpmnNode::Task {
-                                name,
-                                task_type: TaskType::Script,
-                                description,
-                            };
+                            snarl[node] =
+                                BpmnNode::Task { name, task_type: TaskType::Script, description };
                         }
                         ui.close();
                     }
                 });
-            }
+            },
             BpmnNode::Gateway { .. } => {
                 ui.menu_button("Change Type", |ui| {
                     if ui.button("Exclusive (XOR)").clicked() {
                         if let BpmnNode::Gateway { name, .. } = snarl[node].clone() {
-                            snarl[node] = BpmnNode::Gateway {
-                                name,
-                                gateway_type: GatewayType::Exclusive,
-                            };
+                            snarl[node] =
+                                BpmnNode::Gateway { name, gateway_type: GatewayType::Exclusive };
                         }
                         ui.close();
                     }
                     if ui.button("Parallel (AND)").clicked() {
                         if let BpmnNode::Gateway { name, .. } = snarl[node].clone() {
-                            snarl[node] = BpmnNode::Gateway {
-                                name,
-                                gateway_type: GatewayType::Parallel,
-                            };
+                            snarl[node] =
+                                BpmnNode::Gateway { name, gateway_type: GatewayType::Parallel };
                         }
                         ui.close();
                     }
                 });
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         ui.separator();

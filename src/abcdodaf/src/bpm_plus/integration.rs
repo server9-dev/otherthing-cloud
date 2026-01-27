@@ -2,8 +2,8 @@
 //!
 //! This module provides the glue that connects BPMN, CMMN, and DMN together.
 
+use super::{bpmn::*, cmmn::*, dmn::*, BpmPlusModel};
 use serde::{Deserialize, Serialize};
-use super::{BpmPlusModel, bpmn::*, cmmn::*, dmn::*};
 
 /// Cross-standard integration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,20 +29,11 @@ pub enum IntegrationSource {
 #[serde(tag = "type")]
 pub enum IntegrationTarget {
     /// BPMN Task within a process
-    ProcessTask {
-        process_id: String,
-        task_id: String,
-    },
+    ProcessTask { process_id: String, task_id: String },
     /// CMMN Plan Item within a case
-    CasePlanItem {
-        case_id: String,
-        item_id: String,
-    },
+    CasePlanItem { case_id: String, item_id: String },
     /// Another decision (for decision chaining)
-    DecisionInput {
-        decision_id: String,
-        input_id: String,
-    },
+    DecisionInput { decision_id: String, input_id: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,17 +58,17 @@ impl StandardIntegration {
                 if !model.processes.iter().any(|p| &p.id == id) {
                     return Err(format!("Source process '{}' not found in model", id));
                 }
-            }
+            },
             IntegrationSource::Case(id) => {
                 if !model.cases.iter().any(|c| &c.id == id) {
                     return Err(format!("Source case '{}' not found in model", id));
                 }
-            }
+            },
             IntegrationSource::Decision(id) => {
                 if !model.decisions.iter().any(|d| &d.id == id) {
                     return Err(format!("Source decision '{}' not found in model", id));
                 }
-            }
+            },
         }
 
         // Validate target exists
@@ -85,26 +76,32 @@ impl StandardIntegration {
             IntegrationTarget::ProcessTask { process_id, task_id } => {
                 if let Some(process) = model.processes.iter().find(|p| &p.id == process_id) {
                     if !process.has_element(task_id) {
-                        return Err(format!("Task '{}' not found in process '{}'", task_id, process_id));
+                        return Err(format!(
+                            "Task '{}' not found in process '{}'",
+                            task_id, process_id
+                        ));
                     }
                 } else {
                     return Err(format!("Target process '{}' not found", process_id));
                 }
-            }
+            },
             IntegrationTarget::CasePlanItem { case_id, item_id } => {
                 if let Some(case) = model.cases.iter().find(|c| &c.id == case_id) {
                     if !case.has_plan_item(item_id) {
-                        return Err(format!("Plan item '{}' not found in case '{}'", item_id, case_id));
+                        return Err(format!(
+                            "Plan item '{}' not found in case '{}'",
+                            item_id, case_id
+                        ));
                     }
                 } else {
                     return Err(format!("Target case '{}' not found", case_id));
                 }
-            }
+            },
             IntegrationTarget::DecisionInput { decision_id, .. } => {
                 if !model.decisions.iter().any(|d| &d.id == decision_id) {
                     return Err(format!("Target decision '{}' not found", decision_id));
                 }
-            }
+            },
         }
 
         Ok(())
@@ -118,9 +115,7 @@ pub struct BpmPlusBuilder {
 
 impl BpmPlusBuilder {
     pub fn new(name: impl Into<String>, description: impl Into<String>) -> Self {
-        Self {
-            model: BpmPlusModel::new(name, description),
-        }
+        Self { model: BpmPlusModel::new(name, description) }
     }
 
     pub fn add_process(mut self, process: BpmnProcess) -> Self {
@@ -160,11 +155,8 @@ impl BpmPlusBuilder {
         case_id: impl Into<String>,
         item_id: impl Into<String>,
     ) -> Self {
-        self.model.link_decision_to_case(
-            &decision_id.into(),
-            &case_id.into(),
-            &item_id.into(),
-        );
+        self.model
+            .link_decision_to_case(&decision_id.into(), &case_id.into(), &item_id.into());
         self
     }
 
@@ -181,10 +173,7 @@ impl BpmPlusBuilder {
         self.model.integrations.push(StandardIntegration {
             id: format!("{}_{}", process_id, item_id),
             source: IntegrationSource::Process(process_id),
-            target: IntegrationTarget::CasePlanItem {
-                case_id,
-                item_id,
-            },
+            target: IntegrationTarget::CasePlanItem { case_id, item_id },
             integration_type: IntegrationType::ProcessTask,
         });
         self

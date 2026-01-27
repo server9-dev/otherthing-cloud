@@ -12,8 +12,7 @@ pub trait Exporter {
     /// Export documentation to file
     fn export_to_file(&self, doc: &ProcessDocumentation, path: &str) -> Result<(), String> {
         let content = self.export(doc)?;
-        std::fs::write(path, content)
-            .map_err(|e| format!("Failed to write file: {}", e))
+        std::fs::write(path, content).map_err(|e| format!("Failed to write file: {}", e))
     }
 }
 
@@ -41,7 +40,10 @@ impl Exporter for MarkdownExporter {
         if !doc.inputs.is_empty() {
             output.push_str("## Inputs\n\n");
             for input in &doc.inputs {
-                output.push_str(&format!("- **{}** ({}): {}\n", input.name, input.param_type, input.description));
+                output.push_str(&format!(
+                    "- **{}** ({}): {}\n",
+                    input.name, input.param_type, input.description
+                ));
                 if input.required {
                     output.push_str("  - Required: Yes\n");
                 }
@@ -59,8 +61,10 @@ impl Exporter for MarkdownExporter {
         if !doc.outputs.is_empty() {
             output.push_str("## Outputs\n\n");
             for output_param in &doc.outputs {
-                output.push_str(&format!("- **{}** ({}): {}\n",
-                    output_param.name, output_param.param_type, output_param.description));
+                output.push_str(&format!(
+                    "- **{}** ({}): {}\n",
+                    output_param.name, output_param.param_type, output_param.description
+                ));
             }
             output.push_str("\n");
         }
@@ -118,7 +122,10 @@ impl Exporter for MarkdownExporter {
         // Metadata
         output.push_str("## Metadata\n\n");
         output.push_str(&format!("- **Process ID:** {}\n", doc.process_id));
-        output.push_str(&format!("- **Generated:** {}\n", doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        output.push_str(&format!(
+            "- **Generated:** {}\n",
+            doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
         for (key, value) in &doc.metadata {
             output.push_str(&format!("- **{}:** {}\n", key, value));
         }
@@ -135,9 +142,7 @@ pub struct HtmlExporter {
 
 impl Default for HtmlExporter {
     fn default() -> Self {
-        Self {
-            stylesheet: Some(Self::default_stylesheet()),
-        }
+        Self { stylesheet: Some(Self::default_stylesheet()) }
     }
 }
 
@@ -176,7 +181,8 @@ impl HtmlExporter {
     th { background: #2a7ab0; color: white; }
     tr:nth-child(even) { background: #f9f9f9; }
 </style>
-"#.to_string()
+"#
+        .to_string()
     }
 }
 
@@ -188,7 +194,9 @@ impl Exporter for HtmlExporter {
         output.push_str("<!DOCTYPE html>\n<html>\n<head>\n");
         output.push_str(&format!("<title>{}</title>\n", doc.name));
         output.push_str("<meta charset=\"UTF-8\">\n");
-        output.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
+        output.push_str(
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n",
+        );
 
         if let Some(ref stylesheet) = self.stylesheet {
             output.push_str(stylesheet);
@@ -216,10 +224,12 @@ impl Exporter for HtmlExporter {
             output.push_str("<h2>Inputs</h2>\n<ul>\n");
             for input in &doc.inputs {
                 output.push_str(&format!("<li class=\"parameter\">\n"));
-                output.push_str(&format!("<strong>{}</strong> ({}): {}<br>\n",
+                output.push_str(&format!(
+                    "<strong>{}</strong> ({}): {}<br>\n",
                     html_escape(&input.name),
                     html_escape(&input.param_type),
-                    html_escape(&input.description)));
+                    html_escape(&input.description)
+                ));
                 if input.required {
                     output.push_str("<span class=\"required\">Required</span><br>\n");
                 }
@@ -236,10 +246,12 @@ impl Exporter for HtmlExporter {
             output.push_str("<h2>Outputs</h2>\n<ul>\n");
             for output_param in &doc.outputs {
                 output.push_str(&format!("<li>\n"));
-                output.push_str(&format!("<strong>{}</strong> ({}): {}\n",
+                output.push_str(&format!(
+                    "<strong>{}</strong> ({}): {}\n",
                     html_escape(&output_param.name),
                     html_escape(&output_param.param_type),
-                    html_escape(&output_param.description)));
+                    html_escape(&output_param.description)
+                ));
                 output.push_str("</li>\n");
             }
             output.push_str("</ul>\n");
@@ -250,11 +262,15 @@ impl Exporter for HtmlExporter {
             output.push_str("<h2>Participants</h2>\n");
             for participant in &doc.participants {
                 output.push_str(&format!("<h3>{}</h3>\n", html_escape(&participant.name)));
-                output.push_str(&format!("<p>Type: <strong>{}</strong></p>\n",
-                    html_escape(&participant.participant_type)));
+                output.push_str(&format!(
+                    "<p>Type: <strong>{}</strong></p>\n",
+                    html_escape(&participant.participant_type)
+                ));
                 if let Some(ref role) = participant.role {
-                    output.push_str(&format!("<p>Role: <strong>{}</strong></p>\n",
-                        html_escape(role)));
+                    output.push_str(&format!(
+                        "<p>Role: <strong>{}</strong></p>\n",
+                        html_escape(role)
+                    ));
                 }
                 if !participant.responsibilities.is_empty() {
                     output.push_str("<p>Responsibilities:</p>\n<ul>\n");
@@ -268,7 +284,10 @@ impl Exporter for HtmlExporter {
 
         // Process Flow
         output.push_str("<h2>Process Flow</h2>\n");
-        output.push_str(&format!("<p>{}</p>\n", html_escape(&doc.flow_description).replace("\n", "<br>")));
+        output.push_str(&format!(
+            "<p>{}</p>\n",
+            html_escape(&doc.flow_description).replace("\n", "<br>")
+        ));
 
         // Error Handling
         if !doc.error_handling.is_empty() {
@@ -276,8 +295,10 @@ impl Exporter for HtmlExporter {
             for error in &doc.error_handling {
                 output.push_str(&format!("<div class=\"error-scenario\">\n"));
                 output.push_str(&format!("<h3>{}</h3>\n", html_escape(&error.condition)));
-                output.push_str(&format!("<p><strong>Handling:</strong> {}</p>\n",
-                    html_escape(&error.handling)));
+                output.push_str(&format!(
+                    "<p><strong>Handling:</strong> {}</p>\n",
+                    html_escape(&error.handling)
+                ));
                 if !error.recovery_steps.is_empty() {
                     output.push_str("<p><strong>Recovery Steps:</strong></p>\n<ol>\n");
                     for step in &error.recovery_steps {
@@ -301,12 +322,20 @@ impl Exporter for HtmlExporter {
         // Metadata
         output.push_str("<div class=\"metadata\">\n");
         output.push_str("<h2>Metadata</h2>\n");
-        output.push_str(&format!("<p><strong>Process ID:</strong> {}</p>\n", html_escape(&doc.process_id)));
-        output.push_str(&format!("<p><strong>Generated:</strong> {}</p>\n",
-            doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        output.push_str(&format!(
+            "<p><strong>Process ID:</strong> {}</p>\n",
+            html_escape(&doc.process_id)
+        ));
+        output.push_str(&format!(
+            "<p><strong>Generated:</strong> {}</p>\n",
+            doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
         for (key, value) in &doc.metadata {
-            output.push_str(&format!("<p><strong>{}:</strong> {}</p>\n",
-                html_escape(key), html_escape(value)));
+            output.push_str(&format!(
+                "<p><strong>{}:</strong> {}</p>\n",
+                html_escape(key),
+                html_escape(value)
+            ));
         }
         output.push_str("</div>\n");
 
@@ -378,7 +407,10 @@ impl Exporter for PlainTextExporter {
         output.push_str("METADATA\n");
         output.push_str("--------\n");
         output.push_str(&format!("Process ID: {}\n", doc.process_id));
-        output.push_str(&format!("Generated: {}\n", doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        output.push_str(&format!(
+            "Generated: {}\n",
+            doc.generated_at.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
         for (key, value) in &doc.metadata {
             output.push_str(&format!("{}: {}\n", key, value));
         }

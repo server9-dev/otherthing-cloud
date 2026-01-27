@@ -66,11 +66,7 @@ pub enum PlanItem {
         exit_criteria: Vec<String>,
     },
     /// Milestone - represents an achievable goal
-    Milestone {
-        id: String,
-        name: String,
-        entry_criteria: Vec<String>,
-    },
+    Milestone { id: String, name: String, entry_criteria: Vec<String> },
     /// Stage - a grouping of plan items
     Stage {
         id: String,
@@ -81,11 +77,7 @@ pub enum PlanItem {
         auto_complete: bool,
     },
     /// Event Listener
-    EventListener {
-        id: String,
-        name: String,
-        event_type: EventType,
-    },
+    EventListener { id: String, name: String, event_type: EventType },
 }
 
 /// Sentry - guards that control plan item lifecycle
@@ -93,13 +85,13 @@ pub enum PlanItem {
 pub struct Sentry {
     pub id: String,
     pub name: String,
-    pub on_parts: Vec<OnPart>,  // Events that trigger the sentry
+    pub on_parts: Vec<OnPart>,   // Events that trigger the sentry
     pub if_part: Option<String>, // Condition expression
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OnPart {
-    pub source_ref: String,     // Plan item ID
+    pub source_ref: String, // Plan item ID
     pub standard_event: StandardEvent,
 }
 
@@ -156,9 +148,7 @@ impl CmmnCase {
                 plan_items: Vec::new(),
                 sentries: Vec::new(),
             },
-            case_file: CaseFile {
-                items: HashMap::new(),
-            },
+            case_file: CaseFile { items: HashMap::new() },
         }
     }
 
@@ -179,16 +169,27 @@ impl CmmnCase {
 
     pub fn validate(&self) -> Result<(), String> {
         // Validate that all referenced sentries exist
-        let sentry_ids: Vec<&String> = self.case_plan_model.sentries.iter().map(|s| &s.id).collect();
+        let sentry_ids: Vec<&String> =
+            self.case_plan_model.sentries.iter().map(|s| &s.id).collect();
 
         for item in &self.case_plan_model.plan_items {
             let (entry_criteria, exit_criteria) = match item {
-                PlanItem::HumanTask { entry_criteria, exit_criteria, .. } => (entry_criteria, exit_criteria),
-                PlanItem::ProcessTask { entry_criteria, exit_criteria, .. } => (entry_criteria, exit_criteria),
-                PlanItem::CaseTask { entry_criteria, exit_criteria, .. } => (entry_criteria, exit_criteria),
-                PlanItem::DecisionTask { entry_criteria, exit_criteria, .. } => (entry_criteria, exit_criteria),
+                PlanItem::HumanTask { entry_criteria, exit_criteria, .. } => {
+                    (entry_criteria, exit_criteria)
+                },
+                PlanItem::ProcessTask { entry_criteria, exit_criteria, .. } => {
+                    (entry_criteria, exit_criteria)
+                },
+                PlanItem::CaseTask { entry_criteria, exit_criteria, .. } => {
+                    (entry_criteria, exit_criteria)
+                },
+                PlanItem::DecisionTask { entry_criteria, exit_criteria, .. } => {
+                    (entry_criteria, exit_criteria)
+                },
                 PlanItem::Milestone { entry_criteria, .. } => (entry_criteria, &vec![]),
-                PlanItem::Stage { entry_criteria, exit_criteria, .. } => (entry_criteria, exit_criteria),
+                PlanItem::Stage { entry_criteria, exit_criteria, .. } => {
+                    (entry_criteria, exit_criteria)
+                },
                 PlanItem::EventListener { .. } => continue,
             };
 
@@ -203,8 +204,10 @@ impl CmmnCase {
         for sentry in &self.case_plan_model.sentries {
             for on_part in &sentry.on_parts {
                 if !self.has_plan_item(&on_part.source_ref) {
-                    return Err(format!("Sentry '{}' references non-existent plan item '{}'",
-                        sentry.id, on_part.source_ref));
+                    return Err(format!(
+                        "Sentry '{}' references non-existent plan item '{}'",
+                        sentry.id, on_part.source_ref
+                    ));
                 }
             }
         }
@@ -213,31 +216,27 @@ impl CmmnCase {
     }
 
     pub(crate) fn has_plan_item(&self, item_id: &str) -> bool {
-        self.case_plan_model.plan_items.iter().any(|item| {
-            match item {
-                PlanItem::HumanTask { id, .. } => id == item_id,
-                PlanItem::ProcessTask { id, .. } => id == item_id,
-                PlanItem::CaseTask { id, .. } => id == item_id,
-                PlanItem::DecisionTask { id, .. } => id == item_id,
-                PlanItem::Milestone { id, .. } => id == item_id,
-                PlanItem::Stage { id, .. } => id == item_id,
-                PlanItem::EventListener { id, .. } => id == item_id,
-            }
+        self.case_plan_model.plan_items.iter().any(|item| match item {
+            PlanItem::HumanTask { id, .. } => id == item_id,
+            PlanItem::ProcessTask { id, .. } => id == item_id,
+            PlanItem::CaseTask { id, .. } => id == item_id,
+            PlanItem::DecisionTask { id, .. } => id == item_id,
+            PlanItem::Milestone { id, .. } => id == item_id,
+            PlanItem::Stage { id, .. } => id == item_id,
+            PlanItem::EventListener { id, .. } => id == item_id,
         })
     }
 
     /// Get a plan item by ID
     pub fn get_plan_item(&self, item_id: &str) -> Option<&PlanItem> {
-        self.case_plan_model.plan_items.iter().find(|item| {
-            match item {
-                PlanItem::HumanTask { id, .. } => id == item_id,
-                PlanItem::ProcessTask { id, .. } => id == item_id,
-                PlanItem::CaseTask { id, .. } => id == item_id,
-                PlanItem::DecisionTask { id, .. } => id == item_id,
-                PlanItem::Milestone { id, .. } => id == item_id,
-                PlanItem::Stage { id, .. } => id == item_id,
-                PlanItem::EventListener { id, .. } => id == item_id,
-            }
+        self.case_plan_model.plan_items.iter().find(|item| match item {
+            PlanItem::HumanTask { id, .. } => id == item_id,
+            PlanItem::ProcessTask { id, .. } => id == item_id,
+            PlanItem::CaseTask { id, .. } => id == item_id,
+            PlanItem::DecisionTask { id, .. } => id == item_id,
+            PlanItem::Milestone { id, .. } => id == item_id,
+            PlanItem::Stage { id, .. } => id == item_id,
+            PlanItem::EventListener { id, .. } => id == item_id,
         })
     }
 
@@ -248,9 +247,11 @@ impl CmmnCase {
 
     /// Get all sentries that reference a specific plan item
     pub fn get_sentries_for_item(&self, item_id: &str) -> Vec<&Sentry> {
-        self.case_plan_model.sentries.iter().filter(|s| {
-            s.on_parts.iter().any(|on_part| on_part.source_ref == item_id)
-        }).collect()
+        self.case_plan_model
+            .sentries
+            .iter()
+            .filter(|s| s.on_parts.iter().any(|on_part| on_part.source_ref == item_id))
+            .collect()
     }
 
     /// Get all plan items with a specific type
@@ -260,24 +261,28 @@ impl CmmnCase {
 
     /// Get required plan items
     pub fn get_required_items(&self) -> Vec<&PlanItem> {
-        self.case_plan_model.plan_items.iter().filter(|item| {
-            match item {
+        self.case_plan_model
+            .plan_items
+            .iter()
+            .filter(|item| match item {
                 PlanItem::HumanTask { required, .. } => *required,
                 PlanItem::ProcessTask { required, .. } => *required,
                 _ => false,
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     /// Get discretionary items (optional plan items)
     pub fn get_discretionary_items(&self) -> Vec<&PlanItem> {
-        self.case_plan_model.plan_items.iter().filter(|item| {
-            match item {
+        self.case_plan_model
+            .plan_items
+            .iter()
+            .filter(|item| match item {
                 PlanItem::HumanTask { required, .. } => !*required,
                 PlanItem::ProcessTask { required, .. } => !*required,
                 _ => true,
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     /// Count plan items by type
@@ -304,8 +309,10 @@ impl CmmnCase {
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.push_str("<definitions xmlns=\"http://www.omg.org/spec/CMMN/20151109/MODEL\">\n");
         xml.push_str(&format!("  <case id=\"{}\" name=\"{}\">\n", self.id, self.name));
-        xml.push_str(&format!("    <casePlanModel id=\"{}\" name=\"{}\">\n",
-            self.case_plan_model.id, self.case_plan_model.name));
+        xml.push_str(&format!(
+            "    <casePlanModel id=\"{}\" name=\"{}\">\n",
+            self.case_plan_model.id, self.case_plan_model.name
+        ));
 
         for item in &self.case_plan_model.plan_items {
             xml.push_str(&self.plan_item_to_xml(item, 6));
@@ -321,19 +328,28 @@ impl CmmnCase {
         let spaces = " ".repeat(indent);
         match item {
             PlanItem::HumanTask { id, name, .. } => {
-                format!("{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"humanTask_{}\" />\n",
-                    spaces, id, name, id)
-            }
+                format!(
+                    "{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"humanTask_{}\" />\n",
+                    spaces, id, name, id
+                )
+            },
             PlanItem::ProcessTask { id, name, process_ref, .. } => {
-                format!("{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"{}\" />\n",
-                    spaces, id, name, process_ref)
-            }
+                format!(
+                    "{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"{}\" />\n",
+                    spaces, id, name, process_ref
+                )
+            },
             PlanItem::Milestone { id, name, .. } => {
-                format!("{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"milestone_{}\" />\n",
-                    spaces, id, name, id)
-            }
-            _ => format!("{}<!-- Plan item {} not yet implemented in XML export -->\n",
-                spaces, self.get_plan_item_id(item)),
+                format!(
+                    "{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"milestone_{}\" />\n",
+                    spaces, id, name, id
+                )
+            },
+            _ => format!(
+                "{}<!-- Plan item {} not yet implemented in XML export -->\n",
+                spaces,
+                self.get_plan_item_id(item)
+            ),
         }
     }
 

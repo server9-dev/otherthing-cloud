@@ -20,11 +20,7 @@ pub struct ValidationContext<'a> {
 impl<'a> ValidationContext<'a> {
     /// Create a new validation context
     pub fn new(diagram: &'a BpmnDiagram) -> Self {
-        Self {
-            diagram,
-            metadata: HashMap::new(),
-            path: Vec::new(),
-        }
+        Self { diagram, metadata: HashMap::new(), path: Vec::new() }
     }
 
     /// Add metadata
@@ -107,7 +103,7 @@ impl ValidationResult {
                     RuleSeverity::Critical => self.critical_count += 1,
                     RuleSeverity::Error => self.error_count += 1,
                     RuleSeverity::Warning => self.warning_count += 1,
-                    RuleSeverity::Info => {}
+                    RuleSeverity::Info => {},
                 }
             }
         }
@@ -131,18 +127,12 @@ impl ValidationResult {
 
     /// Get all violations
     pub fn violations(&self) -> Vec<&Violation> {
-        self.results
-            .iter()
-            .filter_map(|r| r.violation.as_ref())
-            .collect()
+        self.results.iter().filter_map(|r| r.violation.as_ref()).collect()
     }
 
     /// Get violations by severity
     pub fn violations_by_severity(&self, severity: RuleSeverity) -> Vec<&Violation> {
-        self.violations()
-            .into_iter()
-            .filter(|v| v.severity == severity)
-            .collect()
+        self.violations().into_iter().filter(|v| v.severity == severity).collect()
     }
 }
 
@@ -161,9 +151,7 @@ pub struct ValidationEngine {
 impl ValidationEngine {
     /// Create a new validation engine
     pub fn new() -> Self {
-        Self {
-            rules: Vec::new(),
-        }
+        Self { rules: Vec::new() }
     }
 
     /// Register a rule
@@ -213,7 +201,11 @@ impl ValidationEngine {
     }
 
     /// Validate a single rule
-    fn validate_rule(&self, rule: &RuleDefinition, context: &ValidationContext) -> RuleValidationResult {
+    fn validate_rule(
+        &self,
+        rule: &RuleDefinition,
+        context: &ValidationContext,
+    ) -> RuleValidationResult {
         let passed = self.evaluate_condition(&rule.condition, context);
 
         let violation = if !passed {
@@ -232,11 +224,7 @@ impl ValidationEngine {
             None
         };
 
-        RuleValidationResult {
-            rule_id: rule.id.clone(),
-            passed,
-            violation,
-        }
+        RuleValidationResult { rule_id: rule.id.clone(), passed, violation }
     }
 
     /// Evaluate a rule condition
@@ -244,33 +232,31 @@ impl ValidationEngine {
         match condition {
             RuleCondition::MustExist { element_type } => {
                 self.check_element_exists(element_type, context)
-            }
+            },
             RuleCondition::MustNotExist { element_type } => {
                 !self.check_element_exists(element_type, context)
-            }
+            },
             RuleCondition::FieldRequired { field_path } => {
                 self.check_field_required(field_path, context)
-            }
+            },
             RuleCondition::FieldMatches { field_path, pattern } => {
                 self.check_field_matches(field_path, pattern, context)
-            }
+            },
             RuleCondition::CountConstraint { element_type, min, max } => {
                 self.check_count_constraint(element_type, *min, *max, context)
-            }
+            },
             RuleCondition::CustomExpression { expression: _ } => {
                 // Custom expressions would be evaluated here
                 // For now, return true
                 true
-            }
+            },
             RuleCondition::And(conditions) => {
                 conditions.iter().all(|c| self.evaluate_condition(c, context))
-            }
+            },
             RuleCondition::Or(conditions) => {
                 conditions.iter().any(|c| self.evaluate_condition(c, context))
-            }
-            RuleCondition::Not(condition) => {
-                !self.evaluate_condition(condition, context)
-            }
+            },
+            RuleCondition::Not(condition) => !self.evaluate_condition(condition, context),
         }
     }
 
@@ -282,7 +268,9 @@ impl ValidationEngine {
             "end_event" => context.diagram.processes.iter().any(|p| !p.end_events.is_empty()),
             "task" => context.diagram.processes.iter().any(|p| !p.tasks.is_empty()),
             "gateway" => context.diagram.processes.iter().any(|p| !p.gateways.is_empty()),
-            "sequence_flow" => context.diagram.processes.iter().any(|p| !p.sequence_flows.is_empty()),
+            "sequence_flow" => {
+                context.diagram.processes.iter().any(|p| !p.sequence_flows.is_empty())
+            },
             _ => false,
         }
     }
@@ -295,7 +283,12 @@ impl ValidationEngine {
     }
 
     /// Check if field matches pattern
-    fn check_field_matches(&self, _field_path: &str, _pattern: &str, _context: &ValidationContext) -> bool {
+    fn check_field_matches(
+        &self,
+        _field_path: &str,
+        _pattern: &str,
+        _context: &ValidationContext,
+    ) -> bool {
         // Pattern matching would be implemented here
         // For now, return true
         true

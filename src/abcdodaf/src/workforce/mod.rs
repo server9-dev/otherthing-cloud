@@ -4,12 +4,12 @@
 //! and non-agentic (human/system) operations within an AI assistant workforce.
 
 pub mod agent;
-pub mod task;
 pub mod orchestration;
+pub mod task;
 
-pub use agent::{AgentTask, AgentCapability, AgentType};
-pub use task::{HumanTask, SystemTask, HumanRole, SystemOperation};
+pub use agent::{AgentCapability, AgentTask, AgentType};
 pub use orchestration::{WorkflowBuilder, WorkflowExecution};
+pub use task::{HumanRole, HumanTask, SystemOperation, SystemTask};
 
 use crate::bpmn::ProcessInstance;
 use crate::dodaf::OperationalActivity;
@@ -102,7 +102,8 @@ mod tests {
 
     #[test]
     fn test_workforce_task_creation() {
-        let agent_task = AgentTask::new("a1", "Agent Task", AgentCapability::NaturalLanguageProcessing);
+        let agent_task =
+            AgentTask::new("a1", "Agent Task", AgentCapability::NaturalLanguageProcessing);
         let task = WorkforceTask::Agent(agent_task);
 
         assert_eq!(task.id(), "a1");

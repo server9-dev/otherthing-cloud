@@ -41,10 +41,8 @@ impl CommandHistory {
         self.redo_stack.clear();
 
         // Save current state
-        let snapshot = SnarlSnapshot {
-            snarl: snarl.clone(),
-            description: self.current_description.clone(),
-        };
+        let snapshot =
+            SnarlSnapshot { snarl: snarl.clone(), description: self.current_description.clone() };
 
         self.undo_stack.push(snapshot);
 

@@ -7,8 +7,8 @@
 //! - Human-in-the-loop workflows
 //! - Error handling patterns
 
-use super::{Template, TemplateMetadata, TemplateCategory, TemplateLibrary};
 use super::templates::ParameterConfig;
+use super::{Template, TemplateCategory, TemplateLibrary, TemplateMetadata};
 
 /// Create the built-in template library
 pub fn create_builtin_library() -> TemplateLibrary {
@@ -37,11 +37,7 @@ fn create_simple_approval_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "approval".to_string(),
-            "request".to_string(),
-            "single-level".to_string(),
-        ],
+        tags: vec!["approval".to_string(), "request".to_string(), "single-level".to_string()],
         complexity: "beginner".to_string(),
         use_cases: vec![
             "Simple request approval".to_string(),
@@ -61,7 +57,8 @@ fn create_simple_approval_template() -> Template {
     <bpmn:serviceTask id="ProcessApproval" name="Process Approval"/>
     <bpmn:endEvent id="ApprovalComplete"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template.add_parameter(
@@ -72,7 +69,7 @@ fn create_simple_approval_template() -> Template {
             default: None,
             description: "Unique request identifier".to_string(),
             required: true,
-        }
+        },
     );
 
     template.add_parameter(
@@ -83,7 +80,7 @@ fn create_simple_approval_template() -> Template {
             default: Some("Manager".to_string()),
             description: "Role of the approver".to_string(),
             required: false,
-        }
+        },
     );
 
     template.documentation = r#"# Simple Approval Workflow
@@ -105,7 +102,8 @@ A straightforward single-level approval workflow for processing requests.
 - Purchase order approvals
 - Leave request approvals
 - Simple access requests
-"#.to_string();
+"#
+    .to_string();
 
     template
 }
@@ -120,11 +118,7 @@ fn create_multi_level_approval_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "approval".to_string(),
-            "multi-level".to_string(),
-            "hierarchical".to_string(),
-        ],
+        tags: vec!["approval".to_string(), "multi-level".to_string(), "hierarchical".to_string()],
         complexity: "intermediate".to_string(),
         use_cases: vec![
             "Multi-level authorization".to_string(),
@@ -147,7 +141,8 @@ fn create_multi_level_approval_template() -> Template {
     <bpmn:serviceTask id="ApplyApproval" name="Apply Approval"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template.documentation = r#"# Multi-Level Approval Workflow
@@ -168,7 +163,8 @@ Sequential approval process with multiple hierarchical levels.
 
 ## Escalation
 Rejections are communicated back to initiator.
-"#.to_string();
+"#
+    .to_string();
 
     template
 }
@@ -183,11 +179,7 @@ fn create_etl_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "etl".to_string(),
-            "data".to_string(),
-            "pipeline".to_string(),
-        ],
+        tags: vec!["etl".to_string(), "data".to_string(), "pipeline".to_string()],
         complexity: "intermediate".to_string(),
         use_cases: vec![
             "Data migration".to_string(),
@@ -209,7 +201,8 @@ fn create_etl_template() -> Template {
     <bpmn:serviceTask id="Validate" name="Validate"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template.documentation = r#"# ETL Workflow Pattern
@@ -244,7 +237,8 @@ Extract-Transform-Load pattern for processing and moving data.
 - Extract errors → Retry logic
 - Transform errors → Exception handling
 - Load errors → Rollback capability
-"#.to_string();
+"#
+    .to_string();
 
     template
 }
@@ -259,11 +253,7 @@ fn create_parallel_orchestration_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "orchestration".to_string(),
-            "parallel".to_string(),
-            "async".to_string(),
-        ],
+        tags: vec!["orchestration".to_string(), "parallel".to_string(), "async".to_string()],
         complexity: "intermediate".to_string(),
         use_cases: vec![
             "Parallel task execution".to_string(),
@@ -285,7 +275,8 @@ fn create_parallel_orchestration_template() -> Template {
     <bpmn:parallelGateway id="Join"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template
@@ -301,16 +292,9 @@ fn create_human_in_loop_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "human-in-loop".to_string(),
-            "decision".to_string(),
-            "hybrid".to_string(),
-        ],
+        tags: vec!["human-in-loop".to_string(), "decision".to_string(), "hybrid".to_string()],
         complexity: "intermediate".to_string(),
-        use_cases: vec![
-            "Exception handling".to_string(),
-            "Quality assurance".to_string(),
-        ],
+        use_cases: vec!["Exception handling".to_string(), "Quality assurance".to_string()],
         related_templates: vec![],
     };
 
@@ -327,7 +311,8 @@ fn create_human_in_loop_template() -> Template {
     <bpmn:serviceTask id="ApplyDecision" name="Apply Decision"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template.documentation = r#"# Human-in-the-Loop Pattern
@@ -347,7 +332,8 @@ Combines automated processing with human review and decision-making.
 - Exception handling
 - Quality assurance gates
 - Learning and continuous improvement
-"#.to_string();
+"#
+    .to_string();
 
     template
 }
@@ -362,16 +348,9 @@ fn create_error_handling_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "error".to_string(),
-            "retry".to_string(),
-            "resilience".to_string(),
-        ],
+        tags: vec!["error".to_string(), "retry".to_string(), "resilience".to_string()],
         complexity: "intermediate".to_string(),
-        use_cases: vec![
-            "Transient error handling".to_string(),
-            "Service reliability".to_string(),
-        ],
+        use_cases: vec!["Transient error handling".to_string(), "Service reliability".to_string()],
         related_templates: vec![],
     };
 
@@ -388,7 +367,8 @@ fn create_error_handling_template() -> Template {
     <bpmn:userTask id="Escalate" name="Manual Escalation"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template
@@ -404,16 +384,9 @@ fn create_notification_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "notification".to_string(),
-            "alert".to_string(),
-            "communication".to_string(),
-        ],
+        tags: vec!["notification".to_string(), "alert".to_string(), "communication".to_string()],
         complexity: "beginner".to_string(),
-        use_cases: vec![
-            "Event notifications".to_string(),
-            "Alert generation".to_string(),
-        ],
+        use_cases: vec!["Event notifications".to_string(), "Alert generation".to_string()],
         related_templates: vec![],
     };
 
@@ -430,7 +403,8 @@ fn create_notification_template() -> Template {
     <bpmn:parallelGateway id="Sync"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template
@@ -446,16 +420,9 @@ fn create_decision_logic_template() -> Template {
         author: Some("ABCDODAF System".to_string()),
         created_at: chrono::Utc::now(),
         modified_at: chrono::Utc::now(),
-        tags: vec![
-            "decision".to_string(),
-            "logic".to_string(),
-            "rules".to_string(),
-        ],
+        tags: vec!["decision".to_string(), "logic".to_string(), "rules".to_string()],
         complexity: "intermediate".to_string(),
-        use_cases: vec![
-            "Business rule evaluation".to_string(),
-            "Complex routing".to_string(),
-        ],
+        use_cases: vec!["Business rule evaluation".to_string(), "Complex routing".to_string()],
         related_templates: vec![],
     };
 
@@ -473,7 +440,8 @@ fn create_decision_logic_template() -> Template {
     <bpmn:exclusiveGateway id="Merge"/>
     <bpmn:endEvent id="End"/>
   </bpmn:process>
-</bpmn:definitions>"#.to_string()
+</bpmn:definitions>"#
+            .to_string(),
     );
 
     template

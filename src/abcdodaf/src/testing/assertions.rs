@@ -18,20 +18,12 @@ pub struct AssertionResult {
 impl AssertionResult {
     /// Create a passing assertion
     pub fn passed(description: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            description: description.into(),
-            passed: true,
-            message: message.into(),
-        }
+        Self { description: description.into(), passed: true, message: message.into() }
     }
 
     /// Create a failing assertion
     pub fn failed(description: impl Into<String>, message: impl Into<String>) -> Self {
-        Self {
-            description: description.into(),
-            passed: false,
-            message: message.into(),
-        }
+        Self { description: description.into(), passed: false, message: message.into() }
     }
 }
 
@@ -43,9 +35,7 @@ pub struct WorkflowAssertions {
 impl WorkflowAssertions {
     /// Create new assertions
     pub fn new() -> Self {
-        Self {
-            assertions: Vec::new(),
-        }
+        Self { assertions: Vec::new() }
     }
 
     /// Assert total execution time
@@ -62,10 +52,7 @@ impl WorkflowAssertions {
             message: if passed {
                 format!("Total duration {}ms is within limit", metrics.total_duration_ms)
             } else {
-                format!(
-                    "Total duration {}ms exceeds limit {}ms",
-                    metrics.total_duration_ms, max_ms
-                )
+                format!("Total duration {}ms exceeds limit {}ms", metrics.total_duration_ms, max_ms)
             },
         };
         self.assertions.push(assertion);
@@ -112,10 +99,7 @@ impl WorkflowAssertions {
                 message: if passed {
                     format!("Agent tasks count matches: {}", expected)
                 } else {
-                    format!(
-                        "Agent tasks expected {}, got {}",
-                        expected, metrics.agent_tasks
-                    )
+                    format!("Agent tasks expected {}, got {}", expected, metrics.agent_tasks)
                 },
             });
         }
@@ -128,10 +112,7 @@ impl WorkflowAssertions {
                 message: if passed {
                     format!("Human tasks count matches: {}", expected)
                 } else {
-                    format!(
-                        "Human tasks expected {}, got {}",
-                        expected, metrics.human_tasks
-                    )
+                    format!("Human tasks expected {}, got {}", expected, metrics.human_tasks)
                 },
             });
         }
@@ -144,10 +125,7 @@ impl WorkflowAssertions {
                 message: if passed {
                     format!("System tasks count matches: {}", expected)
                 } else {
-                    format!(
-                        "System tasks expected {}, got {}",
-                        expected, metrics.system_tasks
-                    )
+                    format!("System tasks expected {}, got {}", expected, metrics.system_tasks)
                 },
             });
         }
@@ -190,9 +168,7 @@ pub struct TaskAssertions {
 impl TaskAssertions {
     /// Create new task assertions
     pub fn new() -> Self {
-        Self {
-            assertions: Vec::new(),
-        }
+        Self { assertions: Vec::new() }
     }
 
     /// Assert task succeeded
@@ -203,10 +179,7 @@ impl TaskAssertions {
             message: if result.success {
                 "Task completed successfully".to_string()
             } else {
-                format!(
-                    "Task failed: {}",
-                    result.error.as_deref().unwrap_or("unknown error")
-                )
+                format!("Task failed: {}", result.error.as_deref().unwrap_or("unknown error"))
             },
         };
         self.assertions.push(assertion);
@@ -244,10 +217,7 @@ impl TaskAssertions {
             message: if passed {
                 format!("Output[{}] has expected value", key)
             } else {
-                format!(
-                    "Output[{}] expected {:?}, got {:?}",
-                    key, expected, actual
-                )
+                format!("Output[{}] expected {:?}, got {:?}", key, expected, actual)
             },
         };
         self.assertions.push(assertion);

@@ -1,0 +1,57 @@
+# ============================================================================
+# Rust Formatting Configuration for ABCDODAF Project
+# ============================================================================
+# This file configures rustfmt, Rust's official code formatter.
+#
+# Purpose:
+# - Ensure consistent code style across the entire project
+# - Improve readability and maintainability
+# - Reduce code review friction by automating formatting
+#
+# Usage:
+#   cargo fmt --all           # Format all code
+#   cargo fmt --all -- --check # Check formatting without modifying files
+#
+# Documentation: https://rust-lang.github.io/rustfmt/
+# ============================================================================
+# NOTE: This config only uses stable rustfmt features for maximum compatibility.
+# ============================================================================
+
+# Rust edition - must match Cargo.toml
+edition = "2021"
+
+# Line width settings
+max_width = 100
+
+# Indentation
+tab_spaces = 4
+hard_tabs = false
+
+# Import and module organization
+reorder_imports = true
+reorder_modules = true
+
+# Code formatting heuristics
+# "Max" uses smaller lines where possible
+use_small_heuristics = "Max"
+
+# Control flow
+match_block_trailing_comma = true
+
+# Struct formatting
+use_field_init_shorthand = true
+
+# Array and chain formatting
+array_width = 80
+chain_width = 80
+
+# Misc formatting
+force_explicit_abi = true
+remove_nested_parens = true
+use_try_shorthand = true
+
+# Newlines
+newline_style = "Unix"
+
+# Function call formatting
+fn_params_layout = "Tall"

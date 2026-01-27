@@ -1,12 +1,12 @@
 //! Test report generation and formatting
 
+use crate::testing::assertions::AssertionResult;
+use crate::testing::coverage::PathCoverage;
 use crate::testing::harness::TestSummary;
 use crate::testing::performance::BenchmarkResult;
-use crate::testing::coverage::PathCoverage;
-use crate::testing::assertions::AssertionResult;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
 
 /// Complete test report
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,10 +139,7 @@ pub struct SystemInfo {
 
 impl TestReport {
     /// Create new test report
-    pub fn new(
-        suite_name: impl Into<String>,
-        summary: TestSummary,
-    ) -> Self {
+    pub fn new(suite_name: impl Into<String>, summary: TestSummary) -> Self {
         let suite_name_str = suite_name.into();
         Self {
             id: uuid::Uuid::new_v4().to_string(),
@@ -227,7 +224,13 @@ impl TestReport {
 
     fn summary_to_html(&self) -> String {
         let pass_rate = (self.summary.pass_rate * 100.0) as u32;
-        let status_color = if pass_rate >= 90 { "green" } else if pass_rate >= 70 { "orange" } else { "red" };
+        let status_color = if pass_rate >= 90 {
+            "green"
+        } else if pass_rate >= 70 {
+            "orange"
+        } else {
+            "red"
+        };
 
         format!(
             "<div class=\"summary-box\">\
@@ -377,7 +380,10 @@ impl ReportGenerator {
     }
 
     /// Save report to file
-    pub fn save_json_report(report: &TestReport, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save_json_report(
+        report: &TestReport,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let json = report.to_json()?;
         std::fs::write(path, json)?;
         Ok(())

@@ -125,13 +125,9 @@ mod tests {
 
     #[test]
     fn test_violation_display() {
-        let violation = Violation::new(
-            "TEST_001",
-            "Test Rule",
-            RuleSeverity::Warning,
-            "Test message",
-        )
-        .at_location("test.path");
+        let violation =
+            Violation::new("TEST_001", "Test Rule", RuleSeverity::Warning, "Test message")
+                .at_location("test.path");
 
         let display = violation.display_string();
         assert!(display.contains("WARNING"));

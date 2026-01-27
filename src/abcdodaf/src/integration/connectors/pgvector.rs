@@ -4,7 +4,7 @@
 //! Supports embedding storage, similarity queries (cosine, L2, inner product), and index management.
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
     ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
@@ -26,9 +26,9 @@ pub enum SimilarityMetric {
 impl SimilarityMetric {
     fn to_pg_operator(&self) -> &'static str {
         match self {
-            SimilarityMetric::Cosine => "<=>",         // cosine distance
-            SimilarityMetric::L2 => "<->",             // L2 distance
-            SimilarityMetric::InnerProduct => "<#>",   // negative inner product
+            SimilarityMetric::Cosine => "<=>",       // cosine distance
+            SimilarityMetric::L2 => "<->",           // L2 distance
+            SimilarityMetric::InnerProduct => "<#>", // negative inner product
         }
     }
 }
@@ -44,35 +44,17 @@ pub struct PgVectorConnector {
 impl PgVectorConnector {
     /// Create a new PGVector connector
     pub fn new(config: ConnectorConfig) -> Self {
-        let dimension = config
-            .config
-            .get("vector_dimension")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(1536) as usize; // Default to OpenAI ada-002 dimension
+        let dimension =
+            config.config.get("vector_dimension").and_then(|v| v.as_u64()).unwrap_or(1536) as usize; // Default to OpenAI ada-002 dimension
 
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            connection_string: None,
-            dimension,
-        }
+        Self { config, status: ConnectionStatus::Disconnected, connection_string: None, dimension }
     }
 
     /// Build connection string from config
     fn build_connection_string(&self) -> ConnectorResult<String> {
-        let host = self
-            .config
-            .params
-            .get("host")
-            .and_then(|v| v.as_str())
-            .unwrap_or("localhost");
+        let host = self.config.params.get("host").and_then(|v| v.as_str()).unwrap_or("localhost");
 
-        let port = self
-            .config
-            .params
-            .get("port")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(5432);
+        let port = self.config.params.get("port").and_then(|v| v.as_u64()).unwrap_or(5432);
 
         let database = self
             .config
@@ -88,17 +70,9 @@ impl PgVectorConnector {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ConnectorError::config("User not specified"))?;
 
-        let password = self
-            .config
-            .params
-            .get("password")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let password = self.config.params.get("password").and_then(|v| v.as_str()).unwrap_or("");
 
-        Ok(format!(
-            "postgresql://{}:{}@{}:{}/{}",
-            user, password, host, port, database
-        ))
+        Ok(format!("postgresql://{}:{}@{}:{}/{}", user, password, host, port, database))
     }
 
     /// Initialize pgvector extension
@@ -148,10 +122,8 @@ impl PgVectorConnector {
         metric: &SimilarityMetric,
         limit: usize,
     ) -> String {
-        let vector_literal = format!("[{}]", embedding.iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<_>>()
-            .join(","));
+        let vector_literal =
+            format!("[{}]", embedding.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(","));
 
         format!(
             "SELECT id, metadata, {} {} '{}' AS distance FROM {} ORDER BY {} {} '{}' LIMIT {}",
@@ -227,7 +199,7 @@ impl Connector for PgVectorConnector {
                     "sql": sql,
                     "status": "success"
                 })
-            }
+            },
             "CREATE_INDEX" => {
                 let table_name = request
                     .parameters
@@ -241,11 +213,8 @@ impl Connector for PgVectorConnector {
                     .and_then(|v| v.as_str())
                     .unwrap_or("embedding");
 
-                let metric_str = request
-                    .parameters
-                    .get("metric")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("cosine");
+                let metric_str =
+                    request.parameters.get("metric").and_then(|v| v.as_str()).unwrap_or("cosine");
 
                 let metric = match metric_str {
                     "cosine" => SimilarityMetric::Cosine,
@@ -263,7 +232,7 @@ impl Connector for PgVectorConnector {
                     "sql": sql,
                     "status": "success"
                 })
-            }
+            },
             "INSERT_EMBEDDING" => {
                 let table_name = request
                     .parameters
@@ -278,10 +247,7 @@ impl Connector for PgVectorConnector {
                     .and_then(|v| v.as_array())
                     .ok_or_else(|| ConnectorError::request("Embedding not specified"))?;
 
-                let metadata = request
-                    .body
-                    .as_ref()
-                    .and_then(|v| v.get("metadata"));
+                let metadata = request.body.as_ref().and_then(|v| v.get("metadata"));
 
                 json!({
                     "operation": "insert_embedding",
@@ -291,7 +257,7 @@ impl Connector for PgVectorConnector {
                     "id": 1,
                     "status": "success"
                 })
-            }
+            },
             "SIMILARITY_SEARCH" => {
                 let table_name = request
                     .parameters
@@ -317,11 +283,8 @@ impl Connector for PgVectorConnector {
                     })
                     .ok_or_else(|| ConnectorError::request("Valid embedding not specified"))?;
 
-                let metric_str = request
-                    .parameters
-                    .get("metric")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("cosine");
+                let metric_str =
+                    request.parameters.get("metric").and_then(|v| v.as_str()).unwrap_or("cosine");
 
                 let metric = match metric_str {
                     "cosine" => SimilarityMetric::Cosine,
@@ -330,13 +293,16 @@ impl Connector for PgVectorConnector {
                     _ => SimilarityMetric::Cosine,
                 };
 
-                let limit = request
-                    .parameters
-                    .get("limit")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(10) as usize;
+                let limit =
+                    request.parameters.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
-                let sql = self.generate_similarity_query(table_name, vector_column, &embedding, &metric, limit);
+                let sql = self.generate_similarity_query(
+                    table_name,
+                    vector_column,
+                    &embedding,
+                    &metric,
+                    limit,
+                );
 
                 // Simulate results
                 json!({
@@ -348,13 +314,13 @@ impl Connector for PgVectorConnector {
                     "results": [],
                     "status": "success"
                 })
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -366,10 +332,7 @@ impl Connector for PgVectorConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "PGVector status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("PGVector status: {}", self.status)));
         }
 
         // In production, check if pgvector extension is installed

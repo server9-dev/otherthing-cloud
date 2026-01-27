@@ -60,20 +60,20 @@ async fn demo_ollama_client() -> Result<(), Box<dyn std::error::Error>> {
             for model in models.iter().take(3) {
                 println!("  - {} ({:.2} GB)", model.name, model.size as f64 / 1e9);
             }
-        }
+        },
         Err(e) => {
             println!("✗ Could not list models: {}", e);
             println!("  (Make sure Ollama is running: ollama serve)");
-        }
+        },
     }
 
     // Simple chat completion
     let request = abcdodaf::ai::ollama::ChatRequest::new("llama3.2:3b")
         .add_message(abcdodaf::ai::ollama::ChatMessage::system(
-            "You are a helpful assistant specialized in Rust programming."
+            "You are a helpful assistant specialized in Rust programming.",
         ))
         .add_message(abcdodaf::ai::ollama::ChatMessage::user(
-            "What is the difference between String and &str in Rust?"
+            "What is the difference between String and &str in Rust?",
         ))
         .with_temperature(0.7)
         .with_max_tokens(500);
@@ -92,10 +92,10 @@ async fn demo_ollama_client() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(tokens) = response.eval_count {
                 println!("  Tokens generated: {}", tokens);
             }
-        }
+        },
         Err(e) => {
             println!("✗ Chat request failed: {}", e);
-        }
+        },
     }
 
     println!();
@@ -118,18 +118,18 @@ fn demo_prompt_templates() -> Result<(), Box<dyn std::error::Error>> {
     let mut values = HashMap::new();
     values.insert("language".to_string(), "Rust".to_string());
     values.insert("task".to_string(), "Create a binary search tree".to_string());
-    values.insert("requirements".to_string(), "Include insert, search, and delete operations".to_string());
+    values.insert(
+        "requirements".to_string(),
+        "Include insert, search, and delete operations".to_string(),
+    );
 
     match manager.render("code_generation", &values) {
         Ok(rendered) => {
             println!("✓ Rendered code generation prompt:");
-            let preview = if rendered.len() > 150 {
-                format!("{}...", &rendered[..150])
-            } else {
-                rendered
-            };
+            let preview =
+                if rendered.len() > 150 { format!("{}...", &rendered[..150]) } else { rendered };
             println!("  {}", preview);
-        }
+        },
         Err(e) => println!("✗ Template rendering failed: {}", e),
     }
 
@@ -147,8 +147,11 @@ fn demo_prompt_templates() -> Result<(), Box<dyn std::error::Error>> {
     )
     .with_category("consulting");
 
-    println!("✓ Created custom template '{}' with {} variables",
-        custom_template.name, custom_template.variables.len());
+    println!(
+        "✓ Created custom template '{}' with {} variables",
+        custom_template.name,
+        custom_template.variables.len()
+    );
 
     println!();
     Ok(())
@@ -165,13 +168,13 @@ fn demo_context_management() -> Result<(), Box<dyn std::error::Error>> {
     // Create a conversation
     let context = manager.get_or_create("conversation_1");
     context.add_message(abcdodaf::ai::ollama::ChatMessage::system(
-        "You are a helpful AI assistant."
+        "You are a helpful AI assistant.",
     ))?;
     context.add_message(abcdodaf::ai::ollama::ChatMessage::user(
-        "Tell me about Rust's ownership system."
+        "Tell me about Rust's ownership system.",
     ))?;
     context.add_message(abcdodaf::ai::ollama::ChatMessage::assistant(
-        "Rust's ownership system is a set of rules that the compiler checks at compile time..."
+        "Rust's ownership system is a set of rules that the compiler checks at compile time...",
     ))?;
 
     println!("✓ Added 3 messages to conversation");
@@ -180,7 +183,8 @@ fn demo_context_management() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Remaining capacity: {} tokens", context.remaining_tokens());
 
     // Test different strategies
-    let mut window = ContextWindow::new(1000, ContextStrategy::HeadTail { head_count: 2, tail_count: 2 });
+    let mut window =
+        ContextWindow::new(1000, ContextStrategy::HeadTail { head_count: 2, tail_count: 2 });
     for i in 0..10 {
         window.add_message(abcdodaf::ai::ollama::ChatMessage::user(format!("Message {}", i)))?;
     }
@@ -203,22 +207,27 @@ fn demo_agent_memory() -> Result<(), Box<dyn std::error::Error>> {
 
     memory.add_short_term(
         MemoryEntry::new("mem1", MemoryType::Fact, "User prefers concise explanations")
-            .with_importance(0.8)
+            .with_importance(0.8),
     );
 
     memory.add_short_term(
         MemoryEntry::new("mem2", MemoryType::Preference, "Interested in Rust systems programming")
-            .with_importance(0.9)
+            .with_importance(0.9),
     );
 
     memory.add_long_term(
-        MemoryEntry::new("mem3", MemoryType::TaskContext, "Working on a distributed systems project")
-            .with_importance(0.95)
+        MemoryEntry::new(
+            "mem3",
+            MemoryType::TaskContext,
+            "Working on a distributed systems project",
+        )
+        .with_importance(0.95),
     );
 
     // Add conversation
     memory.add_message("conv1", abcdodaf::ai::ollama::ChatMessage::user("Hello"));
-    memory.add_message("conv1", abcdodaf::ai::ollama::ChatMessage::assistant("Hi! How can I help?"));
+    memory
+        .add_message("conv1", abcdodaf::ai::ollama::ChatMessage::assistant("Hi! How can I help?"));
 
     let stats = memory.stats();
     println!("✓ Memory statistics:");
@@ -267,13 +276,9 @@ fn demo_model_selection() -> Result<(), Box<dyn std::error::Error>> {
             println!("✓ Selected model: {}", model);
 
             // Get fallbacks
-            let fallbacks = selector.get_fallbacks(
-                &model,
-                &FallbackStrategy::NextBest,
-                &criteria
-            );
+            let fallbacks = selector.get_fallbacks(&model, &FallbackStrategy::NextBest, &criteria);
             println!("✓ Fallback models: {:?}", fallbacks);
-        }
+        },
         Err(e) => println!("✗ Model selection failed: {}", e),
     }
 
@@ -442,21 +447,13 @@ fn demo_response_caching() -> Result<(), Box<dyn std::error::Error>> {
     cache.put(
         key1.clone(),
         "Rust is a systems programming language...".to_string(),
-        CacheMetadata {
-            tokens: 150,
-            latency_ms: 200,
-            cost_saved: 0.01,
-        },
+        CacheMetadata { tokens: 150, latency_ms: 200, cost_saved: 0.01 },
     );
 
     cache.put(
         key2.clone(),
         "Ownership is Rust's most unique feature...".to_string(),
-        CacheMetadata {
-            tokens: 200,
-            latency_ms: 250,
-            cost_saved: 0.015,
-        },
+        CacheMetadata { tokens: 200, latency_ms: 250, cost_saved: 0.015 },
     );
 
     // Test cache hits and misses

@@ -8,7 +8,7 @@
 
 use crate::error::{AbcdodafError, Result};
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::{PgPool, PgPoolOptions, PgListener};
+use sqlx::postgres::{PgListener, PgPool, PgPoolOptions};
 use sqlx::types::chrono::{DateTime, Utc};
 use sqlx::types::Uuid;
 use sqlx::{FromRow, Row};
@@ -61,7 +61,7 @@ impl DatabaseManager {
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING id
-            "#
+            "#,
         )
         .bind(&workflow.name)
         .bind(workflow.version)
@@ -92,7 +92,7 @@ impl DatabaseManager {
                 dodaf_compliance_score, dodaf_compliance_level
             FROM workflows
             WHERE id = $1
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -102,7 +102,11 @@ impl DatabaseManager {
     }
 
     /// Get workflow by name and version
-    pub async fn get_workflow_by_name(&self, name: &str, version: i32) -> Result<Option<StoredWorkflow>> {
+    pub async fn get_workflow_by_name(
+        &self,
+        name: &str,
+        version: i32,
+    ) -> Result<Option<StoredWorkflow>> {
         let workflow = sqlx::query_as::<_, StoredWorkflow>(
             r#"
             SELECT
@@ -112,7 +116,7 @@ impl DatabaseManager {
                 dodaf_compliance_score, dodaf_compliance_level
             FROM workflows
             WHERE name = $1 AND version = $2
-            "#
+            "#,
         )
         .bind(name)
         .bind(version)
@@ -141,9 +145,7 @@ impl DatabaseManager {
             "#
         };
 
-        let workflows = sqlx::query_as::<_, WorkflowSummary>(query)
-            .fetch_all(&self.pool)
-            .await?;
+        let workflows = sqlx::query_as::<_, WorkflowSummary>(query).fetch_all(&self.pool).await?;
 
         Ok(workflows)
     }
@@ -158,7 +160,7 @@ impl DatabaseManager {
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id
-            "#
+            "#,
         )
         .bind(execution.workflow_id)
         .bind(execution.workflow_version)
@@ -209,7 +211,7 @@ impl DatabaseManager {
             INSERT INTO execution_logs (execution_id, level, source, message, context)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id
-            "#
+            "#,
         )
         .bind(log.execution_id)
         .bind(&log.level)
@@ -237,7 +239,7 @@ impl DatabaseManager {
                 WHERE execution_id = $1 AND level = $2
                 ORDER BY timestamp DESC
                 LIMIT $3
-                "#
+                "#,
             )
             .bind(execution_id)
             .bind(level)
@@ -252,7 +254,7 @@ impl DatabaseManager {
                 WHERE execution_id = $1
                 ORDER BY timestamp DESC
                 LIMIT $2
-                "#
+                "#,
             )
             .bind(execution_id)
             .bind(limit)
@@ -277,7 +279,7 @@ impl DatabaseManager {
             ON CONFLICT (workflow_id, view_type)
             DO UPDATE SET metadata = $3, updated_at = NOW()
             RETURNING id
-            "#
+            "#,
         )
         .bind(workflow_id)
         .bind(view_type)
@@ -300,7 +302,7 @@ impl DatabaseManager {
                 SELECT id, workflow_id, view_type, metadata, created_at, updated_at
                 FROM dodaf_metadata
                 WHERE workflow_id = $1 AND view_type = $2
-                "#
+                "#,
             )
             .bind(workflow_id)
             .bind(vt)
@@ -312,7 +314,7 @@ impl DatabaseManager {
                 SELECT id, workflow_id, view_type, metadata, created_at, updated_at
                 FROM dodaf_metadata
                 WHERE workflow_id = $1
-                "#
+                "#,
             )
             .bind(workflow_id)
             .fetch_all(&self.pool)
@@ -360,7 +362,7 @@ impl DatabaseManager {
                 last_check_at, last_success_at, error_message, metadata
             FROM system_connections
             ORDER BY connection_type, connection_name
-            "#
+            "#,
         )
         .fetch_all(&self.pool)
         .await?;
@@ -371,6 +373,31 @@ impl DatabaseManager {
     /// Get pool reference for advanced queries
     pub fn pool(&self) -> &PgPool {
         &self.pool
+    }
+
+    /// Count active executions
+    pub async fn count_active_executions(&self) -> Result<i64> {
+        let row = sqlx::query(
+            r#"
+            SELECT COUNT(*) as count
+            FROM workflow_executions
+            WHERE status IN ('running', 'pending')
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AbcdodafError::Other(e.into()))?;
+
+        let count: i64 = row.try_get("count")
+            .map_err(|e| AbcdodafError::Other(e.into()))?;
+
+        Ok(count)
+    }
+
+    /// Close database connections
+    pub async fn close(&self) -> Result<()> {
+        self.pool.close().await;
+        Ok(())
     }
 }
 
@@ -470,9 +497,7 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires running PostgreSQL
     async fn test_database_manager() {
-        let db = DatabaseManager::new("postgresql://localhost/abcdodaf_test")
-            .await
-            .unwrap();
+        let db = DatabaseManager::new("postgresql://localhost/abcdodaf_test").await.unwrap();
 
         db.initialize_schema().await.unwrap();
 

@@ -228,7 +228,11 @@ impl OperationalNodeConnectivity {
 
 impl OperationalNode {
     /// Create a new operational node
-    pub fn new(id: impl Into<String>, name: impl Into<String>, node_type: OperationalNodeType) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        node_type: OperationalNodeType,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -329,7 +333,12 @@ impl Needline {
 
 impl MaterialNeedline {
     /// Create a new material needline
-    pub fn new(id: impl Into<String>, source: impl Into<String>, target: impl Into<String>, materiel_type: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        source: impl Into<String>,
+        target: impl Into<String>,
+        materiel_type: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             source_node: source.into(),
@@ -369,11 +378,13 @@ mod tests {
 
     #[test]
     fn test_add_nodes_and_needlines() {
-        let node1 = OperationalNode::new("node1", "Command Center", OperationalNodeType::Organization);
+        let node1 =
+            OperationalNode::new("node1", "Command Center", OperationalNodeType::Organization);
         let node2 = OperationalNode::new("node2", "Field Unit", OperationalNodeType::Organization);
 
-        let needline = Needline::new("nl1", "Command Flow", "node1", "node2", Criticality::Critical)
-            .add_information_element("tactical_order");
+        let needline =
+            Needline::new("nl1", "Command Flow", "node1", "node2", Criticality::Critical)
+                .add_information_element("tactical_order");
 
         let desc = OperationalNodeConnectivity::new("ov2_1", "Test")
             .add_node(node1)

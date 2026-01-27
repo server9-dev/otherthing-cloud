@@ -217,10 +217,7 @@ impl CapabilityTaxonomy {
 
     /// Get root capabilities
     pub fn get_root_capabilities(&self) -> Vec<&Capability> {
-        self.capabilities
-            .iter()
-            .filter(|c| c.parent_capability.is_none())
-            .collect()
+        self.capabilities.iter().filter(|c| c.parent_capability.is_none()).collect()
     }
 }
 
@@ -236,10 +233,7 @@ impl Capability {
             id: id.into(),
             name: name.into(),
             description: None,
-            capability_type: CapabilityType {
-                domain: domain.into(),
-                category: category.into(),
-            },
+            capability_type: CapabilityType { domain: domain.into(), category: category.into() },
             parent_capability: None,
             child_capabilities: Vec::new(),
             hierarchy_level: 0,
@@ -360,7 +354,7 @@ impl CapabilityMeasure {
                 } else {
                     None
                 }
-            }
+            },
             _ => None,
         }
     }
@@ -368,7 +362,11 @@ impl CapabilityMeasure {
 
 impl CapabilityCluster {
     /// Create a new capability cluster
-    pub fn new(id: impl Into<String>, name: impl Into<String>, cluster_type: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        cluster_type: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -399,8 +397,8 @@ mod tests {
 
     #[test]
     fn test_capabilities_hierarchy() {
-        let parent = Capability::new("cap_1", "Command", "Command & Control", "Core")
-            .with_maturity_level(3);
+        let parent =
+            Capability::new("cap_1", "Command", "Command & Control", "Core").with_maturity_level(3);
 
         let child1 = Capability::new("cap_1_1", "Plan", "Command & Control", "Planning")
             .with_parent("cap_1", 1);

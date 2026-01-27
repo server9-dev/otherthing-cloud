@@ -10,8 +10,8 @@
 
 #[cfg(feature = "ui")]
 fn main() -> Result<(), eframe::Error> {
-    use abcdodaf::ui::{BpmnNode, BpmnViewer, Snarl, bpmn_style};
     use abcdodaf::bpmn::process::TaskType;
+    use abcdodaf::ui::{bpmn_style, BpmnNode, BpmnViewer, Snarl};
     use eframe::App;
 
     // Initialize tracing for debugging
@@ -30,12 +30,7 @@ fn main() -> Result<(), eframe::Error> {
 
             // Add a default start node
             let start_pos = egui::pos2(100.0, 200.0);
-            snarl.insert_node(
-                start_pos,
-                BpmnNode::StartEvent {
-                    name: "Start".to_string(),
-                },
-            );
+            snarl.insert_node(start_pos, BpmnNode::StartEvent { name: "Start".to_string() });
 
             // Add a sample task
             let task_pos = egui::pos2(300.0, 200.0);
@@ -50,18 +45,9 @@ fn main() -> Result<(), eframe::Error> {
 
             // Add end node
             let end_pos = egui::pos2(500.0, 200.0);
-            snarl.insert_node(
-                end_pos,
-                BpmnNode::EndEvent {
-                    name: "End".to_string(),
-                },
-            );
+            snarl.insert_node(end_pos, BpmnNode::EndEvent { name: "End".to_string() });
 
-            Self {
-                snarl,
-                viewer: BpmnViewer::new(),
-                style: bpmn_style(),
-            }
+            Self { snarl, viewer: BpmnViewer::new(), style: bpmn_style() }
         }
     }
 
@@ -129,12 +115,7 @@ fn main() -> Result<(), eframe::Error> {
             // Main editor area
             egui::CentralPanel::default().show(ctx, |ui| {
                 // Draw the BPMN graph using egui-snarl
-                self.snarl.show(
-                    &mut self.viewer,
-                    &self.style,
-                    egui::Id::new("bpmn_snarl"),
-                    ui,
-                );
+                self.snarl.show(&mut self.viewer, &self.style, egui::Id::new("bpmn_snarl"), ui);
             });
         }
     }

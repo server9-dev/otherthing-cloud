@@ -2,8 +2,8 @@
 //!
 //! HTTP REST API for executor daemon
 
-use crate::executor::{DatabaseManager, EventStream, HealthMonitor, DodafTracker};
-use crate::executor::database::{StoredWorkflow, ExecutionRecord};
+use crate::executor::database::{ExecutionRecord, StoredWorkflow};
+use crate::executor::{DatabaseManager, DodafTracker, EventStream, HealthMonitor};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -31,12 +31,7 @@ impl ApiState {
         health_monitor: Arc<HealthMonitor>,
         dodaf_tracker: Arc<DodafTracker>,
     ) -> Self {
-        Self {
-            db,
-            event_stream,
-            health_monitor,
-            dodaf_tracker,
-        }
+        Self { db, event_stream, health_monitor, dodaf_tracker }
     }
 }
 
@@ -131,11 +126,8 @@ async fn submit_workflow(
                 None
             };
 
-            Json(SubmitWorkflowResponse {
-                workflow_id,
-                execution_id,
-            }).into_response()
-        }
+            Json(SubmitWorkflowResponse { workflow_id, execution_id }).into_response()
+        },
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response(),
     }
 }
@@ -152,10 +144,7 @@ async fn list_workflows(
 }
 
 /// Get workflow by ID
-async fn get_workflow(
-    State(state): State<ApiState>,
-    Path(id): Path<Uuid>,
-) -> Response {
+async fn get_workflow(State(state): State<ApiState>, Path(id): Path<Uuid>) -> Response {
     match state.db.get_workflow(id).await {
         Ok(Some(workflow)) => Json(workflow).into_response(),
         Ok(None) => (StatusCode::NOT_FOUND, "Workflow not found").into_response(),
@@ -164,17 +153,13 @@ async fn get_workflow(
 }
 
 /// Get health status
-async fn get_health(
-    State(state): State<ApiState>,
-) -> Response {
+async fn get_health(State(state): State<ApiState>) -> Response {
     let health = state.health_monitor.overall_health().await;
     Json(health).into_response()
 }
 
 /// Get connection health
-async fn get_connection_health(
-    State(state): State<ApiState>,
-) -> Response {
+async fn get_connection_health(State(state): State<ApiState>) -> Response {
     match state.db.get_connection_health().await {
         Ok(connections) => Json(connections).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response(),

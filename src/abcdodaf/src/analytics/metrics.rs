@@ -39,11 +39,7 @@ pub struct MetricsConfig {
 
 impl Default for MetricsConfig {
     fn default() -> Self {
-        Self {
-            max_history_points: 10000,
-            aggregation_interval_secs: 60,
-            detailed_collection: true,
-        }
+        Self { max_history_points: 10000, aggregation_interval_secs: 60, detailed_collection: true }
     }
 }
 
@@ -102,10 +98,10 @@ impl ProcessMetrics {
 
         // Update running average
         let n = self.completed_instances as f64;
-        self.avg_execution_time_ms =
-            (self.avg_execution_time_ms * (n - 1.0) + duration_ms) / n;
+        self.avg_execution_time_ms = (self.avg_execution_time_ms * (n - 1.0) + duration_ms) / n;
 
-        self.completion_rate = (self.completed_instances as f64 / self.total_instances as f64) * 100.0;
+        self.completion_rate =
+            (self.completed_instances as f64 / self.total_instances as f64) * 100.0;
         self.updated_at = Utc::now();
     }
 
@@ -113,7 +109,8 @@ impl ProcessMetrics {
     pub fn record_failure(&mut self) {
         self.total_instances += 1;
         self.failed_instances += 1;
-        self.completion_rate = (self.completed_instances as f64 / self.total_instances as f64) * 100.0;
+        self.completion_rate =
+            (self.completed_instances as f64 / self.total_instances as f64) * 100.0;
         self.updated_at = Utc::now();
     }
 }
@@ -174,12 +171,7 @@ pub struct MetricPoint {
 impl MetricPoint {
     /// Create a new metric point
     pub fn new(metric_name: impl Into<String>, value: f64) -> Self {
-        Self {
-            timestamp: Utc::now(),
-            metric_name: metric_name.into(),
-            value,
-            tags: HashMap::new(),
-        }
+        Self { timestamp: Utc::now(), metric_name: metric_name.into(), value, tags: HashMap::new() }
     }
 
     /// Add a tag to metric point
@@ -363,11 +355,7 @@ impl MetricsCollector {
 
     /// Get process metrics
     pub fn get_process_metrics(&self, process_id: &str) -> Option<ProcessMetrics> {
-        self.process_metrics
-            .lock()
-            .unwrap()
-            .get(process_id)
-            .cloned()
+        self.process_metrics.lock().unwrap().get(process_id).cloned()
     }
 
     /// Get all process metrics

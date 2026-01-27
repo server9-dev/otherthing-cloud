@@ -65,11 +65,7 @@ pub struct CollaborationExecution {
 impl MultiAgentCoordinator {
     /// Create a new coordinator
     pub fn new() -> Self {
-        Self {
-            agents: HashMap::new(),
-            patterns: HashMap::new(),
-            history: vec![],
-        }
+        Self { agents: HashMap::new(), patterns: HashMap::new(), history: vec![] }
     }
 
     /// Register an agent
@@ -165,11 +161,8 @@ impl MultiAgentCoordinator {
         }
 
         // Aggregate results
-        let final_result = responses
-            .iter()
-            .map(|r| r.content.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
+        let final_result =
+            responses.iter().map(|r| r.content.as_str()).collect::<Vec<_>>().join("\n");
 
         Ok(CollaborationExecution {
             execution_id: uuid::Uuid::new_v4().to_string(),
@@ -189,12 +182,12 @@ impl MultiAgentCoordinator {
         let result = match collaboration.pattern {
             CollaborationPattern::Sequential => {
                 self.execute_sequential(collaboration, input).await?
-            }
+            },
             CollaborationPattern::Parallel => self.execute_parallel(collaboration, input).await?,
             _ => {
                 // Default to sequential for other patterns
                 self.execute_sequential(collaboration, input).await?
-            }
+            },
         };
 
         self.history.push(result.clone());
@@ -253,10 +246,7 @@ mod tests {
             shared_context: HashMap::new(),
         };
 
-        let result = coordinator
-            .execute_sequential(&collaboration, "test input")
-            .await
-            .unwrap();
+        let result = coordinator.execute_sequential(&collaboration, "test input").await.unwrap();
 
         assert_eq!(result.responses.len(), 2);
     }

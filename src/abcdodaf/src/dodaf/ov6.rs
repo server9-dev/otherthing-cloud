@@ -628,10 +628,7 @@ mod tests {
 
     #[test]
     fn test_event_relationships() {
-        assert_eq!(
-            EventRelationshipType::Sequence,
-            EventRelationshipType::Sequence
-        );
+        assert_eq!(EventRelationshipType::Sequence, EventRelationshipType::Sequence);
         assert_ne!(EventRelationshipType::Causality, EventRelationshipType::Parallel);
     }
 }

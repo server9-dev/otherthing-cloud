@@ -1,7 +1,7 @@
 //! File system connector for file operations
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
     ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
@@ -20,11 +20,7 @@ pub struct FileSystemConnector {
 impl FileSystemConnector {
     /// Create a new file system connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            base_path: None,
-        }
+        Self { config, status: ConnectionStatus::Disconnected, base_path: None }
     }
 
     /// Get the base path for file operations
@@ -39,15 +35,12 @@ impl FileSystemConnector {
 
     /// Ensure path is within base path (security check)
     fn validate_path(&self, path: &Path) -> ConnectorResult<PathBuf> {
-        let base = self.base_path.as_ref().ok_or_else(|| {
-            ConnectorError::connection("Base path not initialized")
-        })?;
+        let base = self
+            .base_path
+            .as_ref()
+            .ok_or_else(|| ConnectorError::connection("Base path not initialized"))?;
 
-        let full_path = if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            base.join(path)
-        };
+        let full_path = if path.is_absolute() { path.to_path_buf() } else { base.join(path) };
 
         // Security check: canonicalize paths to resolve .. and symlinks
         // Note: canonicalize requires the path to exist, so we'll use a fallback approach
@@ -64,7 +57,7 @@ impl FileSystemConnector {
                     )));
                 }
                 Ok(canonical)
-            }
+            },
             _ => {
                 // Fallback: normalize path components manually for non-existent paths
                 let normalized = self.normalize_path(&full_path);
@@ -77,7 +70,7 @@ impl FileSystemConnector {
                     )));
                 }
                 Ok(full_path)
-            }
+            },
         }
     }
 
@@ -89,13 +82,13 @@ impl FileSystemConnector {
             match component {
                 std::path::Component::ParentDir => {
                     components.pop();
-                }
+                },
                 std::path::Component::CurDir => {
                     // Skip current directory
-                }
+                },
                 _ => {
                     components.push(component);
-                }
+                },
             }
         }
 
@@ -104,20 +97,12 @@ impl FileSystemConnector {
 
     /// Check if read operations are allowed
     fn allow_read(&self) -> bool {
-        self.config
-            .config
-            .get("allow_read")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(true)
+        self.config.config.get("allow_read").and_then(|v| v.as_bool()).unwrap_or(true)
     }
 
     /// Check if write operations are allowed
     fn allow_write(&self) -> bool {
-        self.config
-            .config
-            .get("allow_write")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(true)
+        self.config.config.get("allow_write").and_then(|v| v.as_bool()).unwrap_or(true)
     }
 
     /// Check if delete operations are allowed
@@ -194,13 +179,10 @@ impl Connector for FileSystemConnector {
                         "content": content
                     }),
                     Err(e) => {
-                        return Err(ConnectorError::request(format!(
-                            "Failed to read file: {}",
-                            e
-                        )))
-                    }
+                        return Err(ConnectorError::request(format!("Failed to read file: {}", e)))
+                    },
                 }
-            }
+            },
             "WRITE" => {
                 if !self.allow_write() {
                     return Err(ConnectorError::validation("Write operations not allowed"));
@@ -228,13 +210,10 @@ impl Connector for FileSystemConnector {
                         "bytes_written": content.len()
                     }),
                     Err(e) => {
-                        return Err(ConnectorError::request(format!(
-                            "Failed to write file: {}",
-                            e
-                        )))
-                    }
+                        return Err(ConnectorError::request(format!("Failed to write file: {}", e)))
+                    },
                 }
-            }
+            },
             "DELETE" => {
                 if !self.allow_delete() {
                     return Err(ConnectorError::validation("Delete operations not allowed"));
@@ -258,19 +237,16 @@ impl Connector for FileSystemConnector {
                             "Failed to delete file: {}",
                             e
                         )))
-                    }
+                    },
                 }
-            }
+            },
             "LIST" => {
                 if !self.allow_read() {
                     return Err(ConnectorError::validation("Read operations not allowed"));
                 }
 
-                let dir_path = request
-                    .parameters
-                    .get("path")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(".");
+                let dir_path =
+                    request.parameters.get("path").and_then(|v| v.as_str()).unwrap_or(".");
 
                 let full_path = self.validate_path(Path::new(dir_path))?;
 
@@ -292,15 +268,15 @@ impl Connector for FileSystemConnector {
                             "file_count": files.len(),
                             "files": files
                         })
-                    }
+                    },
                     Err(e) => {
                         return Err(ConnectorError::request(format!(
                             "Failed to list directory: {}",
                             e
                         )))
-                    }
+                    },
                 }
-            }
+            },
             "MKDIR" => {
                 if !self.allow_write() {
                     return Err(ConnectorError::validation("Write operations not allowed"));
@@ -324,15 +300,15 @@ impl Connector for FileSystemConnector {
                             "Failed to create directory: {}",
                             e
                         )))
-                    }
+                    },
                 }
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -344,19 +320,14 @@ impl Connector for FileSystemConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "File system status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("File system status: {}", self.status)));
         }
 
         if let Some(base_path) = &self.base_path {
             if base_path.exists() && base_path.is_dir() {
                 Ok(HealthStatus::Healthy)
             } else {
-                Ok(HealthStatus::Unhealthy(
-                    "Base path is not accessible".to_string(),
-                ))
+                Ok(HealthStatus::Unhealthy("Base path is not accessible".to_string()))
             }
         } else {
             Ok(HealthStatus::Unhealthy("Base path not initialized".to_string()))
@@ -372,8 +343,8 @@ mod tests {
 
     #[test]
     fn test_filesystem_connector_creation() {
-        let config = ConnectorConfig::new("fs", "filesystem")
-            .with_param("base_path", json!("/tmp"));
+        let config =
+            ConnectorConfig::new("fs", "filesystem").with_param("base_path", json!("/tmp"));
 
         let connector = FileSystemConnector::new(config);
         assert_eq!(connector.connector_type(), "filesystem");
@@ -385,8 +356,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path().to_str().unwrap();
 
-        let config = ConnectorConfig::new("fs", "filesystem")
-            .with_param("base_path", json!(base_path));
+        let config =
+            ConnectorConfig::new("fs", "filesystem").with_param("base_path", json!(base_path));
 
         let mut connector = FileSystemConnector::new(config);
         connector.base_path = Some(PathBuf::from(base_path));

@@ -165,7 +165,11 @@ pub struct RuleSet {
 
 impl RuleSet {
     /// Create a new rule set
-    pub fn new(id: impl Into<String>, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -237,11 +241,7 @@ mod tests {
 
     #[test]
     fn test_rule_set_filtering() {
-        let mut ruleset = RuleSet::new(
-            "test_set",
-            "Test Rules",
-            "Test rule set",
-        );
+        let mut ruleset = RuleSet::new("test_set", "Test Rules", "Test rule set");
 
         ruleset = ruleset.add_rule(RuleDefinition::new(
             "R1",

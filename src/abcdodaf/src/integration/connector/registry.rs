@@ -164,9 +164,7 @@ impl std::fmt::Debug for ConnectorRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::integration::connector::{
-        ConnectionStatus, ConnectorResponse, HealthStatus,
-    };
+    use crate::integration::connector::{ConnectionStatus, ConnectorResponse, HealthStatus};
     use async_trait::async_trait;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -203,7 +201,10 @@ mod tests {
             Ok(())
         }
 
-        async fn execute(&self, request: crate::integration::ConnectorRequest) -> ConnectorResult<ConnectorResponse> {
+        async fn execute(
+            &self,
+            request: crate::integration::ConnectorRequest,
+        ) -> ConnectorResult<ConnectorResponse> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
             Ok(ConnectorResponse::new(request.id, 200))
         }
@@ -228,9 +229,7 @@ mod tests {
     #[tokio::test]
     async fn test_registry_create_connector() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("mock", Arc::new(MockFactory))
-            .await;
+        registry.register_factory("mock", Arc::new(MockFactory)).await;
 
         let config = ConnectorConfig::new("test_connector", "mock");
         let connector = registry.create_connector(config).await.unwrap();
@@ -242,18 +241,10 @@ mod tests {
     #[tokio::test]
     async fn test_registry_list_connectors() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("mock", Arc::new(MockFactory))
-            .await;
+        registry.register_factory("mock", Arc::new(MockFactory)).await;
 
-        registry
-            .create_connector(ConnectorConfig::new("conn1", "mock"))
-            .await
-            .unwrap();
-        registry
-            .create_connector(ConnectorConfig::new("conn2", "mock"))
-            .await
-            .unwrap();
+        registry.create_connector(ConnectorConfig::new("conn1", "mock")).await.unwrap();
+        registry.create_connector(ConnectorConfig::new("conn2", "mock")).await.unwrap();
 
         let connectors = registry.list_connectors().await;
         assert_eq!(connectors.len(), 2);

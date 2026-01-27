@@ -42,11 +42,7 @@ pub struct Alert {
 
 impl Alert {
     /// Create a new alert
-    pub fn new(
-        message: impl Into<String>,
-        level: AlertLevel,
-        source: impl Into<String>,
-    ) -> Self {
+    pub fn new(message: impl Into<String>, level: AlertLevel, source: impl Into<String>) -> Self {
         let id = format!("alert-{}", uuid::Uuid::new_v4());
         Self {
             id,
@@ -219,12 +215,7 @@ pub struct SlaViolation {
 
 impl SlaViolation {
     /// Create new SLA violation
-    pub fn new(
-        sla_policy_id: String,
-        metric: String,
-        expected: f64,
-        actual: f64,
-    ) -> Self {
+    pub fn new(sla_policy_id: String, metric: String, expected: f64, actual: f64) -> Self {
         let id = format!("violation-{}", uuid::Uuid::new_v4());
         Self {
             id,
@@ -306,31 +297,19 @@ impl AlertingSystem {
     /// Get all active alerts
     pub fn active_alerts(&self) -> Vec<Alert> {
         let alerts = self.alerts.lock().unwrap();
-        alerts
-            .values()
-            .filter(|a| !a.resolved)
-            .cloned()
-            .collect()
+        alerts.values().filter(|a| !a.resolved).cloned().collect()
     }
 
     /// Get alerts by source
     pub fn alerts_by_source(&self, source: &str) -> Vec<Alert> {
         let alerts = self.alerts.lock().unwrap();
-        alerts
-            .values()
-            .filter(|a| a.source == source && !a.resolved)
-            .cloned()
-            .collect()
+        alerts.values().filter(|a| a.source == source && !a.resolved).cloned().collect()
     }
 
     /// Get alerts by level
     pub fn alerts_by_level(&self, level: AlertLevel) -> Vec<Alert> {
         let alerts = self.alerts.lock().unwrap();
-        alerts
-            .values()
-            .filter(|a| a.level == level && !a.resolved)
-            .cloned()
-            .collect()
+        alerts.values().filter(|a| a.level == level && !a.resolved).cloned().collect()
     }
 
     /// Resolve an alert
@@ -508,13 +487,8 @@ mod tests {
     #[test]
     fn test_alerting_system() {
         let system = AlertingSystem::new();
-        let rule = AlertRule::new(
-            "Test rule",
-            "test_metric",
-            "greater_than",
-            100.0,
-            AlertLevel::Warning,
-        );
+        let rule =
+            AlertRule::new("Test rule", "test_metric", "greater_than", 100.0, AlertLevel::Warning);
 
         system.add_rule(rule);
         let alerts = system.evaluate_metric("test_metric", 150.0);
@@ -529,7 +503,8 @@ mod tests {
             .with_max_error_rate(5.0);
 
         system.add_sla_policy(policy);
-        let violations = system.check_sla_compliance("process_1", Some(1500.0), None, Some(10.0), None);
+        let violations =
+            system.check_sla_compliance("process_1", Some(1500.0), None, Some(10.0), None);
         assert!(!violations.is_empty());
     }
 }

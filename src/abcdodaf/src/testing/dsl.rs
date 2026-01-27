@@ -157,9 +157,7 @@ pub struct ScenarioBuilder {
 impl ScenarioBuilder {
     /// Create new builder
     pub fn new(id: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            scenario: TestScenario::new(id, name),
-        }
+        Self { scenario: TestScenario::new(id, name) }
     }
 
     /// Set description
@@ -282,14 +280,12 @@ impl ScenarioDsl {
         let mut scenario = TestScenario::new(scenario_id, "Workflow with Retries");
 
         for attempt in 1..=max_retries {
-            let step = StepBuilder::new(
-                &format!("retry_{}", attempt),
-                &format!("Attempt {}", attempt),
-            )
-            .execute_task()
-            .with_parameter("task_id", serde_json::json!(&task_id))
-            .with_parameter("attempt", serde_json::json!(attempt))
-            .build();
+            let step =
+                StepBuilder::new(&format!("retry_{}", attempt), &format!("Attempt {}", attempt))
+                    .execute_task()
+                    .with_parameter("task_id", serde_json::json!(&task_id))
+                    .with_parameter("attempt", serde_json::json!(attempt))
+                    .build();
 
             scenario = scenario.add_execution_step(step);
         }
@@ -300,11 +296,7 @@ impl ScenarioDsl {
     /// Build error handling workflow
     pub fn error_handling_workflow(scenario_id: impl Into<String>) -> TestScenario {
         ScenarioBuilder::new(scenario_id, "Error Handling Workflow")
-            .add_execution(
-                StepBuilder::new("task1", "Main Task")
-                    .execute_task()
-                    .build(),
-            )
+            .add_execution(StepBuilder::new("task1", "Main Task").execute_task().build())
             .add_validation(
                 ValidationBuilder::new("check_error", "error_status")
                     .equals(serde_json::json!("handled"))
@@ -318,10 +310,11 @@ impl ScenarioDsl {
         let mut scenario = TestScenario::new(scenario_id, "Parallel Workflow");
 
         for i in 0..task_count {
-            let step = StepBuilder::new(&format!("parallel_task_{}", i), &format!("Parallel Task {}", i))
-                .execute_task()
-                .with_parameter("parallel", serde_json::json!(true))
-                .build();
+            let step =
+                StepBuilder::new(&format!("parallel_task_{}", i), &format!("Parallel Task {}", i))
+                    .execute_task()
+                    .with_parameter("parallel", serde_json::json!(true))
+                    .build();
 
             scenario = scenario.add_execution_step(step);
         }
@@ -499,10 +492,8 @@ mod tests {
 
     #[test]
     fn test_scenario_dsl() {
-        let scenario = ScenarioDsl::simple_workflow(
-            "workflow",
-            vec![("t1", "Task 1"), ("t2", "Task 2")],
-        );
+        let scenario =
+            ScenarioDsl::simple_workflow("workflow", vec![("t1", "Task 1"), ("t2", "Task 2")]);
 
         assert_eq!(scenario.execution_steps.len(), 2);
     }

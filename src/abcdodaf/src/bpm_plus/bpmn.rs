@@ -22,17 +22,9 @@ pub struct BpmnProcess {
 #[serde(tag = "type")]
 pub enum FlowElement {
     /// Start Event
-    StartEvent {
-        id: String,
-        name: String,
-        outgoing: Vec<String>,
-    },
+    StartEvent { id: String, name: String, outgoing: Vec<String> },
     /// End Event
-    EndEvent {
-        id: String,
-        name: String,
-        incoming: Vec<String>,
-    },
+    EndEvent { id: String, name: String, incoming: Vec<String> },
     /// User Task
     UserTask {
         id: String,
@@ -76,19 +68,9 @@ pub enum FlowElement {
         default_flow: Option<String>,
     },
     /// Parallel Gateway (AND)
-    ParallelGateway {
-        id: String,
-        name: String,
-        incoming: Vec<String>,
-        outgoing: Vec<String>,
-    },
+    ParallelGateway { id: String, name: String, incoming: Vec<String>, outgoing: Vec<String> },
     /// Inclusive Gateway (OR)
-    InclusiveGateway {
-        id: String,
-        name: String,
-        incoming: Vec<String>,
-        outgoing: Vec<String>,
-    },
+    InclusiveGateway { id: String, name: String, incoming: Vec<String>, outgoing: Vec<String> },
     /// Sequence Flow
     SequenceFlow {
         id: String,
@@ -183,8 +165,8 @@ impl BpmnProcess {
                     if !self.has_element(target_ref) {
                         return Err(format!("Target element '{}' not found", target_ref));
                     }
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
@@ -192,21 +174,19 @@ impl BpmnProcess {
     }
 
     pub(crate) fn has_element(&self, element_id: &str) -> bool {
-        self.flow_elements.iter().any(|e| {
-            match e {
-                FlowElement::StartEvent { id, .. } => id == element_id,
-                FlowElement::EndEvent { id, .. } => id == element_id,
-                FlowElement::UserTask { id, .. } => id == element_id,
-                FlowElement::ServiceTask { id, .. } => id == element_id,
-                FlowElement::BusinessRuleTask { id, .. } => id == element_id,
-                FlowElement::ScriptTask { id, .. } => id == element_id,
-                FlowElement::ExclusiveGateway { id, .. } => id == element_id,
-                FlowElement::ParallelGateway { id, .. } => id == element_id,
-                FlowElement::InclusiveGateway { id, .. } => id == element_id,
-                FlowElement::SubProcess { id, .. } => id == element_id,
-                FlowElement::CallActivity { id, .. } => id == element_id,
-                FlowElement::SequenceFlow { id, .. } => id == element_id,
-            }
+        self.flow_elements.iter().any(|e| match e {
+            FlowElement::StartEvent { id, .. } => id == element_id,
+            FlowElement::EndEvent { id, .. } => id == element_id,
+            FlowElement::UserTask { id, .. } => id == element_id,
+            FlowElement::ServiceTask { id, .. } => id == element_id,
+            FlowElement::BusinessRuleTask { id, .. } => id == element_id,
+            FlowElement::ScriptTask { id, .. } => id == element_id,
+            FlowElement::ExclusiveGateway { id, .. } => id == element_id,
+            FlowElement::ParallelGateway { id, .. } => id == element_id,
+            FlowElement::InclusiveGateway { id, .. } => id == element_id,
+            FlowElement::SubProcess { id, .. } => id == element_id,
+            FlowElement::CallActivity { id, .. } => id == element_id,
+            FlowElement::SequenceFlow { id, .. } => id == element_id,
         })
     }
 
@@ -216,8 +196,10 @@ impl BpmnProcess {
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.push_str("<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n");
         xml.push_str("             xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
-        xml.push_str(&format!("  <process id=\"{}\" name=\"{}\" isExecutable=\"{}\">\n",
-            self.id, self.name, self.is_executable));
+        xml.push_str(&format!(
+            "  <process id=\"{}\" name=\"{}\" isExecutable=\"{}\">\n",
+            self.id, self.name, self.is_executable
+        ));
 
         for element in &self.flow_elements {
             xml.push_str(&self.element_to_xml(element, 4));
@@ -233,36 +215,43 @@ impl BpmnProcess {
         match element {
             FlowElement::StartEvent { id, name, .. } => {
                 format!("{}<startEvent id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
+            },
             FlowElement::EndEvent { id, name, .. } => {
                 format!("{}<endEvent id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
+            },
             FlowElement::UserTask { id, name, .. } => {
                 format!("{}<userTask id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
+            },
             FlowElement::ServiceTask { id, name, .. } => {
                 format!("{}<serviceTask id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
+            },
             FlowElement::BusinessRuleTask { id, name, decision_ref, .. } => {
                 if let Some(ref_id) = decision_ref {
-                    format!("{}<businessRuleTask id=\"{}\" name=\"{}\" calledDecision=\"{}\" />\n",
-                        spaces, id, name, ref_id)
+                    format!(
+                        "{}<businessRuleTask id=\"{}\" name=\"{}\" calledDecision=\"{}\" />\n",
+                        spaces, id, name, ref_id
+                    )
                 } else {
                     format!("{}<businessRuleTask id=\"{}\" name=\"{}\" />\n", spaces, id, name)
                 }
-            }
+            },
             FlowElement::SequenceFlow { id, source_ref, target_ref, .. } => {
-                format!("{}<sequenceFlow id=\"{}\" sourceRef=\"{}\" targetRef=\"{}\" />\n",
-                    spaces, id, source_ref, target_ref)
-            }
+                format!(
+                    "{}<sequenceFlow id=\"{}\" sourceRef=\"{}\" targetRef=\"{}\" />\n",
+                    spaces, id, source_ref, target_ref
+                )
+            },
             FlowElement::ExclusiveGateway { id, name, .. } => {
                 format!("{}<exclusiveGateway id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
+            },
             FlowElement::ParallelGateway { id, name, .. } => {
                 format!("{}<parallelGateway id=\"{}\" name=\"{}\" />\n", spaces, id, name)
-            }
-            _ => format!("{}<!-- Element {} not yet implemented in XML export -->\n", spaces,
-                self.get_element_id(element)),
+            },
+            _ => format!(
+                "{}<!-- Element {} not yet implemented in XML export -->\n",
+                spaces,
+                self.get_element_id(element)
+            ),
         }
     }
 

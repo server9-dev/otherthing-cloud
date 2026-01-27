@@ -197,9 +197,7 @@ impl PasswordPolicyConfig {
 
         // Check numbers
         if self.require_numbers && !password.chars().any(|c| c.is_numeric()) {
-            return Err(SecurityError::Other(
-                "Password must contain numbers".to_string(),
-            ));
+            return Err(SecurityError::Other("Password must contain numbers".to_string()));
         }
 
         // Check special characters
@@ -239,47 +237,64 @@ impl SecurityPolicyEngine {
         let engine = Self::new();
 
         // Password policy
-        let password_policy = SecurityPolicy::new("pwd_policy", "Default Password Policy", PolicyType::PasswordPolicy)
-            .with_description("Enterprise-grade password security policy")
-            .add_rule("min_length", "12")
-            .add_rule("require_uppercase", "true")
-            .add_rule("require_lowercase", "true")
-            .add_rule("require_numbers", "true")
-            .add_rule("require_special_chars", "true")
-            .add_rule("expiration_days", "90")
-            .mark_mandatory();
+        let password_policy = SecurityPolicy::new(
+            "pwd_policy",
+            "Default Password Policy",
+            PolicyType::PasswordPolicy,
+        )
+        .with_description("Enterprise-grade password security policy")
+        .add_rule("min_length", "12")
+        .add_rule("require_uppercase", "true")
+        .add_rule("require_lowercase", "true")
+        .add_rule("require_numbers", "true")
+        .add_rule("require_special_chars", "true")
+        .add_rule("expiration_days", "90")
+        .mark_mandatory();
 
         // Encryption policy
-        let encryption_policy = SecurityPolicy::new("enc_policy", "Default Encryption Policy", PolicyType::EncryptionPolicy)
-            .with_description("Require AES-256-GCM for sensitive data")
-            .add_rule("algorithm", "AES-256-GCM")
-            .add_rule("tls_required", "true")
-            .add_rule("tls_version", "1.3")
-            .mark_mandatory();
+        let encryption_policy = SecurityPolicy::new(
+            "enc_policy",
+            "Default Encryption Policy",
+            PolicyType::EncryptionPolicy,
+        )
+        .with_description("Require AES-256-GCM for sensitive data")
+        .add_rule("algorithm", "AES-256-GCM")
+        .add_rule("tls_required", "true")
+        .add_rule("tls_version", "1.3")
+        .mark_mandatory();
 
         // Session policy
-        let session_policy = SecurityPolicy::new("session_policy", "Default Session Policy", PolicyType::SessionPolicy)
-            .with_description("Session timeout and lifecycle management")
-            .add_rule("default_timeout_hours", "24")
-            .add_rule("max_idle_minutes", "60")
-            .add_rule("extend_on_activity", "true")
-            .add_rule("max_concurrent_sessions", "5");
+        let session_policy = SecurityPolicy::new(
+            "session_policy",
+            "Default Session Policy",
+            PolicyType::SessionPolicy,
+        )
+        .with_description("Session timeout and lifecycle management")
+        .add_rule("default_timeout_hours", "24")
+        .add_rule("max_idle_minutes", "60")
+        .add_rule("extend_on_activity", "true")
+        .add_rule("max_concurrent_sessions", "5");
 
         // Audit policy
-        let audit_policy = SecurityPolicy::new("audit_policy", "Default Audit Policy", PolicyType::AuditPolicy)
-            .with_description("Comprehensive audit logging")
-            .add_rule("log_level", "INFO")
-            .add_rule("max_events", "100000")
-            .add_rule("track_authentication", "true")
-            .add_rule("track_authorization", "true")
-            .add_rule("track_data_access", "true")
-            .mark_mandatory();
+        let audit_policy =
+            SecurityPolicy::new("audit_policy", "Default Audit Policy", PolicyType::AuditPolicy)
+                .with_description("Comprehensive audit logging")
+                .add_rule("log_level", "INFO")
+                .add_rule("max_events", "100000")
+                .add_rule("track_authentication", "true")
+                .add_rule("track_authorization", "true")
+                .add_rule("track_data_access", "true")
+                .mark_mandatory();
 
         // Data retention policy
-        let retention_policy = SecurityPolicy::new("retention_policy", "Default Retention Policy", PolicyType::DataRetentionPolicy)
-            .with_description("Data retention period for audit logs")
-            .add_rule("audit_log_retention_days", "365")
-            .add_rule("access_log_retention_days", "90");
+        let retention_policy = SecurityPolicy::new(
+            "retention_policy",
+            "Default Retention Policy",
+            PolicyType::DataRetentionPolicy,
+        )
+        .with_description("Data retention period for audit logs")
+        .add_rule("audit_log_retention_days", "365")
+        .add_rule("access_log_retention_days", "90");
 
         engine.add_policy(password_policy).await.ok();
         engine.add_policy(encryption_policy).await.ok();
@@ -313,7 +328,10 @@ impl SecurityPolicyEngine {
     }
 
     /// Get policies by type
-    pub async fn get_policies_by_type(&self, policy_type: PolicyType) -> SecurityResult<Vec<SecurityPolicy>> {
+    pub async fn get_policies_by_type(
+        &self,
+        policy_type: PolicyType,
+    ) -> SecurityResult<Vec<SecurityPolicy>> {
         let policies = self.policies.read().await;
         Ok(policies
             .values()
@@ -325,11 +343,7 @@ impl SecurityPolicyEngine {
     /// Get all active policies
     pub async fn get_active_policies(&self) -> SecurityResult<Vec<SecurityPolicy>> {
         let policies = self.policies.read().await;
-        Ok(policies
-            .values()
-            .filter(|p| p.is_active())
-            .cloned()
-            .collect())
+        Ok(policies.values().filter(|p| p.is_active()).cloned().collect())
     }
 
     /// Check if policy is enforced
@@ -417,10 +431,7 @@ mod tests {
     async fn test_get_policies_by_type() {
         let engine = SecurityPolicyEngine::with_standard_policies().await;
 
-        let policies = engine
-            .get_policies_by_type(PolicyType::AuditPolicy)
-            .await
-            .unwrap();
+        let policies = engine.get_policies_by_type(PolicyType::AuditPolicy).await.unwrap();
 
         assert!(!policies.is_empty());
     }

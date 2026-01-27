@@ -266,7 +266,11 @@ impl SystemFunction {
 
 impl FunctionFlow {
     /// Create a new function flow
-    pub fn new(id: impl Into<String>, source: impl Into<String>, target: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        source: impl Into<String>,
+        target: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             source_function: source.into(),
@@ -346,11 +350,7 @@ impl FunctionalHierarchy {
 impl HierarchyLevel {
     /// Create a new hierarchy level
     pub fn new(level: i32) -> Self {
-        Self {
-            level,
-            functions: Vec::new(),
-            parent_functions: HashMap::new(),
-        }
+        Self { level, functions: Vec::new(), parent_functions: HashMap::new() }
     }
 
     /// Add a function at this level
@@ -385,10 +385,9 @@ mod tests {
 
     #[test]
     fn test_system_functions() {
-        let func1 =
-            SystemFunction::new("func_1", "Analyze", FunctionType::Primary, "sys_1")
-                .add_input("raw_data")
-                .add_output("analysis_result");
+        let func1 = SystemFunction::new("func_1", "Analyze", FunctionType::Primary, "sys_1")
+            .add_input("raw_data")
+            .add_output("analysis_result");
 
         let func2 = SystemFunction::new("func_2", "Store", FunctionType::Supporting, "sys_2")
             .add_input("analysis_result");
@@ -413,14 +412,11 @@ mod tests {
         let mut level0 = HierarchyLevel::new(0);
         level0.functions.push("func_root".to_string());
 
-        let mut level1 = HierarchyLevel::new(1)
-            .add_function("func_1")
-            .add_function("func_2");
+        let mut level1 = HierarchyLevel::new(1).add_function("func_1").add_function("func_2");
         level1 = level1.add_relationship("func_root", "func_1");
         level1 = level1.add_relationship("func_root", "func_2");
 
-        let hierarchy = FunctionalHierarchy::new("func_root")
-            .add_level(level1);
+        let hierarchy = FunctionalHierarchy::new("func_root").add_level(level1);
 
         assert_eq!(hierarchy.max_depth(), 1);
     }

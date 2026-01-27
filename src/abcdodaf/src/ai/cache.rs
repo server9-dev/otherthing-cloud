@@ -76,13 +76,7 @@ pub enum CacheStrategy {
 impl ResponseCache {
     /// Create a new response cache
     pub fn new(strategy: CacheStrategy, max_size: usize) -> Self {
-        Self {
-            entries: HashMap::new(),
-            strategy,
-            max_size,
-            hits: 0,
-            misses: 0,
-        }
+        Self { entries: HashMap::new(), strategy, max_size, hits: 0, misses: 0 }
     }
 
     /// Get a cached response
@@ -149,21 +143,21 @@ impl ResponseCache {
                     .iter()
                     .min_by_key(|(_, entry)| entry.last_accessed)
                     .map(|(key, _)| key.clone())
-            }
+            },
             CacheStrategy::LFU => {
                 // Remove least frequently used
                 self.entries
                     .iter()
                     .min_by_key(|(_, entry)| entry.access_count)
                     .map(|(key, _)| key.clone())
-            }
+            },
             CacheStrategy::TTL { .. } => {
                 // Remove oldest entry
                 self.entries
                     .iter()
                     .min_by_key(|(_, entry)| entry.created_at)
                     .map(|(key, _)| key.clone())
-            }
+            },
             CacheStrategy::Adaptive => {
                 // Score based on recency and frequency
                 self.entries
@@ -174,7 +168,7 @@ impl ResponseCache {
                         recency_score - frequency_score * 10
                     })
                     .map(|(key, _)| key.clone())
-            }
+            },
         };
 
         if let Some(key) = to_remove {
@@ -197,11 +191,7 @@ impl ResponseCache {
             0.0
         };
 
-        let total_cost_saved: f64 = self
-            .entries
-            .values()
-            .map(|e| e.metadata.cost_saved)
-            .sum();
+        let total_cost_saved: f64 = self.entries.values().map(|e| e.metadata.cost_saved).sum();
 
         CacheStats {
             size: self.entries.len(),
@@ -249,12 +239,7 @@ pub struct CacheStats {
 
 impl CacheKey {
     /// Create a new cache key
-    pub fn new(
-        model: impl Into<String>,
-        prompt: &str,
-        temperature: f32,
-        params: &str,
-    ) -> Self {
+    pub fn new(model: impl Into<String>, prompt: &str, temperature: f32, params: &str) -> Self {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         prompt.hash(&mut hasher);
         let prompt_hash = hasher.finish();
@@ -317,11 +302,7 @@ mod tests {
         cache.put(
             key.clone(),
             "response".to_string(),
-            CacheMetadata {
-                tokens: 100,
-                latency_ms: 50,
-                cost_saved: 0.01,
-            },
+            CacheMetadata { tokens: 100, latency_ms: 50, cost_saved: 0.01 },
         );
 
         assert_eq!(cache.get(&key).unwrap(), "response");
@@ -344,11 +325,7 @@ mod tests {
         let key2 = CacheKey::new("model1", "prompt2", 0.7, "");
         let key3 = CacheKey::new("model1", "prompt3", 0.7, "");
 
-        let metadata = CacheMetadata {
-            tokens: 100,
-            latency_ms: 50,
-            cost_saved: 0.01,
-        };
+        let metadata = CacheMetadata { tokens: 100, latency_ms: 50, cost_saved: 0.01 };
 
         cache.put(key1.clone(), "resp1".to_string(), metadata.clone());
         cache.put(key2.clone(), "resp2".to_string(), metadata.clone());
@@ -366,11 +343,7 @@ mod tests {
         cache.put(
             key.clone(),
             "response".to_string(),
-            CacheMetadata {
-                tokens: 100,
-                latency_ms: 50,
-                cost_saved: 0.01,
-            },
+            CacheMetadata { tokens: 100, latency_ms: 50, cost_saved: 0.01 },
         );
 
         cache.get(&key);

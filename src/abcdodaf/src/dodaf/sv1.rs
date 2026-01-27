@@ -380,11 +380,13 @@ mod tests {
         let sys1 = System::new("sys_1", "Command System", SystemType::Software);
         let sys2 = System::new("sys_2", "Sensor System", SystemType::Hardware);
 
-        let port1 = SystemPort::new("port_1", "Command Out", PortType::Output, "sys_1", PortDirection::Out)
-            .with_protocol("TCP");
+        let port1 =
+            SystemPort::new("port_1", "Command Out", PortType::Output, "sys_1", PortDirection::Out)
+                .with_protocol("TCP");
 
-        let port2 = SystemPort::new("port_2", "Data In", PortType::Input, "sys_2", PortDirection::In)
-            .with_protocol("TCP");
+        let port2 =
+            SystemPort::new("port_2", "Data In", PortType::Input, "sys_2", PortDirection::In)
+                .with_protocol("TCP");
 
         let desc = SystemsInterfaceDescription::new("sv1_1", "Test")
             .add_system(sys1)

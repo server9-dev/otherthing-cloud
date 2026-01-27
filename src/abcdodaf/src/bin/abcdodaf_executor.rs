@@ -16,7 +16,7 @@
 //! DATABASE_URL=postgresql://localhost/abcdodaf abcdodaf-executor
 //! ```
 
-use abcdodaf::executor::{ExecutorDaemon, ExecutorConfig};
+use abcdodaf::executor::{ExecutorConfig, ExecutorDaemon};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Start daemon
             let daemon = ExecutorDaemon::new(config).await?;
             daemon.start().await?;
-        }
+        },
 
         Some(Commands::InitDb) => {
             // Initialize database only
@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let daemon = ExecutorDaemon::new(config).await?;
             println!("✅ Database schema initialized successfully");
             let _ = daemon; // Keep daemon alive until done
-        }
+        },
 
         Some(Commands::Check) => {
             // Check configuration and connections
@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("  Disconnected: {}", health.disconnected);
             println!("  Error: {}", health.error);
             println!("  Health: {:.1}%", health.health_percentage);
-        }
+        },
 
         Some(Commands::GenConfig { output }) => {
             // Generate default config file
@@ -129,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let toml = toml::to_string_pretty(&config)?;
             std::fs::write(&output, toml)?;
             println!("✅ Configuration written to: {}", output.display());
-        }
+        },
     }
 
     Ok(())

@@ -1,7 +1,7 @@
 //! Enhanced execution runtime with debugging and visualization support
 
-use super::{Process, ProcessInstance, ProcessState};
 use super::process::Task;
+use super::{Process, ProcessInstance, ProcessState};
 use crate::error::{AbcdodafError, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -43,16 +43,9 @@ pub enum TokenState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExecutionEvent {
     /// Process started
-    ProcessStarted {
-        instance_id: Uuid,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    ProcessStarted { instance_id: Uuid, timestamp: chrono::DateTime<chrono::Utc> },
     /// Token created at element
-    TokenCreated {
-        token_id: Uuid,
-        element_id: String,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    TokenCreated { token_id: Uuid, element_id: String, timestamp: chrono::DateTime<chrono::Utc> },
     /// Token moved to new element
     TokenMoved {
         token_id: Uuid,
@@ -61,11 +54,7 @@ pub enum ExecutionEvent {
         timestamp: chrono::DateTime<chrono::Utc>,
     },
     /// Task started execution
-    TaskStarted {
-        task_id: String,
-        token_id: Uuid,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    TaskStarted { task_id: String, token_id: Uuid, timestamp: chrono::DateTime<chrono::Utc> },
     /// Task completed successfully
     TaskCompleted {
         task_id: String,
@@ -94,22 +83,11 @@ pub enum ExecutionEvent {
         timestamp: chrono::DateTime<chrono::Utc>,
     },
     /// Breakpoint hit
-    BreakpointHit {
-        element_id: String,
-        token_id: Uuid,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    BreakpointHit { element_id: String, token_id: Uuid, timestamp: chrono::DateTime<chrono::Utc> },
     /// Process completed
-    ProcessCompleted {
-        instance_id: Uuid,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    ProcessCompleted { instance_id: Uuid, timestamp: chrono::DateTime<chrono::Utc> },
     /// Process failed
-    ProcessFailed {
-        instance_id: Uuid,
-        error: String,
-        timestamp: chrono::DateTime<chrono::Utc>,
-    },
+    ProcessFailed { instance_id: Uuid, error: String, timestamp: chrono::DateTime<chrono::Utc> },
 }
 
 /// Execution context for a running process
@@ -195,21 +173,11 @@ pub struct Breakpoint {
 
 impl Breakpoint {
     pub fn new(element_id: String) -> Self {
-        Self {
-            element_id,
-            enabled: true,
-            condition: None,
-            hit_count: 0,
-        }
+        Self { element_id, enabled: true, condition: None, hit_count: 0 }
     }
 
     pub fn with_condition(element_id: String, condition: String) -> Self {
-        Self {
-            element_id,
-            enabled: true,
-            condition: Some(condition),
-            hit_count: 0,
-        }
+        Self { element_id, enabled: true, condition: Some(condition), hit_count: 0 }
     }
 }
 
@@ -311,10 +279,7 @@ impl EnhancedRuntime {
     /// Add a conditional breakpoint
     pub async fn add_conditional_breakpoint(&self, element_id: String, condition: String) {
         let mut breakpoints = self.breakpoints.write().await;
-        breakpoints.insert(
-            element_id.clone(),
-            Breakpoint::with_condition(element_id, condition),
-        );
+        breakpoints.insert(element_id.clone(), Breakpoint::with_condition(element_id, condition));
     }
 
     /// Remove a breakpoint
@@ -338,24 +303,129 @@ impl EnhancedRuntime {
     }
 
     /// Check if should break at element
-    async fn should_break(&self, element_id: &str, _variables: &HashMap<String, serde_json::Value>) -> bool {
+    async fn should_break(
+        &self,
+        element_id: &str,
+        variables: &HashMap<String, serde_json::Value>,
+    ) -> bool {
         let mut breakpoints = self.breakpoints.write().await;
         if let Some(bp) = breakpoints.get_mut(element_id) {
             if bp.enabled {
                 bp.hit_count += 1;
-                // TODO: Evaluate condition if present
-                return true;
+
+                // Evaluate condition if present
+                if let Some(ref condition) = bp.condition {
+                    match self.evaluate_condition(condition, variables) {
+                        Ok(result) => result,
+                        Err(e) => {
+                            warn!("Failed to evaluate breakpoint condition: {}", e);
+                            true // Break anyway if condition evaluation fails
+                        }
+                    }
+                } else {
+                    true
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    /// Evaluate a condition expression
+    fn evaluate_condition(
+        &self,
+        condition: &str,
+        variables: &HashMap<String, serde_json::Value>,
+    ) -> Result<bool> {
+        // Simple condition evaluator
+        // Supports basic comparisons: variable == value, variable != value, etc.
+        let condition = condition.trim();
+
+        // Check for common operators
+        if let Some(pos) = condition.find("==") {
+            let var_name = condition[..pos].trim();
+            let value_str = condition[pos + 2..].trim().trim_matches('"');
+
+            if let Some(var_value) = variables.get(var_name) {
+                return Ok(match var_value {
+                    serde_json::Value::String(s) => s == value_str,
+                    serde_json::Value::Number(n) => n.to_string() == value_str,
+                    serde_json::Value::Bool(b) => b.to_string() == value_str,
+                    _ => false,
+                });
+            }
+            return Ok(false);
+        }
+
+        if let Some(pos) = condition.find("!=") {
+            let var_name = condition[..pos].trim();
+            let value_str = condition[pos + 2..].trim().trim_matches('"');
+
+            if let Some(var_value) = variables.get(var_name) {
+                return Ok(match var_value {
+                    serde_json::Value::String(s) => s != value_str,
+                    serde_json::Value::Number(n) => n.to_string() != value_str,
+                    serde_json::Value::Bool(b) => b.to_string() != value_str,
+                    _ => true,
+                });
+            }
+            return Ok(true);
+        }
+
+        if let Some(pos) = condition.find('>') {
+            let var_name = condition[..pos].trim();
+            let value_str = condition[pos + 1..].trim();
+
+            if let Some(var_value) = variables.get(var_name) {
+                if let serde_json::Value::Number(n) = var_value {
+                    if let (Some(var_num), Ok(threshold)) =
+                        (n.as_f64(), value_str.parse::<f64>())
+                    {
+                        return Ok(var_num > threshold);
+                    }
+                }
+            }
+            return Ok(false);
+        }
+
+        if let Some(pos) = condition.find('<') {
+            let var_name = condition[..pos].trim();
+            let value_str = condition[pos + 1..].trim();
+
+            if let Some(var_value) = variables.get(var_name) {
+                if let serde_json::Value::Number(n) = var_value {
+                    if let (Some(var_num), Ok(threshold)) =
+                        (n.as_f64(), value_str.parse::<f64>())
+                    {
+                        return Ok(var_num < threshold);
+                    }
+                }
+            }
+            return Ok(false);
+        }
+
+        // Check for boolean variable
+        if let Some(var_value) = variables.get(condition) {
+            if let serde_json::Value::Bool(b) = var_value {
+                return Ok(*b);
             }
         }
-        false
+
+        // Default: try to parse as boolean
+        match condition.to_lowercase().as_str() {
+            "true" => Ok(true),
+            "false" => Ok(false),
+            _ => Err(AbcdodafError::WorkflowError(format!(
+                "Cannot evaluate condition: {}",
+                condition
+            ))),
+        }
     }
 
     /// Start a process instance
-    pub async fn start_process(
-        &self,
-        process: &Process,
-        mode: ExecutionMode,
-    ) -> Result<Uuid> {
+    pub async fn start_process(&self, process: &Process, mode: ExecutionMode) -> Result<Uuid> {
         let mut instance = ProcessInstance::new(&process.id);
         instance.state = ProcessState::Running;
         let instance_id = instance.id;
@@ -384,13 +454,15 @@ impl EnhancedRuntime {
         self.emit_event(ExecutionEvent::ProcessStarted {
             instance_id,
             timestamp: chrono::Utc::now(),
-        }).await;
+        })
+        .await;
 
         self.emit_event(ExecutionEvent::TokenCreated {
             token_id: token.id,
             element_id: "start".to_string(),
             timestamp: chrono::Utc::now(),
-        }).await;
+        })
+        .await;
 
         info!("Started process instance: {} in mode {:?}", instance_id, mode);
         Ok(instance_id)
@@ -403,7 +475,10 @@ impl EnhancedRuntime {
     }
 
     /// Get performance data for an instance
-    pub async fn get_performance(&self, instance_id: Uuid) -> Option<HashMap<String, TaskPerformance>> {
+    pub async fn get_performance(
+        &self,
+        instance_id: Uuid,
+    ) -> Option<HashMap<String, TaskPerformance>> {
         let contexts = self.contexts.read().await;
         contexts.get(&instance_id).map(|ctx| ctx.performance.clone())
     }
@@ -469,7 +544,8 @@ impl EnhancedRuntime {
                 element_id: task.id.clone(),
                 token_id: token.id,
                 timestamp: chrono::Utc::now(),
-            }).await;
+            })
+            .await;
 
             // Pause execution
             self.pause(instance_id).await?;
@@ -480,7 +556,8 @@ impl EnhancedRuntime {
             task_id: task.id.clone(),
             token_id: token.id,
             timestamp: chrono::Utc::now(),
-        }).await;
+        })
+        .await;
 
         let start_time = std::time::Instant::now();
 
@@ -498,7 +575,8 @@ impl EnhancedRuntime {
         {
             let mut contexts = self.contexts.write().await;
             if let Some(context) = contexts.get_mut(&instance_id) {
-                let perf = context.performance
+                let perf = context
+                    .performance
                     .entry(task.id.clone())
                     .or_insert_with(|| TaskPerformance::new(task.id.clone()));
                 perf.record_execution(duration_ms);
@@ -513,16 +591,18 @@ impl EnhancedRuntime {
                     token_id: token.id,
                     duration_ms,
                     timestamp: chrono::Utc::now(),
-                }).await;
-            }
+                })
+                .await;
+            },
             Err(e) => {
                 self.emit_event(ExecutionEvent::TaskFailed {
                     task_id: task.id.clone(),
                     token_id: token.id,
                     error: e.to_string(),
                     timestamp: chrono::Utc::now(),
-                }).await;
-            }
+                })
+                .await;
+            },
         }
 
         result
@@ -551,7 +631,10 @@ impl EnhancedRuntime {
             loop {
                 let (mode, state) = {
                     let contexts = self.contexts.read().await;
-                    contexts.get(&instance_id).map(|c| (c.mode, c.instance.state)).unwrap_or((ExecutionMode::Continuous, ProcessState::Running))
+                    contexts
+                        .get(&instance_id)
+                        .map(|c| (c.mode, c.instance.state))
+                        .unwrap_or((ExecutionMode::Continuous, ProcessState::Running))
                 };
 
                 // Check if cancelled
@@ -571,8 +654,7 @@ impl EnhancedRuntime {
             // Get current token
             let token = {
                 let contexts = self.contexts.read().await;
-                contexts.get(&instance_id)
-                    .and_then(|c| c.tokens.first().cloned())
+                contexts.get(&instance_id).and_then(|c| c.tokens.first().cloned())
             };
 
             if let Some(token) = token {
@@ -594,7 +676,7 @@ impl EnhancedRuntime {
                                 context.instance.set_variable(key, value);
                             }
                         }
-                    }
+                    },
                     Err(e) => {
                         let mut contexts = self.contexts.write().await;
                         if let Some(context) = contexts.get_mut(&instance_id) {
@@ -605,10 +687,11 @@ impl EnhancedRuntime {
                             instance_id,
                             error: e.to_string(),
                             timestamp: chrono::Utc::now(),
-                        }).await;
+                        })
+                        .await;
 
                         return Err(e);
-                    }
+                    },
                 }
             }
         }
@@ -622,7 +705,8 @@ impl EnhancedRuntime {
             self.emit_event(ExecutionEvent::ProcessCompleted {
                 instance_id,
                 timestamp: chrono::Utc::now(),
-            }).await;
+            })
+            .await;
 
             Ok(context.instance.clone())
         } else {
@@ -633,7 +717,8 @@ impl EnhancedRuntime {
     /// Get all active instances
     pub async fn get_active_instances(&self) -> Vec<(Uuid, ExecutionContext)> {
         let contexts = self.contexts.read().await;
-        contexts.iter()
+        contexts
+            .iter()
             .filter(|(_, ctx)| {
                 matches!(ctx.instance.state, ProcessState::Running | ProcessState::Suspended)
             })
@@ -644,7 +729,9 @@ impl EnhancedRuntime {
     /// Get bottleneck analysis
     pub async fn analyze_bottlenecks(&self, instance_id: Uuid) -> Vec<(String, TaskPerformance)> {
         if let Some(context) = self.get_context(instance_id).await {
-            let mut tasks: Vec<_> = context.performance.iter()
+            let mut tasks: Vec<_> = context
+                .performance
+                .iter()
                 .map(|(id, perf)| (id.clone(), perf.clone()))
                 .collect();
 
@@ -666,8 +753,8 @@ impl Default for EnhancedRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bpmn::ProcessBuilder;
     use crate::bpmn::process::Task;
+    use crate::bpmn::ProcessBuilder;
 
     struct MockHandler;
 
@@ -695,8 +782,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let runtime = EnhancedRuntime::new()
-            .register_handler("user", Arc::new(MockHandler));
+        let runtime = EnhancedRuntime::new().register_handler("user", Arc::new(MockHandler));
 
         let mut event_rx = runtime.subscribe_events();
 
@@ -738,13 +824,9 @@ mod tests {
             .build()
             .unwrap();
 
-        let runtime = EnhancedRuntime::new()
-            .register_handler("user", Arc::new(MockHandler));
+        let runtime = EnhancedRuntime::new().register_handler("user", Arc::new(MockHandler));
 
-        let instance_id = runtime
-            .start_process(&process, ExecutionMode::Continuous)
-            .await
-            .unwrap();
+        let instance_id = runtime.start_process(&process, ExecutionMode::Continuous).await.unwrap();
 
         // Test pause/resume
         runtime.pause(instance_id).await.unwrap();

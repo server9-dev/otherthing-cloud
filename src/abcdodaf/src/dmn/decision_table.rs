@@ -14,9 +14,9 @@
 //! - **RULE ORDER**: All matching rules in definition order
 //! - **OUTPUT ORDER**: All matching rules, ordered by output priority
 
+use crate::dmn::errors::{DmnError, DmnResult};
 use crate::dmn::expression::Expression;
 use crate::dmn::feel::FeelValue;
-use crate::dmn::errors::{DmnError, DmnResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -69,10 +69,7 @@ impl HitPolicy {
             "COLLECT" | "C" => Ok(HitPolicy::Collect),
             "RULE ORDER" | "RULEORDER" | "R" => Ok(HitPolicy::RuleOrder),
             "OUTPUT ORDER" | "OUTPUTORDER" | "O" => Ok(HitPolicy::OutputOrder),
-            _ => Err(DmnError::InvalidDecisionTable(format!(
-                "Unknown hit policy: {}",
-                s
-            ))),
+            _ => Err(DmnError::InvalidDecisionTable(format!("Unknown hit policy: {}", s))),
         }
     }
 }
@@ -127,9 +124,10 @@ impl RuleEntry {
     /// Set an input entry
     pub fn set_input(&mut self, index: usize, value: Option<String>) -> DmnResult<()> {
         if index >= self.input_entries.len() {
-            return Err(DmnError::InvalidDecisionTable(
-                format!("Input index {} out of range", index)
-            ));
+            return Err(DmnError::InvalidDecisionTable(format!(
+                "Input index {} out of range",
+                index
+            )));
         }
         self.input_entries[index] = value;
         Ok(())
@@ -138,9 +136,10 @@ impl RuleEntry {
     /// Set an output entry
     pub fn set_output(&mut self, index: usize, value: String) -> DmnResult<()> {
         if index >= self.output_entries.len() {
-            return Err(DmnError::InvalidDecisionTable(
-                format!("Output index {} out of range", index)
-            ));
+            return Err(DmnError::InvalidDecisionTable(format!(
+                "Output index {} out of range",
+                index
+            )));
         }
         self.output_entries[index] = value;
         Ok(())
@@ -190,22 +189,18 @@ impl DecisionTable {
     /// Add a rule
     pub fn add_rule(&mut self, rule: RuleEntry) -> DmnResult<()> {
         if rule.input_entries.len() != self.inputs.len() {
-            return Err(DmnError::InvalidDecisionTable(
-                format!(
-                    "Rule has {} inputs, expected {}",
-                    rule.input_entries.len(),
-                    self.inputs.len()
-                )
-            ));
+            return Err(DmnError::InvalidDecisionTable(format!(
+                "Rule has {} inputs, expected {}",
+                rule.input_entries.len(),
+                self.inputs.len()
+            )));
         }
         if rule.output_entries.len() != self.outputs.len() {
-            return Err(DmnError::InvalidDecisionTable(
-                format!(
-                    "Rule has {} outputs, expected {}",
-                    rule.output_entries.len(),
-                    self.outputs.len()
-                )
-            ));
+            return Err(DmnError::InvalidDecisionTable(format!(
+                "Rule has {} outputs, expected {}",
+                rule.output_entries.len(),
+                self.outputs.len()
+            )));
         }
         self.rules.push(rule);
         Ok(())
@@ -215,34 +210,30 @@ impl DecisionTable {
     pub fn validate(&self) -> DmnResult<()> {
         if self.inputs.is_empty() {
             return Err(DmnError::InvalidDecisionTable(
-                "Decision table must have at least one input".to_string()
+                "Decision table must have at least one input".to_string(),
             ));
         }
 
         if self.outputs.is_empty() {
             return Err(DmnError::InvalidDecisionTable(
-                "Decision table must have at least one output".to_string()
+                "Decision table must have at least one output".to_string(),
             ));
         }
 
         for rule in &self.rules {
             if rule.input_entries.len() != self.inputs.len() {
-                return Err(DmnError::InvalidDecisionTable(
-                    format!(
-                        "Rule has incorrect number of inputs: {} vs {}",
-                        rule.input_entries.len(),
-                        self.inputs.len()
-                    )
-                ));
+                return Err(DmnError::InvalidDecisionTable(format!(
+                    "Rule has incorrect number of inputs: {} vs {}",
+                    rule.input_entries.len(),
+                    self.inputs.len()
+                )));
             }
             if rule.output_entries.len() != self.outputs.len() {
-                return Err(DmnError::InvalidDecisionTable(
-                    format!(
-                        "Rule has incorrect number of outputs: {} vs {}",
-                        rule.output_entries.len(),
-                        self.outputs.len()
-                    )
-                ));
+                return Err(DmnError::InvalidDecisionTable(format!(
+                    "Rule has incorrect number of outputs: {} vs {}",
+                    rule.output_entries.len(),
+                    self.outputs.len()
+                )));
             }
         }
 
@@ -276,9 +267,8 @@ impl DecisionTable {
 
             // Get the input value from context
             let input_id = input.id.clone();
-            let input_value = inputs
-                .get(&input_id)
-                .ok_or_else(|| DmnError::MissingInput(input_id.clone()))?;
+            let input_value =
+                inputs.get(&input_id).ok_or_else(|| DmnError::MissingInput(input_id.clone()))?;
 
             // If no condition, it's a wildcard (always matches)
             let Some(condition) = input_entry else {

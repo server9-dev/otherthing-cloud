@@ -56,7 +56,11 @@ impl TaskTestCase {
     }
 
     /// Add expected output
-    pub fn with_expected_output(mut self, key: impl Into<String>, value: serde_json::Value) -> Self {
+    pub fn with_expected_output(
+        mut self,
+        key: impl Into<String>,
+        value: serde_json::Value,
+    ) -> Self {
         self.expected_output.insert(key.into(), value);
         self
     }
@@ -159,11 +163,7 @@ impl TestHarness {
 
     /// Create with custom configuration
     pub fn with_config(executor: ProcessExecutor, config: TestHarnessConfig) -> Self {
-        Self {
-            executor: Arc::new(executor),
-            results: Arc::new(RwLock::new(Vec::new())),
-            config,
-        }
+        Self { executor: Arc::new(executor), results: Arc::new(RwLock::new(Vec::new())), config }
     }
 
     /// Run a single task test
@@ -187,7 +187,7 @@ impl TestHarness {
             Ok(Ok((output, assertions))) => {
                 let passed = assertions.iter().all(|a| a.passed);
                 (passed, output, None, assertions)
-            }
+            },
             Ok(Err(e)) => (false, HashMap::new(), Some(e.to_string()), vec![]),
             Err(_) => (
                 false,
@@ -214,10 +214,7 @@ impl TestHarness {
 
         if self.config.verbose {
             let status = if passed { "PASS" } else { "FAIL" };
-            info!(
-                "Test {} ({}): {} in {}ms",
-                test_case.name, status, test_case.id, duration_ms
-            );
+            info!("Test {} ({}): {} in {}ms", test_case.name, status, test_case.id, duration_ms);
         }
 
         Ok(test_result)
@@ -302,11 +299,7 @@ impl TestHarness {
             passed_tests: passed,
             failed_tests: failed,
             total_duration_ms,
-            pass_rate: if total > 0 {
-                (passed as f64) / (total as f64)
-            } else {
-                0.0
-            },
+            pass_rate: if total > 0 { (passed as f64) / (total as f64) } else { 0.0 },
         }
     }
 
@@ -321,10 +314,7 @@ impl TestHarness {
         // Simulate task execution with captured variables
         let mut output = test_case.input_variables.clone();
         output.insert("executed".to_string(), serde_json::json!(true));
-        output.insert(
-            "timestamp".to_string(),
-            serde_json::json!(chrono::Utc::now().to_rfc3339()),
-        );
+        output.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
 
         // Validate output
         let mut assertions = Vec::new();
@@ -334,10 +324,7 @@ impl TestHarness {
 
             let passed = actual_value.map(|v| v == expected_value).unwrap_or(false);
             let details = if !passed {
-                Some(format!(
-                    "Expected: {:?}, Got: {:?}",
-                    expected_value, actual_value
-                ))
+                Some(format!("Expected: {:?}, Got: {:?}", expected_value, actual_value))
             } else {
                 None
             };

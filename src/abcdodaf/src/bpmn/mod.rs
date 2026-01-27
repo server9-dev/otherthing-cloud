@@ -3,32 +3,33 @@
 //! This module wraps the bpxe engine to provide a simplified interface
 //! for defining and executing BPMN processes within the workforce context.
 
-pub mod process;
-pub mod executor;
 pub mod elements;
-pub mod xml_io;
+pub mod executor;
 pub mod file_io;
-pub mod runtime;
 pub mod json_format;
 pub mod json_validation;
+pub mod process;
+pub mod runtime;
+pub mod validation;
+pub mod xml_io;
 
-pub use process::{Process, ProcessBuilder};
-pub use executor::ProcessExecutor;
 pub use elements::*;
-pub use xml_io::{BpmnXmlSerializer, XmlError, XmlResult, namespace};
-pub use file_io::{BpmnFileIo, FileOptions, FileError, FileResult};
-pub use runtime::{
-    EnhancedRuntime, ExecutionContext, ExecutionEvent, ExecutionMode,
-    ExecutionToken, TaskHandler, TokenState, Breakpoint, TaskPerformance,
-};
-pub use json_format::{BpmnJsonWorkflow, BpmnProcessInfo, WorkflowStep, SequenceFlow};
+pub use executor::ProcessExecutor;
+pub use file_io::{BpmnFileIo, FileError, FileOptions, FileResult};
+pub use json_format::{BpmnJsonWorkflow, BpmnProcessInfo, SequenceFlow, WorkflowStep};
 pub use json_validation::{
-    validate_bpmn_json, validate_bpmn_workflow, ValidationError,
-    ErrorSeverity, ErrorCategory, ValidationSummary,
+    validate_bpmn_json, validate_bpmn_workflow, ErrorCategory, ErrorSeverity, ValidationError,
+    ValidationSummary,
+};
+pub use process::{Process, ProcessBuilder};
+pub use runtime::{
+    Breakpoint, EnhancedRuntime, ExecutionContext, ExecutionEvent, ExecutionMode, ExecutionToken,
+    TaskHandler, TaskPerformance, TokenState,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
+pub use xml_io::{namespace, BpmnXmlSerializer, XmlError, XmlResult};
 
 /// Represents a BPMN process instance
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -141,10 +142,7 @@ mod tests {
     fn test_process_variables() {
         let mut instance = ProcessInstance::new("test");
         instance.set_variable("key", serde_json::json!("value"));
-        assert_eq!(
-            instance.get_variable("key"),
-            Some(&serde_json::json!("value"))
-        );
+        assert_eq!(instance.get_variable("key"), Some(&serde_json::json!("value")));
     }
 
     #[test]

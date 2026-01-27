@@ -244,10 +244,7 @@ impl SystemsResourceFlowDescription {
 
     /// Get links to a system
     pub fn get_inbound_links(&self, to_system: &str) -> Vec<&CommunicationLink> {
-        self.communications_links
-            .iter()
-            .filter(|l| l.to_system == to_system)
-            .collect()
+        self.communications_links.iter().filter(|l| l.to_system == to_system).collect()
     }
 }
 
@@ -406,10 +403,7 @@ impl Default for FlowAttributes {
 impl FlowAttributes {
     /// Create with availability requirement
     pub fn with_availability(availability: f64) -> Self {
-        Self {
-            availability_requirement: Some(availability),
-            ..Default::default()
-        }
+        Self { availability_requirement: Some(availability), ..Default::default() }
     }
 
     /// Set throughput
@@ -474,10 +468,11 @@ mod tests {
 
     #[test]
     fn test_communication_network() {
-        let network = CommunicationNetwork::new("net_1", "Corporate Network", NetworkType::Intranet)
-            .add_member_system("sys_1")
-            .add_member_system("sys_2")
-            .add_link("link_1");
+        let network =
+            CommunicationNetwork::new("net_1", "Corporate Network", NetworkType::Intranet)
+                .add_member_system("sys_1")
+                .add_member_system("sys_2")
+                .add_link("link_1");
 
         assert_eq!(network.network_type, NetworkType::Intranet);
         assert_eq!(network.member_systems.len(), 2);

@@ -107,11 +107,7 @@ pub struct RetryPolicy {
 
 impl HumanTask {
     /// Create a new human task
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        role: HumanRole,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, role: HumanRole) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -165,11 +161,7 @@ impl HumanTask {
 
 impl SystemTask {
     /// Create a new system task
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        operation: SystemOperation,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, operation: SystemOperation) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -217,12 +209,7 @@ impl SystemTask {
 impl RetryPolicy {
     /// Create a new retry policy
     pub fn new(max_attempts: u32) -> Self {
-        Self {
-            max_attempts,
-            initial_delay_ms: 1000,
-            backoff_multiplier: 2.0,
-            max_delay_ms: 30000,
-        }
+        Self { max_attempts, initial_delay_ms: 1000, backoff_multiplier: 2.0, max_delay_ms: 30000 }
     }
 
     /// Set initial delay
@@ -245,8 +232,8 @@ impl RetryPolicy {
 
     /// Calculate delay for a given attempt
     pub fn calculate_delay(&self, attempt: u32) -> u64 {
-        let delay = (self.initial_delay_ms as f64)
-            * self.backoff_multiplier.powi(attempt as i32 - 1);
+        let delay =
+            (self.initial_delay_ms as f64) * self.backoff_multiplier.powi(attempt as i32 - 1);
         delay.min(self.max_delay_ms as f64) as u64
     }
 }
@@ -282,9 +269,7 @@ mod tests {
 
     #[test]
     fn test_retry_policy() {
-        let policy = RetryPolicy::new(3)
-            .with_initial_delay(1000)
-            .with_backoff(2.0);
+        let policy = RetryPolicy::new(3).with_initial_delay(1000).with_backoff(2.0);
 
         assert_eq!(policy.calculate_delay(1), 1000);
         assert_eq!(policy.calculate_delay(2), 2000);

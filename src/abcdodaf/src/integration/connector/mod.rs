@@ -2,19 +2,19 @@
 //!
 //! Provides extensible traits and base types for building connectors to various external systems
 
-pub mod error;
 pub mod auth;
-pub mod config;
-pub mod retry;
 pub mod circuit_breaker;
+pub mod config;
+pub mod error;
 pub mod registry;
+pub mod retry;
 
-pub use error::{ConnectorError, ConnectorResult};
-pub use auth::{AuthStrategy, OAuthConfig, JwtConfig, ApiKeyConfig};
-pub use config::{ConnectorConfig, ConnectorContext, AuthConfig};
-pub use retry::RetryPolicy;
+pub use auth::{ApiKeyConfig, AuthStrategy, JwtConfig, OAuthConfig};
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerState};
+pub use config::{AuthConfig, ConnectorConfig, ConnectorContext};
+pub use error::{ConnectorError, ConnectorResult};
 pub use registry::ConnectorRegistry;
+pub use retry::RetryPolicy;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
@@ -258,9 +258,7 @@ mod tests {
 
     #[test]
     fn test_request_creation() {
-        let req = ConnectorRequest::new("GET")
-            .with_param("id", json!("123"))
-            .with_timeout(30);
+        let req = ConnectorRequest::new("GET").with_param("id", json!("123")).with_timeout(30);
 
         assert_eq!(req.operation, "GET");
         assert_eq!(req.timeout_secs, Some(30));

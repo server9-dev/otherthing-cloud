@@ -3,8 +3,8 @@
 //! Provides secure storage and retrieval of sensitive credentials with
 //! encryption and access control.
 
+use crate::security::encryption::{Aes256GcmProvider, EncryptedData, EncryptionProvider};
 use crate::security::error::{SecurityError, SecurityResult};
-use crate::security::encryption::{EncryptedData, EncryptionProvider, Aes256GcmProvider};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -163,10 +163,7 @@ impl SecretManager {
         let mut secrets = self.secrets.write().await;
 
         if secrets.contains_key(&secret.name) {
-            return Err(SecurityError::Other(format!(
-                "Secret '{}' already exists",
-                secret.name
-            )));
+            return Err(SecurityError::Other(format!("Secret '{}' already exists", secret.name)));
         }
 
         secrets.insert(secret.name.clone(), secret);
@@ -200,18 +197,12 @@ impl SecretManager {
 
             // Check if expired
             if secret.is_expired() {
-                return Err(SecurityError::Other(format!(
-                    "Secret '{}' has expired",
-                    name
-                )));
+                return Err(SecurityError::Other(format!("Secret '{}' has expired", name)));
             }
 
             // Check if active
             if !secret.is_active {
-                return Err(SecurityError::Other(format!(
-                    "Secret '{}' is inactive",
-                    name
-                )));
+                return Err(SecurityError::Other(format!("Secret '{}' is inactive", name)));
             }
 
             secret.mark_accessed();
@@ -235,14 +226,9 @@ impl SecretManager {
     }
 
     /// Retrieve secret as string
-    pub async fn get_secret_string(
-        &self,
-        name: &str,
-        subject_id: &str,
-    ) -> SecurityResult<String> {
+    pub async fn get_secret_string(&self, name: &str, subject_id: &str) -> SecurityResult<String> {
         let bytes = self.get_secret(name, subject_id).await?;
-        String::from_utf8(bytes)
-            .map_err(|e| SecurityError::DecryptionError(e.to_string()))
+        String::from_utf8(bytes).map_err(|e| SecurityError::DecryptionError(e.to_string()))
     }
 
     /// Delete a secret
@@ -302,10 +288,7 @@ impl SecretManager {
     /// Get access log for a secret
     pub async fn get_access_log(&self, name: &str) -> SecurityResult<Vec<AccessRecord>> {
         let access_log = self.access_log.read().await;
-        Ok(access_log
-            .get(name)
-            .cloned()
-            .unwrap_or_default())
+        Ok(access_log.get(name).cloned().unwrap_or_default())
     }
 
     /// Rotate secret (create new encrypted version with rotated key)
@@ -336,13 +319,8 @@ impl SecretManager {
     }
 }
 
-impl Default for SecretManager {
-    fn default() -> Self {
-        // This is not async, so we can't properly initialize here
-        // Users should call SecretManager::new() instead
-        panic!("Use SecretManager::new() instead")
-    }
-}
+// Note: Default trait removed to prevent panics.
+// SecretManager requires async initialization, so users must call SecretManager::new().
 
 #[cfg(test)]
 mod tests {
@@ -363,10 +341,7 @@ mod tests {
             .await
             .unwrap();
 
-        let secret = manager
-            .get_secret_string("api_key", "user1")
-            .await
-            .unwrap();
+        let secret = manager.get_secret_string("api_key", "user1").await.unwrap();
         assert_eq!(secret, "secret123");
     }
 
@@ -418,15 +393,9 @@ mod tests {
             .await
             .unwrap();
 
-        manager
-            .get_secret_string("api_key", "user1")
-            .await
-            .unwrap();
+        manager.get_secret_string("api_key", "user1").await.unwrap();
 
-        manager
-            .get_secret_string("api_key", "user2")
-            .await
-            .unwrap();
+        manager.get_secret_string("api_key", "user2").await.unwrap();
 
         let log = manager.get_access_log("api_key").await.unwrap();
         assert_eq!(log.len(), 2);

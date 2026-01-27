@@ -178,10 +178,11 @@ mod tests {
 
     #[test]
     fn test_agent_task_creation() {
-        let task = AgentTask::new("agent1", "Process Text", AgentCapability::NaturalLanguageProcessing)
-            .with_agent_type(AgentType::LanguageModel)
-            .with_autonomy(0.9)
-            .add_parameter("temperature", serde_json::json!(0.7));
+        let task =
+            AgentTask::new("agent1", "Process Text", AgentCapability::NaturalLanguageProcessing)
+                .with_agent_type(AgentType::LanguageModel)
+                .with_autonomy(0.9)
+                .add_parameter("temperature", serde_json::json!(0.7));
 
         assert_eq!(task.id, "agent1");
         assert_eq!(task.agent_type, AgentType::LanguageModel);

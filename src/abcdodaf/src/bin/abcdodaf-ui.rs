@@ -18,14 +18,20 @@
 #[cfg(feature = "ui")]
 fn main() -> Result<(), eframe::Error> {
     use abcdodaf::ui::{
-        EnhancedBpmnViewer, enhanced_bpmn_style, PropertyEditor,
-        Workspace, FileBrowser, FileAction, TabBar, TabAction,
-        DodafAggregator, Validator,
+        enhanced_bpmn_style, DodafAggregator, EnhancedBpmnViewer, FileAction, FileBrowser,
+        PropertyEditor, TabAction, TabBar, Validator, Workspace,
     };
     use eframe::App;
 
     // Initialize tracing for logging
     tracing_subscriber::fmt::init();
+
+    /// Rename dialog state
+    struct RenameDialog {
+        path: std::path::PathBuf,
+        current_name: String,
+        new_name: String,
+    }
 
     /// IDE-like BPMN Workspace Editor
     struct WorkspaceEditorApp {
@@ -42,6 +48,7 @@ fn main() -> Result<(), eframe::Error> {
         show_file_browser: bool,
         show_properties: bool,
         pending_save_as: Option<usize>, // Workflow ID waiting for save path
+        rename_dialog: Option<RenameDialog>,
     }
 
     impl WorkspaceEditorApp {
@@ -63,7 +70,69 @@ fn main() -> Result<(), eframe::Error> {
                 show_file_browser: true,
                 show_properties: true,
                 pending_save_as: None,
+                rename_dialog: None,
             }
+        }
+
+        fn render_rename_dialog(&mut self, ctx: &egui::Context) -> bool {
+            let mut keep_open = true;
+            let mut should_rename = false;
+
+            if let Some(dialog) = &mut self.rename_dialog {
+                egui::Window::new("Rename File")
+                    .collapsible(false)
+                    .resizable(false)
+                    .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                    .show(ctx, |ui| {
+                        ui.label(format!("Current name: {}", dialog.current_name));
+                        ui.separator();
+
+                        ui.horizontal(|ui| {
+                            ui.label("New name:");
+                            let response = ui.text_edit_singleline(&mut dialog.new_name);
+
+                            // Focus the text field when dialog opens
+                            response.request_focus();
+
+                            // Handle Enter key
+                            if response.lost_focus()
+                                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                            {
+                                should_rename = true;
+                            }
+                        });
+
+                        ui.separator();
+
+                        ui.horizontal(|ui| {
+                            if ui.button("Rename").clicked() {
+                                should_rename = true;
+                            }
+
+                            if ui.button("Cancel").clicked() {
+                                keep_open = false;
+                            }
+                        });
+                    });
+            }
+
+            if should_rename {
+                if let Some(dialog) = &self.rename_dialog {
+                    let new_path = dialog.path.with_file_name(&dialog.new_name);
+
+                    match std::fs::rename(&dialog.path, &new_path) {
+                        Ok(()) => {
+                            self.file_browser.mark_dirty();
+                            keep_open = false;
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to rename file: {}", e);
+                        }
+                    }
+                }
+            }
+
+            keep_open
         }
 
         fn render_menu_bar(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
@@ -76,9 +145,8 @@ fn main() -> Result<(), eframe::Error> {
                     }
 
                     if ui.button("📂 Open Workflow...").clicked() {
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("JSON", &["json"])
-                            .pick_file()
+                        if let Some(path) =
+                            rfd::FileDialog::new().add_filter("JSON", &["json"]).pick_file()
                         {
                             if let Err(e) = self.workspace.open_workflow(path) {
                                 eprintln!("Failed to open workflow: {}", e);
@@ -117,7 +185,8 @@ fn main() -> Result<(), eframe::Error> {
 
                     ui.separator();
 
-                    if ui.add_enabled(has_active, egui::Button::new("✖ Close Workflow")).clicked() {
+                    if ui.add_enabled(has_active, egui::Button::new("✖ Close Workflow")).clicked()
+                    {
                         if let Some(id) = self.workspace.active_workflow_id() {
                             self.workspace.close_workflow(id);
                         }
@@ -213,12 +282,19 @@ fn main() -> Result<(), eframe::Error> {
                 if let Some(doc) = self.workspace.get_active_workflow() {
                     // Validation status
                     if doc.validation_errors.is_empty() {
-                        ui.label(egui::RichText::new("✅ Valid").color(egui::Color32::from_rgb(0, 128, 0)));
+                        ui.label(
+                            egui::RichText::new("✅ Valid")
+                                .color(egui::Color32::from_rgb(0, 128, 0)),
+                        );
                     } else {
                         let error_count = doc.validation_errors.len();
                         ui.label(
-                            egui::RichText::new(format!("❌ {} Error{}", error_count, if error_count == 1 { "" } else { "s" }))
-                                .color(egui::Color32::from_rgb(255, 0, 0))
+                            egui::RichText::new(format!(
+                                "❌ {} Error{}",
+                                error_count,
+                                if error_count == 1 { "" } else { "s" }
+                            ))
+                            .color(egui::Color32::from_rgb(255, 0, 0)),
                         );
                     }
 
@@ -226,19 +302,30 @@ fn main() -> Result<(), eframe::Error> {
 
                     // Node count
                     let node_count = doc.snarl.node_ids().count();
-                    ui.label(format!("📦 {} Node{}", node_count, if node_count == 1 { "" } else { "s" }));
+                    ui.label(format!(
+                        "📦 {} Node{}",
+                        node_count,
+                        if node_count == 1 { "" } else { "s" }
+                    ));
 
                     ui.separator();
 
                     // Connection count
                     let conn_count = doc.snarl.wires().count();
-                    ui.label(format!("🔗 {} Connection{}", conn_count, if conn_count == 1 { "" } else { "s" }));
+                    ui.label(format!(
+                        "🔗 {} Connection{}",
+                        conn_count,
+                        if conn_count == 1 { "" } else { "s" }
+                    ));
 
                     ui.separator();
 
                     // Modified indicator
                     if doc.is_modified {
-                        ui.label(egui::RichText::new("● Modified").color(egui::Color32::from_rgb(255, 200, 0)));
+                        ui.label(
+                            egui::RichText::new("● Modified")
+                                .color(egui::Color32::from_rgb(255, 200, 0)),
+                        );
                     }
                 } else {
                     ui.label("No workflow open");
@@ -275,36 +362,34 @@ fn main() -> Result<(), eframe::Error> {
             ui.heading("⚙ Properties");
             ui.separator();
 
-            egui::ScrollArea::vertical()
-                .auto_shrink([false, false])
-                .show(ui, |ui| {
-                    if let Some(doc) = self.workspace.get_active_workflow_mut() {
-                        let doc_id = doc.id;
-                        if let Some(node_id) = self.viewer.selected_node_for_properties {
-                            if let Some(node) = doc.snarl.get_node_mut(node_id) {
-                                let changed = self.property_editor.show_properties(ui, node);
-                                if changed {
-                                    self.workspace.mark_modified(doc_id);
-                                }
-                            } else {
-                                ui.label("Node not found");
+            egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+                if let Some(doc) = self.workspace.get_active_workflow_mut() {
+                    let doc_id = doc.id;
+                    if let Some(node_id) = self.viewer.selected_node_for_properties {
+                        if let Some(node) = doc.snarl.get_node_mut(node_id) {
+                            let changed = self.property_editor.show_properties(ui, node);
+                            if changed {
+                                self.workspace.mark_modified(doc_id);
                             }
                         } else {
-                            ui.heading("Workflow Properties");
-                            ui.separator();
-                            ui.label(format!("Name: {}", doc.name));
-                            if let Some(path) = &doc.file_path {
-                                ui.label(format!("File: {}", path.display()));
-                            } else {
-                                ui.label("File: Unsaved");
-                            }
-                            ui.separator();
-                            ui.label("Select a node to edit its properties");
+                            ui.label("Node not found");
                         }
                     } else {
-                        ui.label("No workflow open");
+                        ui.heading("Workflow Properties");
+                        ui.separator();
+                        ui.label(format!("Name: {}", doc.name));
+                        if let Some(path) = &doc.file_path {
+                            ui.label(format!("File: {}", path.display()));
+                        } else {
+                            ui.label("File: Unsaved");
+                        }
+                        ui.separator();
+                        ui.label("Select a node to edit its properties");
                     }
-                });
+                } else {
+                    ui.label("No workflow open");
+                }
+            });
         }
 
         fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
@@ -353,6 +438,13 @@ fn main() -> Result<(), eframe::Error> {
             // Handle keyboard shortcuts
             self.handle_keyboard_shortcuts(ctx);
 
+            // Handle rename dialog
+            if self.rename_dialog.is_some() {
+                if !self.render_rename_dialog(ctx) {
+                    self.rename_dialog = None;
+                }
+            }
+
             // Handle pending save as dialog
             if let Some(workflow_id) = self.pending_save_as {
                 if let Some(path) = rfd::FileDialog::new()
@@ -376,43 +468,54 @@ fn main() -> Result<(), eframe::Error> {
 
             // Left file browser
             if self.show_file_browser {
-                egui::SidePanel::left("file_browser")
-                    .default_width(200.0)
-                    .resizable(true)
-                    .show(ctx, |ui| {
+                egui::SidePanel::left("file_browser").default_width(200.0).resizable(true).show(
+                    ctx,
+                    |ui| {
                         if let Some(action) = self.file_browser.render(ui, &mut self.workspace) {
                             match action {
                                 FileAction::NewFile => {
                                     self.workspace.create_new_workflow();
-                                }
+                                },
                                 FileAction::OpenFile(path) => {
                                     if let Err(e) = self.workspace.open_workflow(path) {
                                         eprintln!("Failed to open: {}", e);
                                     }
-                                }
+                                },
                                 FileAction::DeleteFile(path) => {
                                     if let Err(e) = std::fs::remove_file(&path) {
                                         eprintln!("Failed to delete: {}", e);
                                     } else {
                                         self.file_browser.mark_dirty();
                                     }
-                                }
-                                FileAction::RenameFile(_path) => {
-                                    // TODO: Implement rename dialog
-                                }
+                                },
+                                FileAction::RenameFile(path) => {
+                                    // Open rename dialog
+                                    let current_name = path
+                                        .file_name()
+                                        .and_then(|n| n.to_str())
+                                        .unwrap_or("untitled")
+                                        .to_string();
+
+                                    self.rename_dialog = Some(RenameDialog {
+                                        path: path.clone(),
+                                        current_name: current_name.clone(),
+                                        new_name: current_name,
+                                    });
+                                },
                             }
                         }
-                    });
+                    },
+                );
             }
 
             // Right properties panel
             if self.show_properties {
-                egui::SidePanel::right("properties")
-                    .default_width(350.0)
-                    .resizable(true)
-                    .show(ctx, |ui| {
+                egui::SidePanel::right("properties").default_width(350.0).resizable(true).show(
+                    ctx,
+                    |ui| {
                         self.render_properties(ui);
-                    });
+                    },
+                );
             }
 
             // Bottom DoDAF panel
@@ -426,32 +529,28 @@ fn main() -> Result<(), eframe::Error> {
             }
 
             // Bottom status bar
-            egui::TopBottomPanel::bottom("status_bar")
-                .min_height(24.0)
-                .show(ctx, |ui| {
-                    self.render_status_bar(ui);
-                });
+            egui::TopBottomPanel::bottom("status_bar").min_height(24.0).show(ctx, |ui| {
+                self.render_status_bar(ui);
+            });
 
             // Center panel with tabs + editor
             egui::CentralPanel::default().show(ctx, |ui| {
                 // Tab bar
-                egui::TopBottomPanel::top("tabs")
-                    .min_height(32.0)
-                    .show_inside(ui, |ui| {
-                        if let Some(action) = self.tab_bar.render(ui, &mut self.workspace) {
-                            match action {
-                                TabAction::NewTab => {
-                                    self.workspace.create_new_workflow();
-                                }
-                                TabAction::SwitchTab(id) => {
-                                    self.workspace.set_active_workflow(id);
-                                }
-                                TabAction::CloseTab(id) => {
-                                    self.workspace.close_workflow(id);
-                                }
-                            }
+                egui::TopBottomPanel::top("tabs").min_height(32.0).show_inside(ui, |ui| {
+                    if let Some(action) = self.tab_bar.render(ui, &mut self.workspace) {
+                        match action {
+                            TabAction::NewTab => {
+                                self.workspace.create_new_workflow();
+                            },
+                            TabAction::SwitchTab(id) => {
+                                self.workspace.set_active_workflow(id);
+                            },
+                            TabAction::CloseTab(id) => {
+                                self.workspace.close_workflow(id);
+                            },
                         }
-                    });
+                    }
+                });
 
                 // Active workflow editor
                 egui::CentralPanel::default().show_inside(ui, |ui| {

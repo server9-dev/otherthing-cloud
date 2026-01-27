@@ -54,10 +54,7 @@ pub struct McpResourceRequirements {
 impl McpIntegration {
     /// Create a new MCP integration
     pub fn new(endpoint: impl Into<String>) -> Self {
-        Self {
-            endpoint: endpoint.into(),
-            config: McpConfig::default(),
-        }
+        Self { endpoint: endpoint.into(), config: McpConfig::default() }
     }
 
     /// Configure the integration
@@ -104,11 +101,7 @@ impl McpIntegration {
     async fn submit_task(&self, submission: McpTaskSubmission) -> Result<String> {
         // In production, this would make an actual HTTP request to the MCP orchestrator
         // For now, return a mock job ID
-        tracing::info!(
-            "Submitting task {} to MCP endpoint: {}",
-            submission.task_id,
-            self.endpoint
-        );
+        tracing::info!("Submitting task {} to MCP endpoint: {}", submission.task_id, self.endpoint);
 
         // Mock implementation
         Ok(format!("job-{}", uuid::Uuid::new_v4()))
@@ -145,22 +138,13 @@ pub enum TaskStatus {
 
 impl Default for McpConfig {
     fn default() -> Self {
-        Self {
-            timeout_secs: 300,
-            retry_attempts: 3,
-            gpu_enabled: false,
-        }
+        Self { timeout_secs: 300, retry_attempts: 3, gpu_enabled: false }
     }
 }
 
 impl Default for McpResourceRequirements {
     fn default() -> Self {
-        Self {
-            cpu_cores: 1,
-            memory_mb: 1024,
-            gpu_required: false,
-            gpu_memory_mb: None,
-        }
+        Self { cpu_cores: 1, memory_mb: 1024, gpu_required: false, gpu_memory_mb: None }
     }
 }
 

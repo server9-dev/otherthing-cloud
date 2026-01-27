@@ -29,11 +29,7 @@ pub struct ApiKeyConfig {
 impl ApiKeyConfig {
     /// Create a new API key configuration
     pub fn new(key: impl Into<String>, header_name: impl Into<String>) -> Self {
-        Self {
-            key: key.into(),
-            header_name: header_name.into(),
-            prefix: None,
-        }
+        Self { key: key.into(), header_name: header_name.into(), prefix: None }
     }
 
     /// Set a prefix for the key
@@ -111,7 +107,7 @@ impl OAuthConfig {
                     .unwrap()
                     .as_secs() as i64;
                 now >= expires_at
-            }
+            },
             None => true,
         }
     }
@@ -131,10 +127,7 @@ impl OAuthConfig {
 impl AuthStrategy for OAuthConfig {
     fn apply(&self, headers: &mut HashMap<String, String>) {
         if let Some(ref token) = self.access_token {
-            headers.insert(
-                "Authorization".to_string(),
-                format!("Bearer {}", token),
-            );
+            headers.insert("Authorization".to_string(), format!("Bearer {}", token));
         }
     }
 
@@ -186,7 +179,7 @@ impl JwtConfig {
                     .unwrap()
                     .as_secs() as i64;
                 now >= expires_at
-            }
+            },
             None => false,
         }
     }
@@ -194,10 +187,7 @@ impl JwtConfig {
 
 impl AuthStrategy for JwtConfig {
     fn apply(&self, headers: &mut HashMap<String, String>) {
-        headers.insert(
-            self.header_name.clone(),
-            format!("Bearer {}", self.token),
-        );
+        headers.insert(self.header_name.clone(), format!("Bearer {}", self.token));
     }
 
     fn is_valid(&self) -> bool {
@@ -224,10 +214,7 @@ pub struct BasicAuthConfig {
 impl BasicAuthConfig {
     /// Create a new basic auth configuration
     pub fn new(username: impl Into<String>, password: impl Into<String>) -> Self {
-        Self {
-            username: username.into(),
-            password: password.into(),
-        }
+        Self { username: username.into(), password: password.into() }
     }
 }
 
@@ -235,10 +222,7 @@ impl AuthStrategy for BasicAuthConfig {
     fn apply(&self, headers: &mut HashMap<String, String>) {
         let credentials = format!("{}:{}", self.username, self.password);
         let encoded = base64_encode(&credentials);
-        headers.insert(
-            "Authorization".to_string(),
-            format!("Basic {}", encoded),
-        );
+        headers.insert("Authorization".to_string(), format!("Basic {}", encoded));
     }
 
     fn is_valid(&self) -> bool {
@@ -306,10 +290,7 @@ mod tests {
         let mut headers = HashMap::new();
         auth.apply(&mut headers);
 
-        assert_eq!(
-            headers.get("Authorization"),
-            Some(&"Bearer token123".to_string())
-        );
+        assert_eq!(headers.get("Authorization"), Some(&"Bearer token123".to_string()));
     }
 
     #[test]
@@ -318,10 +299,7 @@ mod tests {
         let mut headers = HashMap::new();
         auth.apply(&mut headers);
 
-        assert_eq!(
-            headers.get("Authorization"),
-            Some(&"Bearer eyJhbGc...".to_string())
-        );
+        assert_eq!(headers.get("Authorization"), Some(&"Bearer eyJhbGc...".to_string()));
     }
 
     #[test]

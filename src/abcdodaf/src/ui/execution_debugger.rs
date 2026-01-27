@@ -88,27 +88,11 @@ impl DebuggerPanel {
 
         // Tab bar
         ui.horizontal(|ui| {
-            ui.selectable_value(
-                &mut self.selected_tab,
-                DebuggerTab::Overview,
-                "📊 Overview",
-            );
-            ui.selectable_value(
-                &mut self.selected_tab,
-                DebuggerTab::Breakpoints,
-                "🔴 Breakpoints",
-            );
-            ui.selectable_value(
-                &mut self.selected_tab,
-                DebuggerTab::Variables,
-                "💾 Variables",
-            );
+            ui.selectable_value(&mut self.selected_tab, DebuggerTab::Overview, "📊 Overview");
+            ui.selectable_value(&mut self.selected_tab, DebuggerTab::Breakpoints, "🔴 Breakpoints");
+            ui.selectable_value(&mut self.selected_tab, DebuggerTab::Variables, "💾 Variables");
             ui.selectable_value(&mut self.selected_tab, DebuggerTab::Events, "📋 Events");
-            ui.selectable_value(
-                &mut self.selected_tab,
-                DebuggerTab::Performance,
-                "⚡ Performance",
-            );
+            ui.selectable_value(&mut self.selected_tab, DebuggerTab::Performance, "⚡ Performance");
         });
 
         ui.separator();
@@ -125,12 +109,12 @@ impl DebuggerPanel {
                         if ui.button("⏭️ Step").clicked() {
                             action = DebuggerAction::Step;
                         }
-                    }
+                    },
                     ExecutionMode::Continuous | ExecutionMode::StepByStep => {
                         if ui.button("⏸️ Pause").clicked() {
                             action = DebuggerAction::Pause;
                         }
-                    }
+                    },
                 }
 
                 if ui.button("⏹️ Stop").clicked() {
@@ -142,13 +126,7 @@ impl DebuggerPanel {
                 // Instance info
                 ui.label(format!(
                     "Instance: {}",
-                    context
-                        .instance
-                        .id
-                        .to_string()
-                        .chars()
-                        .take(8)
-                        .collect::<String>()
+                    context.instance.id.to_string().chars().take(8).collect::<String>()
                 ));
                 ui.label(format!("State: {:?}", context.instance.state));
                 ui.label(format!("Mode: {:?}", context.mode));
@@ -175,10 +153,9 @@ impl DebuggerPanel {
 
             ui.group(|ui| {
                 ui.label(RichText::new("Process Information").strong());
-                egui::Grid::new("overview_grid")
-                    .num_columns(2)
-                    .spacing([40.0, 4.0])
-                    .show(ui, |ui| {
+                egui::Grid::new("overview_grid").num_columns(2).spacing([40.0, 4.0]).show(
+                    ui,
+                    |ui| {
                         ui.label("Process ID:");
                         ui.label(&context.instance.process_id);
                         ui.end_row();
@@ -199,7 +176,9 @@ impl DebuggerPanel {
                         ui.end_row();
 
                         ui.label("Started:");
-                        ui.label(context.instance.started_at.format("%Y-%m-%d %H:%M:%S").to_string());
+                        ui.label(
+                            context.instance.started_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                        );
                         ui.end_row();
 
                         if let Some(completed) = context.instance.completed_at {
@@ -209,10 +188,14 @@ impl DebuggerPanel {
 
                             let duration = completed - context.instance.started_at;
                             ui.label("Duration:");
-                            ui.label(format!("{:.2}s", duration.num_milliseconds() as f64 / 1000.0));
+                            ui.label(format!(
+                                "{:.2}s",
+                                duration.num_milliseconds() as f64 / 1000.0
+                            ));
                             ui.end_row();
                         }
-                    });
+                    },
+                );
             });
 
             ui.add_space(10.0);
@@ -231,7 +214,8 @@ impl DebuggerPanel {
 
                         ui.colored_label(
                             token_color,
-                            format!("🎯 Token {} at {}",
+                            format!(
+                                "🎯 Token {} at {}",
                                 token.id.to_string().chars().take(8).collect::<String>(),
                                 token.current_element
                             ),
@@ -344,7 +328,12 @@ impl DebuggerPanel {
         let events_to_show: Vec<_> = if self.filter_errors_only {
             self.recent_events
                 .iter()
-                .filter(|e| matches!(e, ExecutionEvent::TaskFailed { .. } | ExecutionEvent::ProcessFailed { .. }))
+                .filter(|e| {
+                    matches!(
+                        e,
+                        ExecutionEvent::TaskFailed { .. } | ExecutionEvent::ProcessFailed { .. }
+                    )
+                })
                 .collect()
         } else {
             self.recent_events.iter().collect()
@@ -374,7 +363,12 @@ impl DebuggerPanel {
             ),
             ExecutionEvent::TokenMoved { from_element, to_element, timestamp, .. } => (
                 "➡️",
-                format!("Token moved {} → {} ({})", from_element, to_element, timestamp.format("%H:%M:%S")),
+                format!(
+                    "Token moved {} → {} ({})",
+                    from_element,
+                    to_element,
+                    timestamp.format("%H:%M:%S")
+                ),
                 Color32::LIGHT_BLUE,
             ),
             ExecutionEvent::TaskStarted { task_id, timestamp, .. } => (
@@ -384,7 +378,12 @@ impl DebuggerPanel {
             ),
             ExecutionEvent::TaskCompleted { task_id, duration_ms, timestamp, .. } => (
                 "✅",
-                format!("Task {} completed in {}ms ({})", task_id, duration_ms, timestamp.format("%H:%M:%S")),
+                format!(
+                    "Task {} completed in {}ms ({})",
+                    task_id,
+                    duration_ms,
+                    timestamp.format("%H:%M:%S")
+                ),
                 Color32::GREEN,
             ),
             ExecutionEvent::TaskFailed { task_id, error, timestamp, .. } => (
@@ -394,7 +393,12 @@ impl DebuggerPanel {
             ),
             ExecutionEvent::VariableChanged { variable_name, new_value, timestamp, .. } => (
                 "💾",
-                format!("Variable {} = {} ({})", variable_name, new_value, timestamp.format("%H:%M:%S")),
+                format!(
+                    "Variable {} = {} ({})",
+                    variable_name,
+                    new_value,
+                    timestamp.format("%H:%M:%S")
+                ),
                 Color32::LIGHT_GREEN,
             ),
             ExecutionEvent::BreakpointHit { element_id, timestamp, .. } => (
@@ -414,7 +418,12 @@ impl DebuggerPanel {
             ),
             ExecutionEvent::GatewayEvaluated { gateway_id, outgoing_flows, timestamp } => (
                 "🔀",
-                format!("Gateway {} evaluated → {} flows ({})", gateway_id, outgoing_flows.len(), timestamp.format("%H:%M:%S")),
+                format!(
+                    "Gateway {} evaluated → {} flows ({})",
+                    gateway_id,
+                    outgoing_flows.len(),
+                    timestamp.format("%H:%M:%S")
+                ),
                 Color32::KHAKI,
             ),
         };
@@ -480,17 +489,15 @@ impl DebuggerPanel {
         ui.group(|ui| {
             ui.label(RichText::new("🐌 Bottleneck Analysis").strong());
 
-            let bottlenecks: Vec<_> = tasks.iter()
-                .filter(|(_, perf)| perf.avg_duration_ms > 500)
-                .take(5)
-                .collect();
+            let bottlenecks: Vec<_> =
+                tasks.iter().filter(|(_, perf)| perf.avg_duration_ms > 500).take(5).collect();
 
             if bottlenecks.is_empty() {
                 ui.colored_label(Color32::GREEN, "✅ No significant bottlenecks detected");
             } else {
                 ui.colored_label(
                     Color32::YELLOW,
-                    format!("⚠️ {} potential bottlenecks found:", bottlenecks.len())
+                    format!("⚠️ {} potential bottlenecks found:", bottlenecks.len()),
                 );
 
                 for (task_id, perf) in bottlenecks {
@@ -499,11 +506,14 @@ impl DebuggerPanel {
                         ui.label(*task_id);
                         ui.colored_label(
                             Color32::RED,
-                            format!("avg {}ms ({}% of total)",
+                            format!(
+                                "avg {}ms ({}% of total)",
                                 perf.avg_duration_ms,
-                                (perf.total_duration_ms as f64 /
-                                 tasks.iter().map(|(_, p)| p.total_duration_ms).sum::<u64>() as f64 * 100.0) as u32
-                            )
+                                (perf.total_duration_ms as f64
+                                    / tasks.iter().map(|(_, p)| p.total_duration_ms).sum::<u64>()
+                                        as f64
+                                    * 100.0) as u32
+                            ),
                         );
                     });
                 }

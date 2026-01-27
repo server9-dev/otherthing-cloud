@@ -15,7 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Created sample BPMN diagram:");
     println!("  - ID: {}", diagram.id);
     println!("  - Processes: {}", diagram.processes.len());
-    println!("  - Process elements: {} start, {} tasks, {} gateways, {} end",
+    println!(
+        "  - Process elements: {} start, {} tasks, {} gateways, {} end",
         diagram.processes[0].start_events.len(),
         diagram.processes[0].tasks.len(),
         diagram.processes[0].gateways.len(),
@@ -34,16 +35,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Convert back to BpmnDiagram
     println!("Converting Snarl back to BpmnDiagram...");
-    let result_diagram = BpmnDiagramConverter::from_snarl(
-        &snarl,
-        "result_diagram",
-        "Converted Diagram",
-    )?;
+    let result_diagram =
+        BpmnDiagramConverter::from_snarl(&snarl, "result_diagram", "Converted Diagram")?;
 
     println!("BpmnDiagram created from Snarl:");
     println!("  - ID: {}", result_diagram.id);
     println!("  - Processes: {}", result_diagram.processes.len());
-    println!("  - Process elements: {} start, {} tasks, {} gateways, {} end",
+    println!(
+        "  - Process elements: {} start, {} tasks, {} gateways, {} end",
         result_diagram.processes[0].start_events.len(),
         result_diagram.processes[0].tasks.len(),
         result_diagram.processes[0].gateways.len(),
@@ -73,15 +72,13 @@ fn create_sample_diagram() -> BpmnDiagram {
         is_executable: true,
         process_type: ProcessType::Private,
 
-        start_events: vec![
-            StartEvent {
-                id: "start_1".to_string(),
-                name: Some("Start".to_string()),
-                documentation: None,
-                event_definition: None,
-                is_interrupting: true,
-            },
-        ],
+        start_events: vec![StartEvent {
+            id: "start_1".to_string(),
+            name: Some("Start".to_string()),
+            documentation: None,
+            event_definition: None,
+            is_interrupting: true,
+        }],
 
         end_events: vec![
             EndEvent {
@@ -100,29 +97,22 @@ fn create_sample_diagram() -> BpmnDiagram {
             },
         ],
 
-        intermediate_events: vec![
-            IntermediateEvent {
-                id: "timer_1".to_string(),
-                name: Some("Wait Timer".to_string()),
-                documentation: None,
-                event_definition: Some(EventDefinition::Timer {
-                    time_expression: "PT5M".to_string(),
-                }),
-                is_catching: true,
-                is_interrupting: false,
-                attached_to_ref: None,
-            },
-        ],
+        intermediate_events: vec![IntermediateEvent {
+            id: "timer_1".to_string(),
+            name: Some("Wait Timer".to_string()),
+            documentation: None,
+            event_definition: Some(EventDefinition::Timer { time_expression: "PT5M".to_string() }),
+            is_catching: true,
+            is_interrupting: false,
+            attached_to_ref: None,
+        }],
 
         tasks: vec![
             BpmnTask {
                 id: "task_1".to_string(),
                 name: Some("Validate Input".to_string()),
                 documentation: Some("Validate incoming request data".to_string()),
-                task_type: BpmnTaskType::User {
-                    implementation: None,
-                    rendering: None,
-                },
+                task_type: BpmnTaskType::User { implementation: None, rendering: None },
                 default_flow: None,
                 io_specification: None,
                 properties: HashMap::new(),
@@ -166,16 +156,14 @@ fn create_sample_diagram() -> BpmnDiagram {
             },
         ],
 
-        gateways: vec![
-            BpmnGateway {
-                id: "gateway_1".to_string(),
-                name: Some("Valid?".to_string()),
-                documentation: None,
-                gateway_type: BpmnGatewayType::Exclusive,
-                gateway_direction: GatewayDirection::Diverging,
-                default_flow: None,
-            },
-        ],
+        gateways: vec![BpmnGateway {
+            id: "gateway_1".to_string(),
+            name: Some("Valid?".to_string()),
+            documentation: None,
+            gateway_type: BpmnGatewayType::Exclusive,
+            gateway_direction: GatewayDirection::Diverging,
+            default_flow: None,
+        }],
 
         sequence_flows: vec![
             SequenceFlow {
@@ -252,13 +240,11 @@ fn create_sample_diagram() -> BpmnDiagram {
         processes: vec![process],
         collaborations: Vec::new(),
         data_stores: Vec::new(),
-        messages: vec![
-            Message {
-                id: "notification_msg".to_string(),
-                name: Some("Notification".to_string()),
-                item_ref: None,
-            },
-        ],
+        messages: vec![Message {
+            id: "notification_msg".to_string(),
+            name: Some("Notification".to_string()),
+            item_ref: None,
+        }],
         signals: Vec::new(),
     }
 }
@@ -271,42 +257,49 @@ fn verify_roundtrip(original: &BpmnDiagram, converted: &BpmnDiagram) {
     println!("Comparing element counts:");
 
     let start_match = orig_proc.start_events.len() == conv_proc.start_events.len();
-    println!("  Start events: {} -> {} {}",
+    println!(
+        "  Start events: {} -> {} {}",
         orig_proc.start_events.len(),
         conv_proc.start_events.len(),
         if start_match { "✓" } else { "✗" }
     );
 
     let task_match = orig_proc.tasks.len() == conv_proc.tasks.len();
-    println!("  Tasks: {} -> {} {}",
+    println!(
+        "  Tasks: {} -> {} {}",
         orig_proc.tasks.len(),
         conv_proc.tasks.len(),
         if task_match { "✓" } else { "✗" }
     );
 
     let gateway_match = orig_proc.gateways.len() == conv_proc.gateways.len();
-    println!("  Gateways: {} -> {} {}",
+    println!(
+        "  Gateways: {} -> {} {}",
         orig_proc.gateways.len(),
         conv_proc.gateways.len(),
         if gateway_match { "✓" } else { "✗" }
     );
 
-    let intermediate_match = orig_proc.intermediate_events.len() == conv_proc.intermediate_events.len();
-    println!("  Intermediate events: {} -> {} {}",
+    let intermediate_match =
+        orig_proc.intermediate_events.len() == conv_proc.intermediate_events.len();
+    println!(
+        "  Intermediate events: {} -> {} {}",
         orig_proc.intermediate_events.len(),
         conv_proc.intermediate_events.len(),
         if intermediate_match { "✓" } else { "✗" }
     );
 
     let end_match = orig_proc.end_events.len() == conv_proc.end_events.len();
-    println!("  End events: {} -> {} {}",
+    println!(
+        "  End events: {} -> {} {}",
         orig_proc.end_events.len(),
         conv_proc.end_events.len(),
         if end_match { "✓" } else { "✗" }
     );
 
     let flow_match = orig_proc.sequence_flows.len() == conv_proc.sequence_flows.len();
-    println!("  Sequence flows: {} -> {} {}",
+    println!(
+        "  Sequence flows: {} -> {} {}",
         orig_proc.sequence_flows.len(),
         conv_proc.sequence_flows.len(),
         if flow_match { "✓" } else { "✗" }
@@ -315,6 +308,8 @@ fn verify_roundtrip(original: &BpmnDiagram, converted: &BpmnDiagram) {
     if start_match && task_match && gateway_match && intermediate_match && end_match && flow_match {
         println!("\n✓ All element counts match!");
     } else {
-        println!("\n✗ Some element counts don't match (this may be expected for complex conversions)");
+        println!(
+            "\n✗ Some element counts don't match (this may be expected for complex conversions)"
+        );
     }
 }

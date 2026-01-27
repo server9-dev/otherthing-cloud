@@ -93,8 +93,8 @@ pub struct IntermediateEvent {
     pub name: Option<String>,
     pub documentation: Option<String>,
     pub event_definition: Option<EventDefinition>,
-    pub is_catching: bool, // true = catching, false = throwing
-    pub is_interrupting: bool, // for boundary events
+    pub is_catching: bool,               // true = catching, false = throwing
+    pub is_interrupting: bool,           // for boundary events
     pub attached_to_ref: Option<String>, // for boundary events
 }
 
@@ -139,38 +139,19 @@ pub enum BpmnTaskType {
     /// Abstract/None - Generic task
     Abstract,
     /// User Task - Human performer with process-aware application
-    User {
-        implementation: Option<String>,
-        rendering: Option<String>,
-    },
+    User { implementation: Option<String>, rendering: Option<String> },
     /// Service Task - Automated service/web service
-    Service {
-        implementation: Option<String>,
-        operation_ref: Option<String>,
-    },
+    Service { implementation: Option<String>, operation_ref: Option<String> },
     /// Manual Task - Human work without system support
     Manual,
     /// Script Task - Automated script execution
-    Script {
-        script_format: String,
-        script: String,
-    },
+    Script { script_format: String, script: String },
     /// Business Rule Task - Business rules engine
-    BusinessRule {
-        implementation: Option<String>,
-        rule_ref: Option<String>,
-    },
+    BusinessRule { implementation: Option<String>, rule_ref: Option<String> },
     /// Send Task - Sends message
-    Send {
-        message_ref: Option<String>,
-        operation_ref: Option<String>,
-    },
+    Send { message_ref: Option<String>, operation_ref: Option<String> },
     /// Receive Task - Receives message
-    Receive {
-        message_ref: Option<String>,
-        operation_ref: Option<String>,
-        instantiate: bool,
-    },
+    Receive { message_ref: Option<String>, operation_ref: Option<String>, instantiate: bool },
 }
 
 /// Subprocess
@@ -181,7 +162,7 @@ pub struct Subprocess {
     pub documentation: Option<String>,
     pub subprocess_type: SubprocessType,
     pub triggered_by_event: bool,
-    pub process: Option<BpmnProcess>, // For embedded subprocesses
+    pub process: Option<BpmnProcess>,   // For embedded subprocesses
     pub called_element: Option<String>, // For call activities
     pub loop_characteristics: Option<LoopCharacteristics>,
 }
@@ -205,11 +186,7 @@ pub enum SubprocessType {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LoopCharacteristics {
     /// Sequential loop
-    Standard {
-        loop_condition: Option<String>,
-        test_before: bool,
-        loop_maximum: Option<i32>,
-    },
+    Standard { loop_condition: Option<String>, test_before: bool, loop_maximum: Option<i32> },
     /// Parallel multi-instance
     MultiInstance {
         is_sequential: bool,

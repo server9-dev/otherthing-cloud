@@ -3,9 +3,12 @@
 //! Provides high-level workflow building and execution capabilities
 //! that combine BPMN processes with DoDAF architecture and workforce tasks.
 
-use super::{AgentTask, HumanTask, SystemTask, WorkforceTask, WorkforceExecutionResult, ExecutionMetrics, TaskResult};
-use crate::bpmn::{Process, ProcessBuilder, ProcessExecutor};
+use super::{
+    AgentTask, ExecutionMetrics, HumanTask, SystemTask, TaskResult, WorkforceExecutionResult,
+    WorkforceTask,
+};
 use crate::bpmn::executor::TaskHandler;
+use crate::bpmn::{Process, ProcessBuilder, ProcessExecutor};
 use crate::dodaf::OperationalContext;
 use crate::error::Result;
 use async_trait::async_trait;
@@ -48,31 +51,19 @@ impl WorkflowBuilder {
     }
 
     /// Add an agent task
-    pub fn add_agent_task(
-        mut self,
-        _id: impl Into<String>,
-        task: AgentTask,
-    ) -> Self {
+    pub fn add_agent_task(mut self, _id: impl Into<String>, task: AgentTask) -> Self {
         self.tasks.push(WorkforceTask::Agent(task));
         self
     }
 
     /// Add a human task
-    pub fn add_human_task(
-        mut self,
-        _id: impl Into<String>,
-        task: HumanTask,
-    ) -> Self {
+    pub fn add_human_task(mut self, _id: impl Into<String>, task: HumanTask) -> Self {
         self.tasks.push(WorkforceTask::Human(task));
         self
     }
 
     /// Add a system task
-    pub fn add_system_task(
-        mut self,
-        _id: impl Into<String>,
-        task: SystemTask,
-    ) -> Self {
+    pub fn add_system_task(mut self, _id: impl Into<String>, task: SystemTask) -> Self {
         self.tasks.push(WorkforceTask::System(task));
         self
     }
@@ -97,22 +88,18 @@ impl WorkflowBuilder {
             match task {
                 WorkforceTask::Agent(t) => {
                     builder = builder.add_service_task(&t.id, &t.name);
-                }
+                },
                 WorkforceTask::Human(t) => {
                     builder = builder.add_user_task(&t.id, &t.name);
-                }
+                },
                 WorkforceTask::System(t) => {
                     builder = builder.add_service_task(&t.id, &t.name);
-                }
+                },
             }
         }
 
         let process = builder.build()?;
-        Ok(Workflow {
-            process,
-            tasks: self.tasks,
-            context: self.context,
-        })
+        Ok(Workflow { process, tasks: self.tasks, context: self.context })
     }
 }
 
@@ -154,18 +141,11 @@ pub struct WorkflowExecution {
 impl WorkflowExecution {
     /// Create a new workflow execution
     pub fn new(workflow: Workflow) -> Self {
-        Self {
-            workflow,
-            executor: ProcessExecutor::new(),
-            custom_handlers: HashMap::new(),
-        }
+        Self { workflow, executor: ProcessExecutor::new(), custom_handlers: HashMap::new() }
     }
 
     /// Add custom task handlers
-    pub fn with_handlers(
-        mut self,
-        handlers: HashMap<String, Arc<dyn TaskHandler>>,
-    ) -> Self {
+    pub fn with_handlers(mut self, handlers: HashMap<String, Arc<dyn TaskHandler>>) -> Self {
         self.custom_handlers = handlers;
         self
     }
@@ -181,30 +161,40 @@ impl WorkflowExecution {
         let mut variables = HashMap::new();
         variables.insert("context".to_string(), serde_json::to_value(&self.workflow.context)?);
 
-        let instance = self.executor
-            .execute_process(&self.workflow.process, variables)
-            .await?;
+        let instance = self.executor.execute_process(&self.workflow.process, variables).await?;
 
         // Collect task results (mock for now - in production, track actual executions)
-        let task_results: Vec<TaskResult> = self.workflow.tasks.iter().map(|task| {
-            TaskResult {
+        let task_results: Vec<TaskResult> = self
+            .workflow
+            .tasks
+            .iter()
+            .map(|task| TaskResult {
                 task_id: task.id().to_string(),
                 success: true,
                 error: None,
                 output: serde_json::json!({}),
                 duration_ms: 100,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Calculate metrics
         let total_duration = start_time.elapsed().as_millis() as u64;
-        let agent_tasks = self.workflow.tasks.iter()
+        let agent_tasks = self
+            .workflow
+            .tasks
+            .iter()
             .filter(|t| matches!(t, WorkforceTask::Agent(_)))
             .count();
-        let human_tasks = self.workflow.tasks.iter()
+        let human_tasks = self
+            .workflow
+            .tasks
+            .iter()
             .filter(|t| matches!(t, WorkforceTask::Human(_)))
             .count();
-        let system_tasks = self.workflow.tasks.iter()
+        let system_tasks = self
+            .workflow
+            .tasks
+            .iter()
             .filter(|t| matches!(t, WorkforceTask::System(_)))
             .count();
 
@@ -231,8 +221,8 @@ impl WorkflowExecution {
     fn register_default_handlers(&mut self) {
         // Register custom handlers from the map
         for (task_type, handler) in &self.custom_handlers {
-            self.executor = std::mem::take(&mut self.executor)
-                .register_handler(task_type, handler.clone());
+            self.executor =
+                std::mem::take(&mut self.executor).register_handler(task_type, handler.clone());
         }
 
         // Add default handlers if not provided
@@ -312,10 +302,7 @@ mod tests {
     async fn test_workflow_execution() {
         let workflow = WorkflowBuilder::new("exec_test")
             .name("Execution Test")
-            .add_agent_task(
-                "a1",
-                AgentTask::new("a1", "Agent", AgentCapability::CodeGeneration),
-            )
+            .add_agent_task("a1", AgentTask::new("a1", "Agent", AgentCapability::CodeGeneration))
             .build()
             .unwrap();
 

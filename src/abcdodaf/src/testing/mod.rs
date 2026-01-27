@@ -11,23 +11,25 @@
 //! - Code coverage tracking
 //! - Test report generation
 
+pub mod assertions;
+pub mod coverage;
+pub mod dsl;
+pub mod fixtures;
 pub mod harness;
 pub mod mock_handlers;
-pub mod assertions;
-pub mod fixtures;
-pub mod dsl;
 pub mod performance;
 pub mod reporting;
-pub mod coverage;
 
-pub use harness::{TestHarness, TaskTestCase, TaskTestResult, TestSummary};
-pub use mock_handlers::{MockTaskHandler, MockHandlerBuilder, RecordingMockHandler, MockBehavior};
-pub use assertions::{WorkflowAssertions, TaskAssertions, AssertionResult};
-pub use fixtures::{TestFixture, FixtureBuilder, SampleDataGenerator, FixturePool};
-pub use dsl::{TestScenario, ScenarioBuilder, ScenarioDsl, StepBuilder, ValidationBuilder};
-pub use performance::{PerformanceMetrics, BenchmarkSuite, BenchmarkResult, PerfTimer};
-pub use reporting::{TestReport, ReportGenerator, CoverageReport, TestResultDetail, TestStatus, CoverageStatus};
-pub use coverage::{CoverageTracker, PathCoverage, CoverageAnalyzer, BranchCoverage};
+pub use assertions::{AssertionResult, TaskAssertions, WorkflowAssertions};
+pub use coverage::{BranchCoverage, CoverageAnalyzer, CoverageTracker, PathCoverage};
+pub use dsl::{ScenarioBuilder, ScenarioDsl, StepBuilder, TestScenario, ValidationBuilder};
+pub use fixtures::{FixtureBuilder, FixturePool, SampleDataGenerator, TestFixture};
+pub use harness::{TaskTestCase, TaskTestResult, TestHarness, TestSummary};
+pub use mock_handlers::{MockBehavior, MockHandlerBuilder, MockTaskHandler, RecordingMockHandler};
+pub use performance::{BenchmarkResult, BenchmarkSuite, PerfTimer, PerformanceMetrics};
+pub use reporting::{
+    CoverageReport, CoverageStatus, ReportGenerator, TestReport, TestResultDetail, TestStatus,
+};
 
 #[cfg(test)]
 mod tests {

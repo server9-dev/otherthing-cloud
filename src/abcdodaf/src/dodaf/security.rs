@@ -202,13 +202,7 @@ impl SecurityMarking {
 
         if !self.caveats.is_empty() {
             parts.push("//".to_string());
-            parts.push(
-                self.caveats
-                    .iter()
-                    .map(|c| c.as_str())
-                    .collect::<Vec<_>>()
-                    .join("/"),
-            );
+            parts.push(self.caveats.iter().map(|c| c.as_str()).collect::<Vec<_>>().join("/"));
         }
 
         parts.join("")

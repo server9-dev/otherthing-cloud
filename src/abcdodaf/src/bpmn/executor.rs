@@ -30,10 +30,7 @@ pub struct ProcessExecutor {
 impl ProcessExecutor {
     /// Create a new process executor
     pub fn new() -> Self {
-        Self {
-            handlers: HashMap::new(),
-            instances: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { handlers: HashMap::new(), instances: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Register a task handler
@@ -85,10 +82,7 @@ impl ProcessExecutor {
             // Get current variables
             let variables = {
                 let instances = self.instances.read().await;
-                instances
-                    .get(&instance_id)
-                    .map(|i| i.variables.clone())
-                    .unwrap_or_default()
+                instances.get(&instance_id).map(|i| i.variables.clone()).unwrap_or_default()
             };
 
             // Find appropriate handler
@@ -103,7 +97,7 @@ impl ProcessExecutor {
                                 instance.set_variable(key, value);
                             }
                         }
-                    }
+                    },
                     Err(e) => {
                         warn!("Task execution failed: {}", e);
                         let mut instances = self.instances.write().await;
@@ -114,7 +108,7 @@ impl ProcessExecutor {
                             "Task {} failed: {}",
                             task.id, e
                         )));
-                    }
+                    },
                 }
             } else {
                 warn!("No handler found for task type: {}", task_type);
@@ -128,9 +122,7 @@ impl ProcessExecutor {
             info!("Process instance {} completed", instance_id);
             Ok(instance.clone())
         } else {
-            Err(AbcdodafError::WorkflowError(
-                "Instance not found".to_string(),
-            ))
+            Err(AbcdodafError::WorkflowError("Instance not found".to_string()))
         }
     }
 
@@ -148,9 +140,7 @@ impl ProcessExecutor {
             instance.completed_at = Some(chrono::Utc::now());
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(
-                "Instance not found".to_string(),
-            ))
+            Err(AbcdodafError::WorkflowError("Instance not found".to_string()))
         }
     }
 }
@@ -188,15 +178,9 @@ mod tests {
             .build()
             .unwrap();
 
-        let executor = ProcessExecutor::new().register_handler(
-            "user",
-            Arc::new(MockTaskHandler),
-        );
+        let executor = ProcessExecutor::new().register_handler("user", Arc::new(MockTaskHandler));
 
-        let instance = executor
-            .execute_process(&process, HashMap::new())
-            .await
-            .unwrap();
+        let instance = executor.execute_process(&process, HashMap::new()).await.unwrap();
 
         assert_eq!(instance.state, ProcessState::Completed);
         assert!(instance.get_variable("executed").is_some());

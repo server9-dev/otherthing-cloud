@@ -3,11 +3,11 @@
 //! Provides comprehensive audit trail with configurable levels, filtering,
 //! and structured logging of security-relevant events.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono::{DateTime, Utc};
 
 /// Audit event severity level
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
@@ -229,10 +229,7 @@ pub struct AuditLogger {
 impl AuditLogger {
     /// Create a new audit logger
     pub fn new(config: AuditLoggerConfig) -> Self {
-        Self {
-            events: Arc::new(RwLock::new(Vec::new())),
-            config: Arc::new(RwLock::new(config)),
-        }
+        Self { events: Arc::new(RwLock::new(Vec::new())), config: Arc::new(RwLock::new(config)) }
     }
 
     /// Create with default configuration
@@ -276,23 +273,28 @@ impl AuditLogger {
     }
 
     /// Get events filtered by level
-    pub async fn get_events_by_level(&self, level: AuditLevel) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
+    pub async fn get_events_by_level(
+        &self,
+        level: AuditLevel,
+    ) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
         let events = self.events.read().await;
         Ok(events.iter().filter(|e| e.level >= level).cloned().collect())
     }
 
     /// Get events for a specific subject
-    pub async fn get_subject_events(&self, subject_id: &str) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
+    pub async fn get_subject_events(
+        &self,
+        subject_id: &str,
+    ) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
         let events = self.events.read().await;
-        Ok(events
-            .iter()
-            .filter(|e| e.subject_id == subject_id)
-            .cloned()
-            .collect())
+        Ok(events.iter().filter(|e| e.subject_id == subject_id).cloned().collect())
     }
 
     /// Get events for a specific resource
-    pub async fn get_resource_events(&self, resource_id: &str) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
+    pub async fn get_resource_events(
+        &self,
+        resource_id: &str,
+    ) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
         let events = self.events.read().await;
         Ok(events
             .iter()
@@ -321,11 +323,7 @@ impl AuditLogger {
         category: EventCategory,
     ) -> crate::security::error::SecurityResult<Vec<AuditEvent>> {
         let events = self.events.read().await;
-        Ok(events
-            .iter()
-            .filter(|e| e.category == category)
-            .cloned()
-            .collect())
+        Ok(events.iter().filter(|e| e.category == category).cloned().collect())
     }
 
     /// Clear all events
@@ -342,7 +340,10 @@ impl AuditLogger {
     }
 
     /// Update configuration
-    pub async fn update_config(&self, config: AuditLoggerConfig) -> crate::security::error::SecurityResult<()> {
+    pub async fn update_config(
+        &self,
+        config: AuditLoggerConfig,
+    ) -> crate::security::error::SecurityResult<()> {
         let mut cfg = self.config.write().await;
         *cfg = config;
         Ok(())
@@ -447,7 +448,10 @@ mod tests {
             .unwrap();
 
         let events = logger
-            .get_events_in_range(now - chrono::Duration::minutes(1), Utc::now() + chrono::Duration::minutes(1))
+            .get_events_in_range(
+                now - chrono::Duration::minutes(1),
+                Utc::now() + chrono::Duration::minutes(1),
+            )
             .await
             .unwrap();
 

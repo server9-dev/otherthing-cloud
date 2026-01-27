@@ -2,7 +2,7 @@
 //!
 //! Demonstrates how to load BPMN workflow files and convert them to Snarl format.
 
-use abcdodaf::ui::bpmn_json_loader::{BpmnJsonConverter, load_workflow_file};
+use abcdodaf::ui::bpmn_json_loader::{load_workflow_file, BpmnJsonConverter};
 use std::path::PathBuf;
 
 fn main() -> Result<(), String> {
@@ -97,10 +97,10 @@ fn main() -> Result<(), String> {
                 for (_node_id, node) in workflow.snarl.node_ids() {
                     println!("    - {} ({})", node.name(), node.type_name());
                 }
-            }
+            },
             Err(e) => {
                 println!("  Error loading workflow: {}", e);
-            }
+            },
         }
     } else {
         println!("  Workflow file not found: {:?}", workflow_path);
@@ -131,7 +131,10 @@ fn main() -> Result<(), String> {
     }"#;
 
     let types_workflow = converter.load_from_string(types_example)?;
-    println!("  Created workflow with {} different node types", types_workflow.snarl.node_ids().count());
+    println!(
+        "  Created workflow with {} different node types",
+        types_workflow.snarl.node_ids().count()
+    );
 
     for (_node_id, node) in types_workflow.snarl.node_ids() {
         println!("    - {}: {}", node.type_name(), node.name());

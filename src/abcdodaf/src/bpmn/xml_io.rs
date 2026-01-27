@@ -54,10 +54,10 @@ impl std::fmt::Display for XmlError {
             XmlError::InvalidElement(elem) => write!(f, "Invalid BPMN element: {}", elem),
             XmlError::MissingAttribute { element, attribute } => {
                 write!(f, "Missing attribute '{}' in element '{}'", attribute, element)
-            }
+            },
             XmlError::InvalidCoordinate { value, reason } => {
                 write!(f, "Invalid coordinate '{}': {}", value, reason)
-            }
+            },
             XmlError::IoError(msg) => write!(f, "IO error: {}", msg),
             XmlError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
         }
@@ -116,14 +116,8 @@ impl BpmnXmlSerializer {
         if let Some(name) = &diagram.name {
             xml.push_str(&format!("name=\"{}\" ", Self::escape_xml(name)));
         }
-        xml.push_str(&format!(
-            "xmlns=\"{}\" ",
-            namespace::BPMN2
-        ));
-        xml.push_str(&format!(
-            "xmlns:bpmndi=\"{}\" ",
-            namespace::BPMNDI
-        ));
+        xml.push_str(&format!("xmlns=\"{}\" ", namespace::BPMN2));
+        xml.push_str(&format!("xmlns:bpmndi=\"{}\" ", namespace::BPMNDI));
         xml.push_str(&format!("xmlns:dc=\"{}\" ", namespace::DC));
         xml.push_str(&format!("xmlns:di=\"{}\" ", namespace::DI));
         xml.push_str("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ");
@@ -181,18 +175,14 @@ impl BpmnXmlSerializer {
     /// Serialize to writer
     pub fn write<W: Write>(diagram: &BpmnDiagram, writer: &mut W) -> XmlResult<()> {
         let xml = Self::to_string(diagram)?;
-        writer
-            .write_all(xml.as_bytes())
-            .map_err(|e| XmlError::IoError(e.to_string()))?;
+        writer.write_all(xml.as_bytes()).map_err(|e| XmlError::IoError(e.to_string()))?;
         Ok(())
     }
 
     /// Deserialize from reader
     pub fn read<R: Read>(reader: &mut R) -> XmlResult<BpmnDiagram> {
         let mut xml = String::new();
-        reader
-            .read_to_string(&mut xml)
-            .map_err(|e| XmlError::IoError(e.to_string()))?;
+        reader.read_to_string(&mut xml).map_err(|e| XmlError::IoError(e.to_string()))?;
         Self::from_string(&xml)
     }
 
@@ -208,11 +198,17 @@ impl BpmnXmlSerializer {
             xml.push_str(&format!("name=\"{}\" ", Self::escape_xml(name)));
         }
         xml.push_str(&format!("isExecutable=\"{}\" ", process.is_executable));
-        xml.push_str(&format!("processType=\"{}\">\n", Self::process_type_to_string(&process.process_type)));
+        xml.push_str(&format!(
+            "processType=\"{}\">\n",
+            Self::process_type_to_string(&process.process_type)
+        ));
 
         // Documentation
         if let Some(doc) = &process.documentation {
-            xml.push_str(&format!("    <documentation>{}</documentation>\n", Self::escape_xml(doc)));
+            xml.push_str(&format!(
+                "    <documentation>{}</documentation>\n",
+                Self::escape_xml(doc)
+            ));
         }
 
         // Start events
@@ -355,14 +351,14 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(" />\n");
                 xml
-            }
+            },
             EventDefinition::Timer { time_expression } => {
                 format!(
                     "{}<timerEventDefinition><timeDate>{}</timeDate></timerEventDefinition>\n",
                     ind,
                     Self::escape_xml(time_expression)
                 )
-            }
+            },
             EventDefinition::Signal { signal_ref } => {
                 let mut xml = format!("{}<signalEventDefinition", ind);
                 if let Some(sig_ref) = signal_ref {
@@ -370,7 +366,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(" />\n");
                 xml
-            }
+            },
             EventDefinition::Error { error_ref } => {
                 let mut xml = format!("{}<errorEventDefinition", ind);
                 if let Some(err_ref) = error_ref {
@@ -378,7 +374,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(" />\n");
                 xml
-            }
+            },
             EventDefinition::Escalation { escalation_ref } => {
                 let mut xml = format!("{}<escalationEventDefinition", ind);
                 if let Some(esc_ref) = escalation_ref {
@@ -386,7 +382,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(" />\n");
                 xml
-            }
+            },
             EventDefinition::Cancel => format!("{}<cancelEventDefinition />\n", ind),
             EventDefinition::Compensation => format!("{}<compensateEventDefinition />\n", ind),
             EventDefinition::Conditional { condition } => {
@@ -395,7 +391,7 @@ impl BpmnXmlSerializer {
                     ind,
                     Self::escape_xml(condition)
                 )
-            }
+            },
             EventDefinition::Link { target, source: _ } => {
                 let mut xml = format!("{}<linkEventDefinition", ind);
                 if let Some(t) = target {
@@ -403,11 +399,11 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(" />\n");
                 xml
-            }
+            },
             EventDefinition::Terminate => format!("{}<terminateEventDefinition />\n", ind),
             EventDefinition::Multiple { .. } => {
                 format!("{}<multipleEventDefinition />\n", ind)
-            }
+            },
         }
     }
 
@@ -424,7 +420,7 @@ impl BpmnXmlSerializer {
             BpmnTaskType::Abstract => {
                 xml.push_str(">\n");
                 xml.push_str("    </task>\n");
-            }
+            },
             BpmnTaskType::User { .. } => {
                 // Convert to userTask element
                 xml.clear();
@@ -435,7 +431,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </userTask>\n");
-            }
+            },
             BpmnTaskType::Service { .. } => {
                 xml.clear();
                 xml.push_str("    <serviceTask ");
@@ -445,7 +441,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </serviceTask>\n");
-            }
+            },
             BpmnTaskType::Manual => {
                 xml.clear();
                 xml.push_str("    <manualTask ");
@@ -455,7 +451,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </manualTask>\n");
-            }
+            },
             BpmnTaskType::Script { script_format, script } => {
                 xml.clear();
                 xml.push_str("    <scriptTask ");
@@ -466,7 +462,7 @@ impl BpmnXmlSerializer {
                 xml.push_str(&format!("scriptFormat=\"{}\">\n", Self::escape_xml(script_format)));
                 xml.push_str(&format!("      <script>{}</script>\n", Self::escape_xml(script)));
                 xml.push_str("    </scriptTask>\n");
-            }
+            },
             BpmnTaskType::BusinessRule { .. } => {
                 xml.clear();
                 xml.push_str("    <businessRuleTask ");
@@ -476,7 +472,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </businessRuleTask>\n");
-            }
+            },
             BpmnTaskType::Send { .. } => {
                 xml.clear();
                 xml.push_str("    <sendTask ");
@@ -486,7 +482,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </sendTask>\n");
-            }
+            },
             BpmnTaskType::Receive { .. } => {
                 xml.clear();
                 xml.push_str("    <receiveTask ");
@@ -496,7 +492,7 @@ impl BpmnXmlSerializer {
                 }
                 xml.push_str(">\n");
                 xml.push_str("    </receiveTask>\n");
-            }
+            },
         }
         Ok(xml)
     }
@@ -606,7 +602,10 @@ impl BpmnXmlSerializer {
         }
         if let Some(cond) = &flow.condition_expression {
             xml.push_str(">\n");
-            xml.push_str(&format!("      <conditionExpression>{}</conditionExpression>\n", Self::escape_xml(cond)));
+            xml.push_str(&format!(
+                "      <conditionExpression>{}</conditionExpression>\n",
+                Self::escape_xml(cond)
+            ));
             xml.push_str("    </sequenceFlow>\n");
         } else {
             xml.push_str("/>\n");
@@ -785,7 +784,14 @@ impl BpmnXmlSerializer {
         Ok(xml)
     }
 
-    fn serialize_shape(id: &str, bpmn_element: &str, x: f64, y: f64, width: f64, height: f64) -> XmlResult<String> {
+    fn serialize_shape(
+        id: &str,
+        bpmn_element: &str,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    ) -> XmlResult<String> {
         // Validate coordinates are positive
         if x < 0.0 || y < 0.0 {
             return Err(XmlError::InvalidCoordinate {
@@ -830,9 +836,7 @@ impl BpmnXmlSerializer {
         // Look for pattern like: <element ... attribute="value" ...>
         let pattern = format!(r#"<{}[^>]*\s{}="([^"]*)""#, element, attribute);
         let re = regex::Regex::new(&pattern).ok()?;
-        re.captures(xml)
-            .and_then(|caps| caps.get(1))
-            .map(|m| m.as_str().to_string())
+        re.captures(xml).and_then(|caps| caps.get(1)).map(|m| m.as_str().to_string())
     }
 
     fn parse_xml(xml: &str) -> XmlResult<BpmnDiagram> {

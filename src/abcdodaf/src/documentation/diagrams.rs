@@ -33,8 +33,7 @@ impl SvgDiagram {
 
     /// Save SVG to file
     pub fn save_to_file(&self, path: &str) -> Result<(), String> {
-        std::fs::write(path, &self.content)
-            .map_err(|e| format!("Failed to write SVG file: {}", e))
+        std::fs::write(path, &self.content).map_err(|e| format!("Failed to write SVG file: {}", e))
     }
 }
 
@@ -100,28 +99,21 @@ impl DiagramGenerator {
         if !process.tasks.is_empty() {
             for (idx, task) in process.tasks.iter().enumerate() {
                 let task_x = start_x + step_spacing + (idx as i32 * 200);
-                svg.push_str(&Self::draw_flow_box(
-                    task_x,
-                    flow_y,
-                    &task.name,
-                    "Task"
-                ));
+                svg.push_str(&Self::draw_flow_box(task_x, flow_y, &task.name, "Task"));
             }
         } else {
             svg.push_str(&Self::draw_flow_box(
                 start_x + step_spacing,
                 flow_y,
                 &process.name,
-                "Process"
+                "Process",
             ));
         }
 
         // Draw end event
-        let end_x = start_x + step_spacing * 2 + if !process.tasks.is_empty() {
-            process.tasks.len() as i32 * 200
-        } else {
-            0
-        };
+        let end_x = start_x
+            + step_spacing * 2
+            + if !process.tasks.is_empty() { process.tasks.len() as i32 * 200 } else { 0 };
         svg.push_str(&Self::draw_end_event(end_x, current_y, "End"));
 
         // Draw connectors
@@ -131,12 +123,7 @@ impl DiagramGenerator {
 
         if !process.tasks.is_empty() {
             let last_task_x = start_x + step_spacing + ((process.tasks.len() - 1) as i32 * 200);
-            svg.push_str(&Self::draw_connector(
-                last_task_x + 30,
-                flow_y,
-                end_x - 30,
-                current_y
-            ));
+            svg.push_str(&Self::draw_connector(last_task_x + 30, flow_y, end_x - 30, current_y));
         } else {
             let from_x = start_x + step_spacing + 30;
             let to_x = end_x - 30;
@@ -243,12 +230,7 @@ impl DiagramGenerator {
         let mid_x = (from_x + to_x) / 2;
         format!(
             r#"<path d="M {} {} Q {} {} {} {}" class="connector" marker-end="url(#arrowhead)"/>"#,
-            from_x,
-            from_y,
-            mid_x,
-            from_y,
-            to_x,
-            to_y
+            from_x, from_y, mid_x, from_y, to_x, to_y
         )
     }
 

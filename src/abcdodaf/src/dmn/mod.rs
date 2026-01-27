@@ -31,23 +31,22 @@
 //! └─────────────────────────────────────────────┘
 //! ```
 
-pub mod feel;
-pub mod expression;
-pub mod decision_table;
 pub mod decision_graph;
-pub mod executor;
-pub mod xml;
+pub mod decision_table;
 pub mod errors;
+pub mod executor;
+pub mod expression;
+pub mod feel;
+pub mod xml;
 
-pub use feel::{FeelExpression, FeelValue, FeelEvaluator};
-pub use expression::{Expression, ExpressionEvaluator};
-pub use decision_table::{
-    DecisionTable, HitPolicy, DecisionTableInput,
-    DecisionTableOutput, RuleEntry,
-};
 pub use decision_graph::{DecisionGraph, DecisionNode, RequirementDiagram};
-pub use executor::DecisionExecutor;
+pub use decision_table::{
+    DecisionTable, DecisionTableInput, DecisionTableOutput, HitPolicy, RuleEntry,
+};
 pub use errors::{DmnError, DmnResult};
+pub use executor::DecisionExecutor;
+pub use expression::{Expression, ExpressionEvaluator};
+pub use feel::{FeelEvaluator, FeelExpression, FeelValue};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -75,10 +74,7 @@ pub enum DecisionDefinition {
     /// FEEL expression definition
     Expression(Expression),
     /// Invocation of another decision
-    Invocation {
-        decision_id: String,
-        parameters: HashMap<String, String>,
-    },
+    Invocation { decision_id: String, parameters: HashMap<String, String> },
 }
 
 /// Decision service for reusable decision logic
@@ -130,9 +126,9 @@ mod tests {
             id: "test_decision".to_string(),
             name: "Test Decision".to_string(),
             description: Some("A test decision".to_string()),
-            definition: DecisionDefinition::Expression(Expression::Literal(
-                FeelValue::String("test".to_string()),
-            )),
+            definition: DecisionDefinition::Expression(Expression::Literal(FeelValue::String(
+                "test".to_string(),
+            ))),
             requirement_diagram: None,
         };
 

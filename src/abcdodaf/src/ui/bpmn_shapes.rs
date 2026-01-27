@@ -2,8 +2,8 @@
 //!
 //! Custom shape rendering for BPMN 2.0 symbols using egui painting primitives.
 
+use egui::epaint::{CornerRadius, RectShape, StrokeKind};
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke};
-use egui::epaint::{RectShape, CornerRadius, StrokeKind};
 use std::f32::consts::PI;
 
 /// Draw a BPMN start event (thin circle)
@@ -51,10 +51,10 @@ pub fn draw_gateway(painter: &Painter, rect: Rect, color: Color32, fill: Color32
     let half_height = rect.height() / 2.0 - 2.0;
 
     let points = vec![
-        Pos2::new(center.x, center.y - half_height),        // top
-        Pos2::new(center.x + half_width, center.y),         // right
-        Pos2::new(center.x, center.y + half_height),        // bottom
-        Pos2::new(center.x - half_width, center.y),         // left
+        Pos2::new(center.x, center.y - half_height), // top
+        Pos2::new(center.x + half_width, center.y),  // right
+        Pos2::new(center.x, center.y + half_height), // bottom
+        Pos2::new(center.x - half_width, center.y),  // left
     ];
 
     painter.add(Shape::convex_polygon(points.clone(), fill, Stroke::new(2.0, color)));
@@ -145,10 +145,7 @@ pub fn draw_complex_gateway_symbol(painter: &Painter, rect: Rect, color: Color32
         let dy = (size / 2.0) * angle.sin();
 
         painter.line_segment(
-            [
-                Pos2::new(center.x - dx, center.y - dy),
-                Pos2::new(center.x + dx, center.y + dy),
-            ],
+            [Pos2::new(center.x - dx, center.y - dy), Pos2::new(center.x + dx, center.y + dy)],
             Stroke::new(2.0, color),
         );
     }
@@ -196,14 +193,9 @@ pub fn draw_data_store(painter: &Painter, rect: Rect, color: Color32, fill: Colo
         Pos2::new(rect.max.x, rect.max.y - ellipse_height / 2.0),
     );
     painter.rect_filled(side_rect, 0.0, fill);
-    painter.line_segment(
-        [side_rect.left_top(), side_rect.left_bottom()],
-        Stroke::new(2.0, color),
-    );
-    painter.line_segment(
-        [side_rect.right_top(), side_rect.right_bottom()],
-        Stroke::new(2.0, color),
-    );
+    painter.line_segment([side_rect.left_top(), side_rect.left_bottom()], Stroke::new(2.0, color));
+    painter
+        .line_segment([side_rect.right_top(), side_rect.right_bottom()], Stroke::new(2.0, color));
 
     // Bottom ellipse
     let bottom_center = Pos2::new(rect.center().x, rect.max.y - ellipse_height / 2.0);
@@ -211,16 +203,20 @@ pub fn draw_data_store(painter: &Painter, rect: Rect, color: Color32, fill: Colo
 }
 
 /// Helper to draw an ellipse
-fn draw_ellipse(painter: &Painter, center: Pos2, rx: f32, ry: f32, stroke_color: Color32, fill: Color32) {
+fn draw_ellipse(
+    painter: &Painter,
+    center: Pos2,
+    rx: f32,
+    ry: f32,
+    stroke_color: Color32,
+    fill: Color32,
+) {
     let num_segments = 32;
     let mut points = Vec::new();
 
     for i in 0..num_segments {
         let angle = (i as f32) * 2.0 * PI / (num_segments as f32);
-        points.push(Pos2::new(
-            center.x + rx * angle.cos(),
-            center.y + ry * angle.sin(),
-        ));
+        points.push(Pos2::new(center.x + rx * angle.cos(), center.y + ry * angle.sin()));
     }
 
     painter.add(Shape::convex_polygon(points, fill, Stroke::new(2.0, stroke_color)));

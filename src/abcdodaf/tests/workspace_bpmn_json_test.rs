@@ -256,17 +256,20 @@ mod workspace_bpmn_json_tests {
 
         // Create workspace and open the file
         let mut workspace = Workspace::new();
-        let workflow_id = workspace.open_workflow(test_file_path.clone())
+        let workflow_id = workspace
+            .open_workflow(test_file_path.clone())
             .expect("Failed to open workflow");
 
         // Save the workflow (which should convert to BpmnDiagram format)
         let save_path = temp_dir.join("test_roundtrip_saved.json");
-        workspace.save_workflow_as(workflow_id, save_path.clone())
+        workspace
+            .save_workflow_as(workflow_id, save_path.clone())
             .expect("Failed to save workflow");
 
         // Reload the saved workflow
         let mut workspace2 = Workspace::new();
-        let workflow_id2 = workspace2.open_workflow(save_path.clone())
+        let workflow_id2 = workspace2
+            .open_workflow(save_path.clone())
             .expect("Failed to reload saved workflow");
 
         let workflow = workspace2.get_workflow(workflow_id2).expect("Workflow not found");

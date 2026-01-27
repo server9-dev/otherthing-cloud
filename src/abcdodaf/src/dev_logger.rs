@@ -3,12 +3,12 @@
 //! Logs all development activities (commands, tool uses, responses) in a format
 //! compatible with BPMN 2.0 and DoDAF 2.02 specifications for future analysis.
 
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
-use anyhow::Result;
 
 /// Activity type classification aligned with BPMN
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,11 +123,7 @@ pub struct DevLogger {
 impl DevLogger {
     /// Create a new logger
     pub fn new(log_path: impl Into<String>) -> Self {
-        Self {
-            log_path: log_path.into(),
-            current_activity_id: 1,
-            current_flow_id: 1,
-        }
+        Self { log_path: log_path.into(), current_activity_id: 1, current_flow_id: 1 }
     }
 
     /// Initialize the log file if it doesn't exist or is empty
@@ -135,9 +131,7 @@ impl DevLogger {
         let path = Path::new(&self.log_path);
         let needs_init = !path.exists() || {
             // Check if file is empty
-            std::fs::metadata(path)
-                .map(|m| m.len() == 0)
-                .unwrap_or(true)
+            std::fs::metadata(path).map(|m| m.len() == 0).unwrap_or(true)
         };
 
         if needs_init {
@@ -146,7 +140,9 @@ impl DevLogger {
                     version: "1.0.0".to_string(),
                     created_at: Utc::now(),
                     project: "abcdodaf".to_string(),
-                    description: "Development activity log for BPMN and DoDAF compliant process modeling".to_string(),
+                    description:
+                        "Development activity log for BPMN and DoDAF compliant process modeling"
+                            .to_string(),
                     standards: Standards {
                         bpmn_version: "2.0".to_string(),
                         dodaf_version: "2.02".to_string(),
@@ -253,10 +249,12 @@ impl DevLogger {
             inputs: serde_json::json!({
                 "command": command,
             }),
-            outputs: output.map(|o| serde_json::json!({
-                "output": o,
-                "exit_code": exit_code,
-            })),
+            outputs: output.map(|o| {
+                serde_json::json!({
+                    "output": o,
+                    "exit_code": exit_code,
+                })
+            }),
             parent_id: None,
             success: Some(exit_code == 0),
             error: if exit_code != 0 {
@@ -286,11 +284,7 @@ impl DevLogger {
     }
 
     /// Log an AI response generation
-    pub fn log_response(
-        &mut self,
-        prompt_summary: &str,
-        response_summary: &str,
-    ) -> Result<String> {
+    pub fn log_response(&mut self, prompt_summary: &str, response_summary: &str) -> Result<String> {
         let mut log = self.load_log()?;
 
         let activity_id = format!("activity_{}", self.current_activity_id);
@@ -363,17 +357,13 @@ impl DevLogger {
         let log = self.load_log()?;
 
         let total_activities = log.operational_activities.len();
-        let successful = log.operational_activities.iter()
-            .filter(|a| a.success == Some(true))
-            .count();
-        let failed = log.operational_activities.iter()
-            .filter(|a| a.success == Some(false))
-            .count();
+        let successful =
+            log.operational_activities.iter().filter(|a| a.success == Some(true)).count();
+        let failed = log.operational_activities.iter().filter(|a| a.success == Some(false)).count();
 
         let mut activity_types = std::collections::HashMap::new();
         for activity in &log.operational_activities {
-            *activity_types.entry(format!("{:?}", activity.activity_type))
-                .or_insert(0) += 1;
+            *activity_types.entry(format!("{:?}", activity.activity_type)).or_insert(0) += 1;
         }
 
         Ok(LogStats {

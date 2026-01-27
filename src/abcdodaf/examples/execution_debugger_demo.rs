@@ -11,14 +11,12 @@
 //! - Execution history and audit trail
 //! - Performance profiling (task duration, bottlenecks)
 
+use abcdodaf::bpmn::process::Task;
 use abcdodaf::bpmn::{
     EnhancedRuntime, ExecutionEvent, ExecutionMode, Process, ProcessBuilder, TaskHandler,
 };
-use abcdodaf::bpmn::process::Task;
 use abcdodaf::error::Result;
-use abcdodaf::ui::{
-    DebuggerPanel, ExecutionVisualizer, InstanceManager,
-};
+use abcdodaf::ui::{DebuggerPanel, ExecutionVisualizer, InstanceManager};
 use async_trait::async_trait;
 use eframe::egui;
 use std::collections::HashMap;
@@ -87,8 +85,8 @@ impl DebuggerDemoApp {
                                 println!("Process started: {}", instance_id);
                             }
                         });
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
         }
@@ -112,11 +110,7 @@ impl eframe::App for DebuggerDemoApp {
 
                 // View selection
                 ui.selectable_value(&mut self.selected_view, DemoView::Debugger, "🔍 Debugger");
-                ui.selectable_value(
-                    &mut self.selected_view,
-                    DemoView::Visualizer,
-                    "🎨 Visualizer",
-                );
+                ui.selectable_value(&mut self.selected_view, DemoView::Visualizer, "🎨 Visualizer");
                 ui.selectable_value(
                     &mut self.selected_view,
                     DemoView::InstanceManager,
@@ -138,10 +132,10 @@ impl eframe::App for DebuggerDemoApp {
                             {
                                 Ok(instance) => {
                                     println!("Process completed: {}", instance.id);
-                                }
+                                },
                                 Err(e) => {
                                     eprintln!("Process failed: {}", e);
-                                }
+                                },
                             }
                         });
                     }
@@ -166,10 +160,10 @@ impl eframe::App for DebuggerDemoApp {
                             {
                                 Ok(instance) => {
                                     println!("Process completed: {}", instance.id);
-                                }
+                                },
                                 Err(e) => {
                                     eprintln!("Process failed: {}", e);
-                                }
+                                },
                             }
                         });
                     }
@@ -187,27 +181,26 @@ impl eframe::App for DebuggerDemoApp {
                     match action {
                         DebuggerAction::Pause => {
                             println!("Pause requested");
-                        }
+                        },
                         DebuggerAction::Resume => {
                             println!("Resume requested");
-                        }
+                        },
                         DebuggerAction::Step => {
                             println!("Step requested");
-                        }
+                        },
                         DebuggerAction::Stop => {
                             println!("Stop requested");
-                        }
-                        _ => {}
+                        },
+                        _ => {},
                     }
-                }
+                },
                 DemoView::Visualizer => {
                     ui.heading("Execution Visualizer");
                     ui.label("Real-time visualization of process execution with token flow");
                     ui.separator();
 
                     // Animation update
-                    self.execution_visualizer
-                        .update_animation(ctx.input(|i| i.stable_dt));
+                    self.execution_visualizer.update_animation(ctx.input(|i| i.stable_dt));
 
                     // Placeholder for diagram
                     egui::Frame::canvas(ui.style()).show(ui, |ui| {
@@ -216,11 +209,7 @@ impl eframe::App for DebuggerDemoApp {
 
                         // Draw example BPMN elements
                         let rect = response.rect;
-                        painter.rect_filled(
-                            rect,
-                            0.0,
-                            egui::Color32::from_rgb(30, 30, 40),
-                        );
+                        painter.rect_filled(rect, 0.0, egui::Color32::from_rgb(30, 30, 40));
 
                         // Draw some example nodes
                         let node1 = egui::Rect::from_center_size(
@@ -247,11 +236,7 @@ impl eframe::App for DebuggerDemoApp {
                         );
 
                         // Draw nodes
-                        painter.rect_filled(
-                            node1,
-                            5.0,
-                            egui::Color32::from_gray(50),
-                        );
+                        painter.rect_filled(node1, 5.0, egui::Color32::from_gray(50));
                         painter.text(
                             node1.center(),
                             egui::Align2::CENTER_CENTER,
@@ -260,11 +245,7 @@ impl eframe::App for DebuggerDemoApp {
                             egui::Color32::WHITE,
                         );
 
-                        painter.rect_filled(
-                            node2,
-                            5.0,
-                            egui::Color32::from_rgb(0, 150, 200),
-                        );
+                        painter.rect_filled(node2, 5.0, egui::Color32::from_rgb(0, 150, 200));
                         painter.text(
                             node2.center(),
                             egui::Align2::CENTER_CENTER,
@@ -273,11 +254,7 @@ impl eframe::App for DebuggerDemoApp {
                             egui::Color32::WHITE,
                         );
 
-                        painter.rect_filled(
-                            node3,
-                            5.0,
-                            egui::Color32::from_gray(50),
-                        );
+                        painter.rect_filled(node3, 5.0, egui::Color32::from_gray(50));
                         painter.text(
                             node3.center(),
                             egui::Align2::CENTER_CENTER,
@@ -301,7 +278,7 @@ impl eframe::App for DebuggerDemoApp {
                             self.execution_visualizer.toggle_heatmap();
                         }
                     });
-                }
+                },
                 DemoView::InstanceManager => {
                     let action = self.instance_manager.ui(ui);
                     // Handle instance manager actions
@@ -310,7 +287,7 @@ impl eframe::App for DebuggerDemoApp {
                         InstanceManagerAction::Debug(id) => {
                             println!("Debug instance: {}", id);
                             self.selected_view = DemoView::Debugger;
-                        }
+                        },
                         InstanceManagerAction::Pause(id) => {
                             let runtime = self.runtime.clone();
                             tokio::spawn(async move {
@@ -318,7 +295,7 @@ impl eframe::App for DebuggerDemoApp {
                                     eprintln!("Failed to pause: {}", e);
                                 }
                             });
-                        }
+                        },
                         InstanceManagerAction::Cancel(id) => {
                             let runtime = self.runtime.clone();
                             tokio::spawn(async move {
@@ -326,7 +303,7 @@ impl eframe::App for DebuggerDemoApp {
                                     eprintln!("Failed to cancel: {}", e);
                                 }
                             });
-                        }
+                        },
                         InstanceManagerAction::Refresh => {
                             // Refresh instances
                             let runtime = self.runtime.clone();
@@ -334,10 +311,10 @@ impl eframe::App for DebuggerDemoApp {
                                 let instances = runtime.get_active_instances().await;
                                 println!("Active instances: {}", instances.len());
                             });
-                        }
-                        _ => {}
+                        },
+                        _ => {},
                     }
-                }
+                },
             }
         });
 
@@ -468,7 +445,8 @@ async fn main() -> Result<()> {
         "ABCDODAF Execution Debugger",
         native_options,
         Box::new(|cc| Ok(Box::new(DebuggerDemoApp::new(cc)))),
-    ).map_err(|e| anyhow::anyhow!("Failed to run native app: {}", e))?;
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to run native app: {}", e))?;
 
     Ok(())
 }

@@ -68,8 +68,7 @@ impl InstanceManager {
 
     /// Get selected instance
     pub fn selected_instance(&self) -> Option<&ProcessInstance> {
-        self.selected_instance
-            .and_then(|id| self.instances.iter().find(|i| i.id == id))
+        self.selected_instance.and_then(|id| self.instances.iter().find(|i| i.id == id))
     }
 
     /// Apply current sort
@@ -77,16 +76,16 @@ impl InstanceManager {
         match self.sort_by {
             SortBy::StartedNewest => {
                 self.instances.sort_by(|a, b| b.started_at.cmp(&a.started_at));
-            }
+            },
             SortBy::StartedOldest => {
                 self.instances.sort_by(|a, b| a.started_at.cmp(&b.started_at));
-            }
+            },
             SortBy::ProcessId => {
                 self.instances.sort_by(|a, b| a.process_id.cmp(&b.process_id));
-            }
+            },
             SortBy::State => {
                 self.instances.sort_by_key(|i| format!("{:?}", i.state));
-            }
+            },
         }
     }
 
@@ -117,13 +116,22 @@ impl InstanceManager {
             egui::ComboBox::from_id_salt("instance_sort")
                 .selected_text(format!("{:?}", self.sort_by))
                 .show_ui(ui, |ui| {
-                    if ui.selectable_value(&mut self.sort_by, SortBy::StartedNewest, "Newest First").changed() {
+                    if ui
+                        .selectable_value(&mut self.sort_by, SortBy::StartedNewest, "Newest First")
+                        .changed()
+                    {
                         self.apply_sort();
                     }
-                    if ui.selectable_value(&mut self.sort_by, SortBy::StartedOldest, "Oldest First").changed() {
+                    if ui
+                        .selectable_value(&mut self.sort_by, SortBy::StartedOldest, "Oldest First")
+                        .changed()
+                    {
                         self.apply_sort();
                     }
-                    if ui.selectable_value(&mut self.sort_by, SortBy::ProcessId, "Process ID").changed() {
+                    if ui
+                        .selectable_value(&mut self.sort_by, SortBy::ProcessId, "Process ID")
+                        .changed()
+                    {
                         self.apply_sort();
                     }
                     if ui.selectable_value(&mut self.sort_by, SortBy::State, "State").changed() {
@@ -142,8 +150,10 @@ impl InstanceManager {
 
         // Statistics
         ui.horizontal(|ui| {
-            let running = self.instances.iter().filter(|i| i.state == ProcessState::Running).count();
-            let completed = self.instances.iter().filter(|i| i.state == ProcessState::Completed).count();
+            let running =
+                self.instances.iter().filter(|i| i.state == ProcessState::Running).count();
+            let completed =
+                self.instances.iter().filter(|i| i.state == ProcessState::Completed).count();
             let failed = self.instances.iter().filter(|i| i.state == ProcessState::Failed).count();
 
             ui.label(format!("Total: {}", self.instances.len()));
@@ -186,7 +196,11 @@ impl InstanceManager {
         action
     }
 
-    fn render_instance_card(&mut self, ui: &mut Ui, instance: &ProcessInstance) -> Option<InstanceManagerAction> {
+    fn render_instance_card(
+        &mut self,
+        ui: &mut Ui,
+        instance: &ProcessInstance,
+    ) -> Option<InstanceManagerAction> {
         let mut action = None;
         let is_selected = self.selected_instance == Some(instance.id);
 
@@ -214,9 +228,12 @@ impl InstanceManager {
                         // Instance ID
                         ui.horizontal(|ui| {
                             ui.label(RichText::new("Instance:").strong());
-                            ui.label(RichText::new(
-                                instance.id.to_string().chars().take(8).collect::<String>()
-                            ).monospace());
+                            ui.label(
+                                RichText::new(
+                                    instance.id.to_string().chars().take(8).collect::<String>(),
+                                )
+                                .monospace(),
+                            );
                         });
 
                         // Process ID
@@ -228,16 +245,22 @@ impl InstanceManager {
                         // Time info
                         ui.horizontal(|ui| {
                             ui.label(RichText::new("Started:").small());
-                            ui.label(RichText::new(
-                                instance.started_at.format("%Y-%m-%d %H:%M:%S").to_string()
-                            ).small());
+                            ui.label(
+                                RichText::new(
+                                    instance.started_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                                )
+                                .small(),
+                            );
 
                             if let Some(completed) = instance.completed_at {
                                 let duration = completed - instance.started_at;
-                                ui.label(RichText::new(format!(
-                                    "Duration: {:.2}s",
-                                    duration.num_milliseconds() as f64 / 1000.0
-                                )).small());
+                                ui.label(
+                                    RichText::new(format!(
+                                        "Duration: {:.2}s",
+                                        duration.num_milliseconds() as f64 / 1000.0
+                                    ))
+                                    .small(),
+                                );
                             }
                         });
                     });
@@ -260,20 +283,22 @@ impl InstanceManager {
                                 if ui.small_button("⏹️ Cancel").clicked() {
                                     action = Some(InstanceManagerAction::Cancel(instance.id));
                                 }
-                            }
-                            ProcessState::Completed | ProcessState::Failed | ProcessState::Cancelled => {
+                            },
+                            ProcessState::Completed
+                            | ProcessState::Failed
+                            | ProcessState::Cancelled => {
                                 if ui.small_button("📊 View").clicked() {
                                     action = Some(InstanceManagerAction::View(instance.id));
                                 }
                                 if ui.small_button("🗑️ Delete").clicked() {
                                     action = Some(InstanceManagerAction::Delete(instance.id));
                                 }
-                            }
+                            },
                             ProcessState::Pending => {
                                 if ui.small_button("▶️ Start").clicked() {
                                     action = Some(InstanceManagerAction::Start(instance.id));
                                 }
-                            }
+                            },
                         }
                     });
                 });
@@ -281,7 +306,11 @@ impl InstanceManager {
                 // Variable count
                 if !instance.variables.is_empty() {
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new(format!("💾 {} variables", instance.variables.len())).small().color(Color32::GRAY));
+                        ui.label(
+                            RichText::new(format!("💾 {} variables", instance.variables.len()))
+                                .small()
+                                .color(Color32::GRAY),
+                        );
                     });
                 }
             });

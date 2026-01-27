@@ -2,12 +2,12 @@
 
 #[cfg(test)]
 mod tests {
-    use abcdodaf::integration::connector::{
-        Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest, ConnectionStatus,
-        AuthConfig,
-    };
-    use abcdodaf::integration::connectors::{RestApiConnector, PostgresConnector, MySqlConnector};
     use abcdodaf::integration::connector::registry::ConnectorFactory;
+    use abcdodaf::integration::connector::{
+        AuthConfig, ConnectionStatus, Connector, ConnectorConfig, ConnectorRegistry,
+        ConnectorRequest,
+    };
+    use abcdodaf::integration::connectors::{MySqlConnector, PostgresConnector, RestApiConnector};
     use async_trait::async_trait;
     use serde_json::json;
     use std::sync::Arc;
@@ -103,12 +103,8 @@ mod tests {
     #[tokio::test]
     async fn test_connector_registry() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("rest_api", Arc::new(MockRestApiFactory))
-            .await;
-        registry
-            .register_factory("postgresql", Arc::new(MockPostgresFactory))
-            .await;
+        registry.register_factory("rest_api", Arc::new(MockRestApiFactory)).await;
+        registry.register_factory("postgresql", Arc::new(MockPostgresFactory)).await;
 
         assert_eq!(registry.factory_count().await, 2);
     }
@@ -116,9 +112,7 @@ mod tests {
     #[tokio::test]
     async fn test_connector_registry_create_and_retrieve() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("rest_api", Arc::new(MockRestApiFactory))
-            .await;
+        registry.register_factory("rest_api", Arc::new(MockRestApiFactory)).await;
 
         let config = ConnectorConfig::new("my_api", "rest_api")
             .with_param("url", json!("https://example.com"));
@@ -136,9 +130,7 @@ mod tests {
     #[tokio::test]
     async fn test_connector_registry_remove_connector() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("rest_api", Arc::new(MockRestApiFactory))
-            .await;
+        registry.register_factory("rest_api", Arc::new(MockRestApiFactory)).await;
 
         let config = ConnectorConfig::new("temp_api", "rest_api")
             .with_param("url", json!("https://example.com"));
@@ -153,9 +145,7 @@ mod tests {
     #[tokio::test]
     async fn test_connector_health_check() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("rest_api", Arc::new(MockRestApiFactory))
-            .await;
+        registry.register_factory("rest_api", Arc::new(MockRestApiFactory)).await;
 
         let config = ConnectorConfig::new("health_api", "rest_api")
             .with_param("url", json!("https://example.com"));
@@ -222,12 +212,8 @@ mod tests {
     #[tokio::test]
     async fn test_multiple_connectors_in_registry() {
         let registry = ConnectorRegistry::new();
-        registry
-            .register_factory("rest_api", Arc::new(MockRestApiFactory))
-            .await;
-        registry
-            .register_factory("postgresql", Arc::new(MockPostgresFactory))
-            .await;
+        registry.register_factory("rest_api", Arc::new(MockRestApiFactory)).await;
+        registry.register_factory("postgresql", Arc::new(MockPostgresFactory)).await;
 
         // Create REST API connector
         let rest_config = ConnectorConfig::new("api1", "rest_api")
@@ -275,8 +261,8 @@ mod tests {
     #[test]
     fn test_circuit_breaker() {
         use abcdodaf::integration::connector::{CircuitBreaker, CircuitBreakerState};
-        use std::time::Duration;
         use std::thread;
+        use std::time::Duration;
 
         let cb = CircuitBreaker::new(2, Duration::from_millis(100));
 

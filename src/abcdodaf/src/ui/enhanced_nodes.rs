@@ -254,7 +254,7 @@ impl EnhancedBpmnNode {
             BpmnNodeType::DataObject(n) => n.name = new_name,
             BpmnNodeType::DataStore(n) => n.name = new_name,
             BpmnNodeType::TextAnnotation(n) => n.text = new_name,
-            BpmnNodeType::Group(_) => {}
+            BpmnNodeType::Group(_) => {},
         }
     }
 
@@ -263,7 +263,13 @@ impl EnhancedBpmnNode {
         match &self.node_type {
             BpmnNodeType::StartEvent(_) => 0,
             BpmnNodeType::EndEvent(_) => 1,
-            BpmnNodeType::IntermediateEvent(e) => if e.is_catching { 1 } else { 1 },
+            BpmnNodeType::IntermediateEvent(e) => {
+                if e.is_catching {
+                    1
+                } else {
+                    1
+                }
+            },
             BpmnNodeType::Task(_) => 1,
             BpmnNodeType::Subprocess(_) => 1,
             BpmnNodeType::Gateway(_) => 1,
@@ -282,16 +288,14 @@ impl EnhancedBpmnNode {
             BpmnNodeType::IntermediateEvent(_) => 1,
             BpmnNodeType::Task(_) => 1,
             BpmnNodeType::Subprocess(_) => 1,
-            BpmnNodeType::Gateway(g) => {
-                match &g.gateway_type {
-                    BpmnGatewayType::Exclusive => 2,
-                    BpmnGatewayType::Parallel => 2,
-                    BpmnGatewayType::Inclusive => 2,
-                    BpmnGatewayType::EventBased { .. } => 2,
-                    BpmnGatewayType::ParallelEventBased => 2,
-                    BpmnGatewayType::Complex { .. } => 2,
-                }
-            }
+            BpmnNodeType::Gateway(g) => match &g.gateway_type {
+                BpmnGatewayType::Exclusive => 2,
+                BpmnGatewayType::Parallel => 2,
+                BpmnGatewayType::Inclusive => 2,
+                BpmnGatewayType::EventBased { .. } => 2,
+                BpmnGatewayType::ParallelEventBased => 2,
+                BpmnGatewayType::Complex { .. } => 2,
+            },
             BpmnNodeType::DataObject(_) => 0,
             BpmnNodeType::DataStore(_) => 0,
             BpmnNodeType::TextAnnotation(_) => 0,
@@ -316,17 +320,17 @@ impl EnhancedBpmnNode {
                     BpmnTaskType::User { .. } => Color32::from_rgb(173, 216, 230), // Light blue
                     BpmnTaskType::Service { .. } => Color32::from_rgb(255, 228, 181), // Moccasin
                     BpmnTaskType::Script { .. } => Color32::from_rgb(216, 191, 216), // Thistle
-                    BpmnTaskType::Manual => Color32::from_rgb(255, 250, 205), // Lemon chiffon
+                    BpmnTaskType::Manual => Color32::from_rgb(255, 250, 205),      // Lemon chiffon
                     BpmnTaskType::Send { .. } => Color32::from_rgb(176, 224, 230), // Powder blue
                     BpmnTaskType::Receive { .. } => Color32::from_rgb(221, 160, 221), // Plum
                     BpmnTaskType::BusinessRule { .. } => Color32::from_rgb(255, 222, 173), // Navajo white
                     BpmnTaskType::Abstract => Color32::from_rgb(211, 211, 211), // Light gray
                 }
-            }
+            },
             BpmnNodeType::Subprocess(_) => Color32::from_rgb(200, 200, 255), // Light blue-violet
-            BpmnNodeType::Gateway(_) => Color32::from_rgb(255, 255, 153), // Light yellow
+            BpmnNodeType::Gateway(_) => Color32::from_rgb(255, 255, 153),    // Light yellow
             BpmnNodeType::DataObject(_) => Color32::from_rgb(240, 240, 240), // Very light gray
-            BpmnNodeType::DataStore(_) => Color32::from_rgb(200, 220, 240), // Light steel blue
+            BpmnNodeType::DataStore(_) => Color32::from_rgb(200, 220, 240),  // Light steel blue
             BpmnNodeType::TextAnnotation(_) => Color32::from_rgb(255, 255, 224), // Light yellow
             BpmnNodeType::Group(_) => Color32::from_rgba_premultiplied(200, 200, 200, 50), // Transparent gray
         }
@@ -338,37 +342,31 @@ impl EnhancedBpmnNode {
             BpmnNodeType::StartEvent(_) => "Start Event",
             BpmnNodeType::EndEvent(_) => "End Event",
             BpmnNodeType::IntermediateEvent(_) => "Intermediate Event",
-            BpmnNodeType::Task(t) => {
-                match &t.task_type {
-                    BpmnTaskType::User { .. } => "User Task",
-                    BpmnTaskType::Service { .. } => "Service Task",
-                    BpmnTaskType::Script { .. } => "Script Task",
-                    BpmnTaskType::Manual => "Manual Task",
-                    BpmnTaskType::Send { .. } => "Send Task",
-                    BpmnTaskType::Receive { .. } => "Receive Task",
-                    BpmnTaskType::BusinessRule { .. } => "Business Rule Task",
-                    BpmnTaskType::Abstract => "Task",
-                }
-            }
-            BpmnNodeType::Subprocess(s) => {
-                match s.subprocess_type {
-                    SubprocessType::Embedded => "Subprocess",
-                    SubprocessType::CallActivity => "Call Activity",
-                    SubprocessType::EventSubprocess => "Event Subprocess",
-                    SubprocessType::Transaction => "Transaction",
-                    SubprocessType::AdHoc => "Ad-Hoc Subprocess",
-                }
-            }
-            BpmnNodeType::Gateway(g) => {
-                match &g.gateway_type {
-                    BpmnGatewayType::Exclusive => "Exclusive Gateway",
-                    BpmnGatewayType::Parallel => "Parallel Gateway",
-                    BpmnGatewayType::Inclusive => "Inclusive Gateway",
-                    BpmnGatewayType::EventBased { .. } => "Event-Based Gateway",
-                    BpmnGatewayType::ParallelEventBased => "Parallel Event Gateway",
-                    BpmnGatewayType::Complex { .. } => "Complex Gateway",
-                }
-            }
+            BpmnNodeType::Task(t) => match &t.task_type {
+                BpmnTaskType::User { .. } => "User Task",
+                BpmnTaskType::Service { .. } => "Service Task",
+                BpmnTaskType::Script { .. } => "Script Task",
+                BpmnTaskType::Manual => "Manual Task",
+                BpmnTaskType::Send { .. } => "Send Task",
+                BpmnTaskType::Receive { .. } => "Receive Task",
+                BpmnTaskType::BusinessRule { .. } => "Business Rule Task",
+                BpmnTaskType::Abstract => "Task",
+            },
+            BpmnNodeType::Subprocess(s) => match s.subprocess_type {
+                SubprocessType::Embedded => "Subprocess",
+                SubprocessType::CallActivity => "Call Activity",
+                SubprocessType::EventSubprocess => "Event Subprocess",
+                SubprocessType::Transaction => "Transaction",
+                SubprocessType::AdHoc => "Ad-Hoc Subprocess",
+            },
+            BpmnNodeType::Gateway(g) => match &g.gateway_type {
+                BpmnGatewayType::Exclusive => "Exclusive Gateway",
+                BpmnGatewayType::Parallel => "Parallel Gateway",
+                BpmnGatewayType::Inclusive => "Inclusive Gateway",
+                BpmnGatewayType::EventBased { .. } => "Event-Based Gateway",
+                BpmnGatewayType::ParallelEventBased => "Parallel Event Gateway",
+                BpmnGatewayType::Complex { .. } => "Complex Gateway",
+            },
             BpmnNodeType::DataObject(_) => "Data Object",
             BpmnNodeType::DataStore(_) => "Data Store",
             BpmnNodeType::TextAnnotation(_) => "Text Annotation",
@@ -377,16 +375,33 @@ impl EnhancedBpmnNode {
     }
 
     /// Convert to BPMN 2.0 element
-    pub fn to_bpmn_element(&self) -> BpmnElement {
+    pub fn to_bpmn_element(&self) -> Result<BpmnElement, String> {
         match &self.node_type {
-            BpmnNodeType::StartEvent(n) => BpmnElement::StartEvent(StartEvent {
+            BpmnNodeType::StartEvent(n) => Ok(BpmnElement::StartEvent(StartEvent {
                 id: self.id.clone(),
                 name: Some(n.name.clone()),
                 documentation: n.documentation.clone(),
                 event_definition: n.event_definition.clone(),
                 is_interrupting: n.is_interrupting,
-            }),
-            BpmnNodeType::Task(n) => BpmnElement::Task(BpmnTask {
+            })),
+            BpmnNodeType::EndEvent(n) => Ok(BpmnElement::EndEvent(EndEvent {
+                id: self.id.clone(),
+                name: Some(n.name.clone()),
+                documentation: n.documentation.clone(),
+                event_definition: n.event_definition.clone(),
+            })),
+            BpmnNodeType::IntermediateEvent(n) => {
+                Ok(BpmnElement::IntermediateEvent(IntermediateEvent {
+                    id: self.id.clone(),
+                    name: Some(n.name.clone()),
+                    documentation: n.documentation.clone(),
+                    event_definition: n.event_definition.clone(),
+                    is_catching: n.is_catching,
+                    is_interrupting: n.is_interrupting,
+                    attached_to_ref: n.attached_to_activity_id.clone(),
+                }))
+            },
+            BpmnNodeType::Task(n) => Ok(BpmnElement::Task(BpmnTask {
                 id: self.id.clone(),
                 name: Some(n.name.clone()),
                 documentation: n.documentation.clone(),
@@ -396,9 +411,32 @@ impl EnhancedBpmnNode {
                 properties: self.properties.clone(),
                 loop_characteristics: n.loop_characteristics.clone(),
                 is_for_compensation: n.is_for_compensation,
-            }),
-            // Add more conversions as needed...
-            _ => unimplemented!("Conversion for this node type not yet implemented"),
+            })),
+            BpmnNodeType::Subprocess(n) => Ok(BpmnElement::Subprocess(Subprocess {
+                id: self.id.clone(),
+                name: Some(n.name.clone()),
+                documentation: n.documentation.clone(),
+                subprocess_type: n.subprocess_type.clone(),
+                triggered_by_event: matches!(n.subprocess_type, SubprocessType::EventSubprocess),
+                process: None, // Embedded processes not preserved in flat visual format
+                called_element: None, // Could be set for call activities
+                loop_characteristics: n.loop_characteristics.clone(),
+            })),
+            BpmnNodeType::Gateway(g) => Ok(BpmnElement::Gateway(BpmnGateway {
+                id: self.id.clone(),
+                name: Some(g.name.clone()),
+                documentation: g.documentation.clone(),
+                gateway_type: g.gateway_type.clone(),
+                gateway_direction: g.gateway_direction.clone(),
+                default_flow: None,
+            })),
+            BpmnNodeType::DataObject(_)
+            | BpmnNodeType::DataStore(_)
+            | BpmnNodeType::TextAnnotation(_)
+            | BpmnNodeType::Group(_) => Err(format!(
+                "Conversion for {} not supported (artifacts/data elements are not flow elements)",
+                self.type_name()
+            )),
         }
     }
 
@@ -421,12 +459,7 @@ pub enum BpmnElement {
 
 impl Default for VisualProperties {
     fn default() -> Self {
-        Self {
-            color: None,
-            highlighted: false,
-            selected: false,
-            markers: Vec::new(),
-        }
+        Self { color: None, highlighted: false, selected: false, markers: Vec::new() }
     }
 }
 
@@ -464,10 +497,7 @@ impl EnhancedBpmnNode {
             BpmnNodeType::Task(TaskNode {
                 name: name.into(),
                 documentation: None,
-                task_type: BpmnTaskType::User {
-                    implementation: None,
-                    rendering: None,
-                },
+                task_type: BpmnTaskType::User { implementation: None, rendering: None },
                 loop_characteristics: None,
                 is_for_compensation: false,
             }),
@@ -480,10 +510,7 @@ impl EnhancedBpmnNode {
             BpmnNodeType::Task(TaskNode {
                 name: name.into(),
                 documentation: None,
-                task_type: BpmnTaskType::Service {
-                    implementation: None,
-                    operation_ref: None,
-                },
+                task_type: BpmnTaskType::Service { implementation: None, operation_ref: None },
                 loop_characteristics: None,
                 is_for_compensation: false,
             }),

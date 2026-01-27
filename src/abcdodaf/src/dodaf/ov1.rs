@@ -317,7 +317,8 @@ mod tests {
             duration: None,
         };
 
-        let org = OperationalOrganization::new("org_1", "Command Center", OrganizationType::Command);
+        let org =
+            OperationalOrganization::new("org_1", "Command Center", OrganizationType::Command);
 
         let concept = OperationalConceptGraphic::new("ov1_1", "Test", "Test mission")
             .add_scenario(scenario)

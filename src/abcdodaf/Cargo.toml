@@ -6,6 +6,46 @@ description = "BPMN-based process modeling with DoDAF 2.02 framework for AI work
 license = "MIT"
 repository = "https://github.com/server9-dev/otherthing-cloud"
 
+# Lint configuration
+[lints.rust]
+# Deny unsafe code (can be overridden with #[allow(unsafe_code)] where necessary)
+unsafe_code = "warn"
+# Warn about unused items
+dead_code = "warn"
+unused_imports = "warn"
+unused_variables = "warn"
+# Warn about deprecated items
+deprecated = "warn"
+
+[lints.clippy]
+# Deny common mistakes and bugs
+correctness = "deny"
+suspicious = "deny"
+
+# Warn on performance issues
+perf = "warn"
+complexity = "warn"
+
+# Warn on style issues
+style = "warn"
+pedantic = "warn"
+
+# Specific lints to deny
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+unimplemented = "warn"
+todo = "warn"
+
+# Allow some pedantic lints that are too noisy
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+
+# Cargo lints
+cargo = "warn"
+cargo_common_metadata = "warn"
+
 [dependencies]
 # BPMN schema types (without the full engine that has compatibility issues)
 # We implement our own lightweight execution engine

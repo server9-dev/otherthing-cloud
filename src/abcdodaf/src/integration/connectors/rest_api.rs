@@ -1,8 +1,8 @@
 //! REST API connector for HTTP-based integrations
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
-    ConnectorResponse, ConnectorResult, HealthStatus, AuthConfig,
+    AuthConfig, ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
 use serde_json::Value;
@@ -19,11 +19,7 @@ pub struct RestApiConnector {
 impl RestApiConnector {
     /// Create a new REST API connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            client: None,
-        }
+        Self { config, status: ConnectionStatus::Disconnected, client: None }
     }
 
     /// Get the base URL
@@ -52,10 +48,7 @@ impl RestApiConnector {
             "PATCH" => Ok(reqwest::Method::PATCH),
             "HEAD" => Ok(reqwest::Method::HEAD),
             "OPTIONS" => Ok(reqwest::Method::OPTIONS),
-            _ => Err(ConnectorError::validation(format!(
-                "Unsupported HTTP method: {}",
-                method
-            ))),
+            _ => Err(ConnectorError::validation(format!("Unsupported HTTP method: {}", method))),
         }
     }
 
@@ -78,7 +71,7 @@ impl RestApiConnector {
                     );
                 }
                 Ok(())
-            }
+            },
             AuthConfig::Jwt(auth) => {
                 let mut map = HashMap::new();
                 auth.apply(&mut map);
@@ -92,7 +85,7 @@ impl RestApiConnector {
                     );
                 }
                 Ok(())
-            }
+            },
             AuthConfig::Basic(auth) => {
                 let mut map = HashMap::new();
                 auth.apply(&mut map);
@@ -106,7 +99,7 @@ impl RestApiConnector {
                     );
                 }
                 Ok(())
-            }
+            },
             AuthConfig::OAuth2(auth) => {
                 let mut map = HashMap::new();
                 auth.apply(&mut map);
@@ -120,7 +113,7 @@ impl RestApiConnector {
                     );
                 }
                 Ok(())
-            }
+            },
         }
     }
 }
@@ -210,48 +203,37 @@ impl Connector for RestApiConnector {
         req = req.headers(headers);
 
         // Execute request
-        let response = req
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    ConnectorError::timeout(self.config.timeout_secs.unwrap_or(30))
-                } else {
-                    ConnectorError::request(e.to_string())
-                }
-            })?;
+        let response = req.send().await.map_err(|e| {
+            if e.is_timeout() {
+                ConnectorError::timeout(self.config.timeout_secs.unwrap_or(30))
+            } else {
+                ConnectorError::request(e.to_string())
+            }
+        })?;
 
         let status_code = response.status().as_u16();
         let response_headers: HashMap<String, String> = response
             .headers()
             .iter()
-            .map(|(k, v)| {
-                (
-                    k.to_string(),
-                    v.to_str().unwrap_or("").to_string(),
-                )
-            })
+            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or_default().to_string()))
             .collect();
 
-        let body = response
-            .json::<Value>()
-            .await
-            .unwrap_or(serde_json::json!({}));
+        let body = response.json::<Value>().await.unwrap_or_else(|_| serde_json::json!({}));
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
 
         Ok(ConnectorResponse::new(&request.id, status_code)
             .with_body(body)
             .with_execution_time(execution_time_ms)
-            .with_header("content_type", response_headers.get("content-type").cloned().unwrap_or_default()))
+            .with_header(
+                "content_type",
+                response_headers.get("content-type").cloned().unwrap_or_default(),
+            ))
     }
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "Connector status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("Connector status: {}", self.status)));
         }
 
         // Try to make a HEAD request to the base URL
@@ -259,10 +241,8 @@ impl Connector for RestApiConnector {
             let client = match &self.client {
                 Some(c) => c,
                 None => {
-                    return Ok(HealthStatus::Unhealthy(
-                        "HTTP client not initialized".to_string(),
-                    ))
-                }
+                    return Ok(HealthStatus::Unhealthy("HTTP client not initialized".to_string()))
+                },
             };
 
             match client.head(&url).send().await {
@@ -275,7 +255,7 @@ impl Connector for RestApiConnector {
                             response.status()
                         )))
                     }
-                }
+                },
                 Err(e) => Ok(HealthStatus::Unhealthy(e.to_string())),
             }
         } else {

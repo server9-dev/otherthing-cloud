@@ -91,7 +91,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Create a sample OV-1: High-Level Operational Concept
 fn create_ov1() -> OperationalConceptGraphic {
-    use ov1::{OperationalOrganization, OrganizationType, OperationalScenario};
+    use ov1::{OperationalOrganization, OperationalScenario, OrganizationType};
 
     let scenario = OperationalScenario {
         id: "scenario_primary".to_string(),
@@ -102,36 +102,49 @@ fn create_ov1() -> OperationalConceptGraphic {
         duration: None,
     };
 
-    let cmd_org = OperationalOrganization::new("org_cmd", "Command Center", OrganizationType::Command)
-        .add_responsibility("Overall mission command");
+    let cmd_org =
+        OperationalOrganization::new("org_cmd", "Command Center", OrganizationType::Command)
+            .add_responsibility("Overall mission command");
 
-    let ops_org = OperationalOrganization::new("org_ops", "Operations Center", OrganizationType::Operations)
-        .add_responsibility("Execute tactical operations");
+    let ops_org =
+        OperationalOrganization::new("org_ops", "Operations Center", OrganizationType::Operations)
+            .add_responsibility("Execute tactical operations");
 
-    OperationalConceptGraphic::new("ov1_demo", "Military Operations Architecture", "Execute joint operations")
-        .with_description("Demonstrates OV-1 operational concept")
-        .with_vision("Integrated command and control across all domains")
-        .add_scenario(scenario)
-        .add_organization(cmd_org)
-        .add_organization(ops_org)
+    OperationalConceptGraphic::new(
+        "ov1_demo",
+        "Military Operations Architecture",
+        "Execute joint operations",
+    )
+    .with_description("Demonstrates OV-1 operational concept")
+    .with_vision("Integrated command and control across all domains")
+    .add_scenario(scenario)
+    .add_organization(cmd_org)
+    .add_organization(ops_org)
 }
 
 /// Create a sample OV-2: Operational Node Connectivity
 fn create_ov2() -> OperationalNodeConnectivity {
-    use ov2::{OperationalNode, OperationalNodeType, Needline, Criticality};
+    use ov2::{Criticality, Needline, OperationalNode, OperationalNodeType};
 
-    let node1 = OperationalNode::new("node_cmd", "Command Center", OperationalNodeType::Organization)
-        .with_description("Central command authority")
-        .add_activity("activity_cmd")
-        .add_performer("performer_commander");
+    let node1 =
+        OperationalNode::new("node_cmd", "Command Center", OperationalNodeType::Organization)
+            .with_description("Central command authority")
+            .add_activity("activity_cmd")
+            .add_performer("performer_commander");
 
     let node2 = OperationalNode::new("node_field", "Field Unit", OperationalNodeType::Organization)
         .with_description("Forward operational unit")
         .add_activity("activity_field")
         .add_performer("performer_unit_leader");
 
-    let needline = Needline::new("nl_cmd_field", "Command Orders", "node_cmd", "node_field", Criticality::Critical)
-        .add_information_element("tactical_order");
+    let needline = Needline::new(
+        "nl_cmd_field",
+        "Command Orders",
+        "node_cmd",
+        "node_field",
+        Criticality::Critical,
+    )
+    .add_information_element("tactical_order");
 
     OperationalNodeConnectivity::new("ov2_demo", "Operational Node Connectivity")
         .with_description("Shows nodes and information flows")
@@ -142,7 +155,10 @@ fn create_ov2() -> OperationalNodeConnectivity {
 
 /// Create a sample OV-3: Information Exchange Matrix
 fn create_ov3() -> InformationExchangeMatrix {
-    use ov3::{InformationElement, InformationType, ExchangePair, ExchangeAttributes, ExchangeMedia, InteroperabilityLevel};
+    use ov3::{
+        ExchangeAttributes, ExchangeMedia, ExchangePair, InformationElement, InformationType,
+        InteroperabilityLevel,
+    };
 
     let ie1 = InformationElement::new("ie_order", "Tactical Order", InformationType::Command)
         .with_creator("Command Center");
@@ -168,7 +184,7 @@ fn create_ov3() -> InformationExchangeMatrix {
 
 /// Create a sample OV-6a: Operational Rules
 fn create_ov6a() -> OperationalRulesModel {
-    use ov6::{OperationalRule, RuleType, RuleApplicability, Constraint, ConstraintType};
+    use ov6::{Constraint, ConstraintType, OperationalRule, RuleApplicability, RuleType};
 
     let rule = OperationalRule::new(
         "rule_auth",
@@ -198,7 +214,7 @@ fn create_ov6a() -> OperationalRulesModel {
 
 /// Create a sample OV-6b: State Transitions
 fn create_ov6b() -> StateTransitionDescription {
-    use ov6::{OperationalState, StateType, StateTransition, TransitionEvent, EventType};
+    use ov6::{EventType, OperationalState, StateTransition, StateType, TransitionEvent};
 
     let idle = OperationalState::new("state_idle", "Idle", StateType::Idle).as_initial();
     let active = OperationalState::new("state_active", "Active", StateType::Active);
@@ -236,19 +252,33 @@ fn create_ov6b() -> StateTransitionDescription {
 
 /// Create a sample SV-1: Systems Interface
 fn create_sv1() -> SystemsInterfaceDescription {
-    use sv1::{System, SystemType, SystemPort, PortType, PortDirection, SystemInterface, InterfaceType};
+    use sv1::{
+        InterfaceType, PortDirection, PortType, System, SystemInterface, SystemPort, SystemType,
+    };
 
-    let sys1 = System::new("sys_cmd", "Command System", SystemType::Software)
-        .add_function("func_cmd");
+    let sys1 =
+        System::new("sys_cmd", "Command System", SystemType::Software).add_function("func_cmd");
 
-    let sys2 = System::new("sys_sensor", "Sensor System", SystemType::Hardware)
-        .add_function("func_sense");
+    let sys2 =
+        System::new("sys_sensor", "Sensor System", SystemType::Hardware).add_function("func_sense");
 
-    let port1 = SystemPort::new("port_out", "Command Output", PortType::Output, "sys_cmd", PortDirection::Out)
-        .with_protocol("TCP/IP");
+    let port1 = SystemPort::new(
+        "port_out",
+        "Command Output",
+        PortType::Output,
+        "sys_cmd",
+        PortDirection::Out,
+    )
+    .with_protocol("TCP/IP");
 
-    let port2 = SystemPort::new("port_in", "Sensor Input", PortType::Input, "sys_sensor", PortDirection::In)
-        .with_protocol("TCP/IP");
+    let port2 = SystemPort::new(
+        "port_in",
+        "Sensor Input",
+        PortType::Input,
+        "sys_sensor",
+        PortDirection::In,
+    )
+    .with_protocol("TCP/IP");
 
     let iface = SystemInterface::new("iface_1", "sys_cmd", "sys_sensor", "port_out", "port_in")
         .with_name("Command to Sensor")
@@ -265,7 +295,10 @@ fn create_sv1() -> SystemsInterfaceDescription {
 
 /// Create a sample SV-2: Systems Resource Flow
 fn create_sv2() -> SystemsResourceFlowDescription {
-    use sv2::{CommunicationSystem, CommunicationType, MediaType, CommunicationLink, CommunicationNetwork, NetworkType};
+    use sv2::{
+        CommunicationLink, CommunicationNetwork, CommunicationSystem, CommunicationType, MediaType,
+        NetworkType,
+    };
 
     let comm_sys = CommunicationSystem::new(
         "comm_tcp",
@@ -296,14 +329,18 @@ fn create_sv2() -> SystemsResourceFlowDescription {
 
 /// Create a sample SV-4: Systems Functionality
 fn create_sv4() -> SystemsFunctionalityDescription {
-    use sv4::{SystemFunction, FunctionType, FunctionDataFlow, FunctionalHierarchy, HierarchyLevel};
+    use sv4::{
+        FunctionDataFlow, FunctionType, FunctionalHierarchy, HierarchyLevel, SystemFunction,
+    };
 
-    let func_cmd = SystemFunction::new("func_cmd", "Command Generation", FunctionType::Primary, "sys_cmd")
-        .add_output("command_data");
+    let func_cmd =
+        SystemFunction::new("func_cmd", "Command Generation", FunctionType::Primary, "sys_cmd")
+            .add_output("command_data");
 
-    let func_execute = SystemFunction::new("func_execute", "Execute Command", FunctionType::Primary, "sys_sensor")
-        .add_input("command_data")
-        .add_output("execution_status");
+    let func_execute =
+        SystemFunction::new("func_execute", "Execute Command", FunctionType::Primary, "sys_sensor")
+            .add_input("command_data")
+            .add_output("execution_status");
 
     let data_flow = FunctionDataFlow::new("flow_1", "func_cmd", "func_execute")
         .add_data_element("command_data")
@@ -312,8 +349,7 @@ fn create_sv4() -> SystemsFunctionalityDescription {
     let mut level0 = HierarchyLevel::new(0);
     level0.functions.push("func_cmd".to_string());
 
-    let hierarchy = FunctionalHierarchy::new("func_cmd")
-        .add_level(level0);
+    let hierarchy = FunctionalHierarchy::new("func_cmd").add_level(level0);
 
     SystemsFunctionalityDescription::new("sv4_demo", "Systems Functionality")
         .with_description("System functions and data flows")
@@ -325,7 +361,7 @@ fn create_sv4() -> SystemsFunctionalityDescription {
 
 /// Create a sample CV-1: Capability Vision
 fn create_cv1() -> CapabilityVision {
-    use cv1::{StrategicObjective, CapabilityIncrement, TimeFrame};
+    use cv1::{CapabilityIncrement, StrategicObjective, TimeFrame};
 
     let obj = StrategicObjective::new(
         "obj_1",

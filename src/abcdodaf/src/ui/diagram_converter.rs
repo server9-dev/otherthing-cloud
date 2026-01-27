@@ -30,8 +30,7 @@ impl BpmnDiagramConverter {
 
         // Process each process in the diagram
         for process in &diagram.processes {
-            debug!("Processing process '{}' with {} tasks",
-                   process.id, process.tasks.len());
+            debug!("Processing process '{}' with {} tasks", process.id, process.tasks.len());
 
             // Convert start events
             for (idx, start_event) in process.start_events.iter().enumerate() {
@@ -84,8 +83,10 @@ impl BpmnDiagramConverter {
                     snarl.connect(out_pin, in_pin);
                     debug!("Connected {} -> {}", flow.source_ref, flow.target_ref);
                 } else {
-                    warn!("Could not find nodes for flow {} -> {}",
-                          flow.source_ref, flow.target_ref);
+                    warn!(
+                        "Could not find nodes for flow {} -> {}",
+                        flow.source_ref, flow.target_ref
+                    );
                 }
             }
         }
@@ -100,7 +101,7 @@ impl BpmnDiagramConverter {
     pub fn from_snarl(
         snarl: &Snarl<EnhancedBpmnNode>,
         diagram_id: &str,
-        diagram_name: &str
+        diagram_name: &str,
     ) -> Result<BpmnDiagram, String> {
         debug!("Converting Snarl to BpmnDiagram '{}'", diagram_id);
 
@@ -127,32 +128,40 @@ impl BpmnDiagramConverter {
 
         // Convert nodes
         for (_node_id, node) in snarl.node_ids() {
-
             match &node.node_type {
                 BpmnNodeType::StartEvent(start) => {
                     process.start_events.push(Self::node_to_start_event(node, start)?);
-                }
+                },
                 BpmnNodeType::EndEvent(end) => {
                     process.end_events.push(Self::node_to_end_event(node, end)?);
-                }
+                },
                 BpmnNodeType::IntermediateEvent(event) => {
-                    process.intermediate_events.push(Self::node_to_intermediate_event(node, event)?);
-                }
+                    process
+                        .intermediate_events
+                        .push(Self::node_to_intermediate_event(node, event)?);
+                },
                 BpmnNodeType::Task(task) => {
                     process.tasks.push(Self::node_to_task(node, task)?);
-                }
+                },
                 BpmnNodeType::Gateway(gateway) => {
                     process.gateways.push(Self::node_to_gateway(node, gateway)?);
-                }
-                BpmnNodeType::Subprocess(_subprocess) => {
-                    // TODO: Convert subprocess nodes
-                    warn!("Subprocess conversion not yet implemented");
-                }
-                BpmnNodeType::DataObject(_) | BpmnNodeType::DataStore(_) |
-                BpmnNodeType::TextAnnotation(_) | BpmnNodeType::Group(_) => {
-                    // TODO: Convert data and artifact nodes
-                    debug!("Skipping data/artifact node: {:?}", node.node_type);
-                }
+                },
+                BpmnNodeType::Subprocess(subprocess) => {
+                    process.subprocesses.push(Self::node_to_subprocess(node, subprocess)?);
+                },
+                BpmnNodeType::DataObject(data_obj) => {
+                    process.data_objects.push(Self::node_to_data_object(node, data_obj)?);
+                },
+                BpmnNodeType::DataStore(data_store) => {
+                    // Data stores are diagram-level elements, handled separately below
+                    debug!("Data store will be added at diagram level: {}", node.id);
+                },
+                BpmnNodeType::TextAnnotation(annotation) => {
+                    process.text_annotations.push(Self::node_to_text_annotation(node, annotation)?);
+                },
+                BpmnNodeType::Group(group) => {
+                    process.groups.push(Self::node_to_group(node, group)?);
+                },
             }
         }
 
@@ -173,10 +182,33 @@ impl BpmnDiagramConverter {
             process.sequence_flows.push(flow);
         }
 
-        debug!("Conversion complete: {} nodes, {} flows",
-               process.start_events.len() + process.end_events.len() +
-               process.tasks.len() + process.gateways.len(),
-               process.sequence_flows.len());
+        // Extract data stores at diagram level
+        let mut data_stores = Vec::new();
+        for (_node_id, node) in snarl.node_ids() {
+            if let BpmnNodeType::DataStore(data_store) = &node.node_type {
+                data_stores.push(DataStore {
+                    id: node.id.clone(),
+                    name: Some(data_store.name.clone()),
+                    capacity: data_store.capacity,
+                    is_unlimited: data_store.is_unlimited,
+                    item_subject_ref: None,
+                });
+            }
+        }
+
+        debug!(
+            "Conversion complete: {} nodes, {} flows, {} data stores",
+            process.start_events.len()
+                + process.end_events.len()
+                + process.tasks.len()
+                + process.gateways.len()
+                + process.subprocesses.len()
+                + process.data_objects.len()
+                + process.text_annotations.len()
+                + process.groups.len(),
+            process.sequence_flows.len(),
+            data_stores.len()
+        );
 
         Ok(BpmnDiagram {
             id: diagram_id.to_string(),
@@ -184,7 +216,7 @@ impl BpmnDiagramConverter {
             documentation: None,
             processes: vec![process],
             collaborations: Vec::new(),
-            data_stores: Vec::new(),
+            data_stores,
             messages: Vec::new(),
             signals: Vec::new(),
             diagram_info: None,
@@ -234,6 +266,7 @@ impl BpmnDiagramConverter {
                 is_catching: event.is_catching,
                 is_interrupting: event.is_interrupting,
                 is_boundary: event.attached_to_ref.is_some(),
+                attached_to_activity_id: event.attached_to_ref.clone(),
             }),
             visual: VisualProperties::default(),
             dodaf_metadata: None,
@@ -278,7 +311,7 @@ impl BpmnDiagramConverter {
 
     fn node_to_start_event(
         node: &EnhancedBpmnNode,
-        event: &StartEventNode
+        event: &StartEventNode,
     ) -> Result<StartEvent, String> {
         Ok(StartEvent {
             id: node.id.clone(),
@@ -291,7 +324,7 @@ impl BpmnDiagramConverter {
 
     fn node_to_end_event(
         node: &EnhancedBpmnNode,
-        event: &EndEventNode
+        event: &EndEventNode,
     ) -> Result<EndEvent, String> {
         Ok(EndEvent {
             id: node.id.clone(),
@@ -303,7 +336,7 @@ impl BpmnDiagramConverter {
 
     fn node_to_intermediate_event(
         node: &EnhancedBpmnNode,
-        event: &IntermediateEventNode
+        event: &IntermediateEventNode,
     ) -> Result<IntermediateEvent, String> {
         Ok(IntermediateEvent {
             id: node.id.clone(),
@@ -316,10 +349,7 @@ impl BpmnDiagramConverter {
         })
     }
 
-    fn node_to_task(
-        node: &EnhancedBpmnNode,
-        task: &TaskNode
-    ) -> Result<BpmnTask, String> {
+    fn node_to_task(node: &EnhancedBpmnNode, task: &TaskNode) -> Result<BpmnTask, String> {
         Ok(BpmnTask {
             id: node.id.clone(),
             name: Some(task.name.clone()),
@@ -335,7 +365,7 @@ impl BpmnDiagramConverter {
 
     fn node_to_gateway(
         node: &EnhancedBpmnNode,
-        gateway: &GatewayNode
+        gateway: &GatewayNode,
     ) -> Result<BpmnGateway, String> {
         Ok(BpmnGateway {
             id: node.id.clone(),
@@ -344,6 +374,56 @@ impl BpmnDiagramConverter {
             gateway_type: gateway.gateway_type.clone(),
             gateway_direction: gateway.gateway_direction.clone(),
             default_flow: None,
+        })
+    }
+
+    fn node_to_subprocess(
+        node: &EnhancedBpmnNode,
+        subprocess: &SubprocessNode,
+    ) -> Result<Subprocess, String> {
+        Ok(Subprocess {
+            id: node.id.clone(),
+            name: Some(subprocess.name.clone()),
+            documentation: subprocess.documentation.clone(),
+            subprocess_type: subprocess.subprocess_type.clone(),
+            triggered_by_event: subprocess.subprocess_type == SubprocessType::EventSubprocess,
+            process: None, // Embedded processes not supported in flat visual format
+            called_element: None,
+            loop_characteristics: subprocess.loop_characteristics.clone(),
+        })
+    }
+
+    fn node_to_data_object(
+        node: &EnhancedBpmnNode,
+        data_obj: &DataObjectNode,
+    ) -> Result<DataObject, String> {
+        Ok(DataObject {
+            id: node.id.clone(),
+            name: Some(data_obj.name.clone()),
+            item_subject_ref: None,
+            is_collection: data_obj.is_collection,
+            data_state: data_obj.data_state.clone(),
+        })
+    }
+
+    fn node_to_text_annotation(
+        node: &EnhancedBpmnNode,
+        annotation: &TextAnnotationNode,
+    ) -> Result<TextAnnotation, String> {
+        Ok(TextAnnotation {
+            id: node.id.clone(),
+            text: annotation.text.clone(),
+            text_format: annotation.text_format.clone(),
+        })
+    }
+
+    fn node_to_group(
+        node: &EnhancedBpmnNode,
+        group: &GroupNode,
+    ) -> Result<Group, String> {
+        Ok(Group {
+            id: node.id.clone(),
+            category_value_ref: group.category.clone(),
         })
     }
 }
@@ -381,23 +461,19 @@ mod tests {
             documentation: None,
             is_executable: true,
             process_type: ProcessType::None,
-            start_events: vec![
-                StartEvent {
-                    id: "start1".to_string(),
-                    name: Some("Start".to_string()),
-                    documentation: None,
-                    event_definition: None,
-                    is_interrupting: true,
-                }
-            ],
-            end_events: vec![
-                EndEvent {
-                    id: "end1".to_string(),
-                    name: Some("End".to_string()),
-                    documentation: None,
-                    event_definition: None,
-                }
-            ],
+            start_events: vec![StartEvent {
+                id: "start1".to_string(),
+                name: Some("Start".to_string()),
+                documentation: None,
+                event_definition: None,
+                is_interrupting: true,
+            }],
+            end_events: vec![EndEvent {
+                id: "end1".to_string(),
+                name: Some("End".to_string()),
+                documentation: None,
+                event_definition: None,
+            }],
             intermediate_events: vec![],
             tasks: vec![],
             subprocesses: vec![],

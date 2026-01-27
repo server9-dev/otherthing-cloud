@@ -4,17 +4,17 @@
 //! including Markdown, HTML, and SVG diagram exports. Supports both operational and
 //! architectural documentation views aligned with DoDAF 2.02.
 
+pub mod builtin_templates;
+pub mod diagrams;
+pub mod exporters;
 pub mod generator;
 pub mod templates;
-pub mod exporters;
-pub mod diagrams;
-pub mod builtin_templates;
 
-pub use generator::{DocumentationGenerator, DocumentationConfig, DocumentationFormat};
-pub use templates::{Template, TemplateLibrary, TemplateMetadata, TemplateCategory};
-pub use exporters::{Exporter, MarkdownExporter, HtmlExporter, PlainTextExporter};
-pub use diagrams::{DiagramGenerator, DiagramFormat, SvgDiagram};
 pub use builtin_templates::create_builtin_library;
+pub use diagrams::{DiagramFormat, DiagramGenerator, SvgDiagram};
+pub use exporters::{Exporter, HtmlExporter, MarkdownExporter, PlainTextExporter};
+pub use generator::{DocumentationConfig, DocumentationFormat, DocumentationGenerator};
+pub use templates::{Template, TemplateCategory, TemplateLibrary, TemplateMetadata};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

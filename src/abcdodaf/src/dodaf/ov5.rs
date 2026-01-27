@@ -59,8 +59,8 @@ pub struct OperationalActivity {
     pub constraints: Vec<BusinessRule>,
 
     // Traceability
-    pub capabilities: Vec<String>,           // Links to CV-6
-    pub systems_services: Vec<String>,       // Links to SV-5a
+    pub capabilities: Vec<String>,             // Links to CV-6
+    pub systems_services: Vec<String>,         // Links to SV-5a
     pub information_requirements: Vec<String>, // Links to DIV
 
     // Additional metadata
@@ -82,30 +82,12 @@ pub struct Performer {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PerformerType {
-    Person {
-        role: String,
-        skills: Vec<String>,
-    },
-    Organization {
-        org_type: String,
-        parent_org: Option<String>,
-    },
-    Service {
-        service_type: String,
-        interface_ref: Option<String>,
-    },
-    ServiceInterface {
-        protocol: String,
-        endpoint: Option<String>,
-    },
-    System {
-        system_type: String,
-        capabilities: Vec<String>,
-    },
-    Interface {
-        interface_type: String,
-        port: Option<String>,
-    },
+    Person { role: String, skills: Vec<String> },
+    Organization { org_type: String, parent_org: Option<String> },
+    Service { service_type: String, interface_ref: Option<String> },
+    ServiceInterface { protocol: String, endpoint: Option<String> },
+    System { system_type: String, capabilities: Vec<String> },
+    Interface { interface_type: String, port: Option<String> },
 }
 
 /// Performer Reference
@@ -394,15 +376,16 @@ pub struct OperationalResourceFlowDescription {
 // ============================================================================
 
 impl OperationalActivity {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
             description: description.into(),
-            performer: PerformerRef {
-                performer_id: String::new(),
-                role: None,
-            },
+            performer: PerformerRef { performer_id: String::new(), role: None },
             input_resources: Vec::new(),
             output_resources: Vec::new(),
             cost: None,
@@ -424,20 +407,25 @@ impl OperationalActivity {
 }
 
 impl Performer {
-    pub fn new_person(id: impl Into<String>, name: impl Into<String>, role: impl Into<String>) -> Self {
+    pub fn new_person(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        role: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
             description: None,
-            performer_type: PerformerType::Person {
-                role: role.into(),
-                skills: Vec::new(),
-            },
+            performer_type: PerformerType::Person { role: role.into(), skills: Vec::new() },
             properties: HashMap::new(),
         }
     }
 
-    pub fn new_system(id: impl Into<String>, name: impl Into<String>, system_type: impl Into<String>) -> Self {
+    pub fn new_system(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        system_type: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),

@@ -8,10 +8,10 @@
 //! - Monitor connector health
 
 use abcdodaf::integration::connector::{
-    Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest, AuthConfig, ApiKeyConfig,
+    ApiKeyConfig, AuthConfig, Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest,
 };
 use abcdodaf::integration::connectors::{
-    RestApiConnector, PostgresConnector, FileSystemConnector, OutgoingWebhookConnector,
+    FileSystemConnector, OutgoingWebhookConnector, PostgresConnector, RestApiConnector,
 };
 use serde_json::json;
 use std::sync::Arc;
@@ -77,18 +77,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let registry = ConnectorRegistry::new();
 
     // Register factories for different connector types
-    registry
-        .register_factory("rest_api", Arc::new(RestApiFactory))
-        .await;
-    registry
-        .register_factory("postgresql", Arc::new(PostgresFactory))
-        .await;
-    registry
-        .register_factory("filesystem", Arc::new(FileSystemFactory))
-        .await;
-    registry
-        .register_factory("outgoing_webhook", Arc::new(WebhookFactory))
-        .await;
+    registry.register_factory("rest_api", Arc::new(RestApiFactory)).await;
+    registry.register_factory("postgresql", Arc::new(PostgresFactory)).await;
+    registry.register_factory("filesystem", Arc::new(FileSystemFactory)).await;
+    registry.register_factory("outgoing_webhook", Arc::new(WebhookFactory)).await;
 
     println!("Registered {} connector factories\n", registry.factory_count().await);
 
@@ -98,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_config = ConnectorConfig::new("github_api", "rest_api")
         .with_param("url", json!("https://api.github.com"))
         .with_auth(AuthConfig::ApiKey(
-            ApiKeyConfig::new("ghp_xxxx", "Authorization").with_prefix("Bearer ")
+            ApiKeyConfig::new("ghp_xxxx", "Authorization").with_prefix("Bearer "),
         ))
         .with_timeout(30)
         .with_retries(true, 3);
@@ -179,11 +171,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             abcdodaf::integration::connector::HealthStatus::Degraded(msg) => {
                 println!("  {} - Degraded: {}", name, msg);
                 continue;
-            }
+            },
             abcdodaf::integration::connector::HealthStatus::Unhealthy(msg) => {
                 println!("  {} - Unhealthy: {}", name, msg);
                 continue;
-            }
+            },
         };
         println!("  {} - {}", name, status_str);
     }
@@ -210,20 +202,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use abcdodaf::integration::connector::RetryPolicy;
     use std::time::Duration;
 
-    let retry_policy = RetryPolicy::exponential_backoff(
-        4,
-        Duration::from_millis(100),
-        Duration::from_secs(30),
-    );
+    let retry_policy =
+        RetryPolicy::exponential_backoff(4, Duration::from_millis(100), Duration::from_secs(30));
 
     println!("Exponential Backoff Retry Policy:");
     for attempt in 0..4 {
         if let Some(delay) = retry_policy.next_retry_delay(attempt) {
-            println!(
-                "  Attempt {}: Wait {}ms before retry",
-                attempt + 1,
-                delay.as_millis()
-            );
+            println!("  Attempt {}: Wait {}ms before retry", attempt + 1, delay.as_millis());
         }
     }
     println!();

@@ -23,24 +23,16 @@ pub struct DmnDecision {
 #[serde(tag = "type")]
 pub enum DecisionLogic {
     /// Decision Table - the most common DMN element
-    DecisionTable {
-        table: DecisionTable,
-    },
+    DecisionTable { table: DecisionTable },
     /// Literal Expression - simple expression
     LiteralExpression {
         expression: String,
         expression_language: String, // e.g., "FEEL", "JavaScript"
     },
     /// Invocation - calling another decision
-    Invocation {
-        invoked_decision: String,
-        bindings: HashMap<String, String>,
-    },
+    Invocation { invoked_decision: String, bindings: HashMap<String, String> },
     /// Decision Service
-    DecisionService {
-        output_decisions: Vec<String>,
-        encapsulated_decisions: Vec<String>,
-    },
+    DecisionService { output_decisions: Vec<String>, encapsulated_decisions: Vec<String> },
 }
 
 /// Decision Table - core DMN decision logic
@@ -191,31 +183,32 @@ impl DmnDecision {
                 if table.rules.is_empty() {
                     return Err(format!("Decision table '{}' has no rules", self.name));
                 }
-            }
+            },
             DecisionLogic::LiteralExpression { expression, .. } => {
                 if expression.is_empty() {
                     return Err(format!("Decision '{}' has empty expression", self.name));
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         Ok(())
     }
 
     /// Execute the decision with given inputs
-    pub fn execute(&self, inputs: &HashMap<String, serde_json::Value>) -> Result<serde_json::Value, String> {
+    pub fn execute(
+        &self,
+        inputs: &HashMap<String, serde_json::Value>,
+    ) -> Result<serde_json::Value, String> {
         match &self.decision_logic {
-            DecisionLogic::DecisionTable { table } => {
-                self.execute_decision_table(table, inputs)
-            }
+            DecisionLogic::DecisionTable { table } => self.execute_decision_table(table, inputs),
             DecisionLogic::LiteralExpression { expression, expression_language } => {
                 // For now, just return a placeholder
                 // In a real implementation, you'd evaluate the expression
                 Ok(serde_json::json!({
                     "result": format!("Evaluated: {} ({})", expression, expression_language)
                 }))
-            }
+            },
             _ => Err("Decision logic type not yet implemented".to_string()),
         }
     }
@@ -242,7 +235,7 @@ impl DmnDecision {
                 } else {
                     Err("No matching rules found".to_string())
                 }
-            }
+            },
             HitPolicy::Unique => {
                 if matching_rules.is_empty() {
                     Err("No matching rules found".to_string())
@@ -251,14 +244,12 @@ impl DmnDecision {
                 } else {
                     Ok(self.rule_to_output(table, matching_rules[0]))
                 }
-            }
+            },
             HitPolicy::RuleOrder | HitPolicy::Collect => {
-                let outputs: Vec<_> = matching_rules
-                    .iter()
-                    .map(|rule| self.rule_to_output(table, rule))
-                    .collect();
+                let outputs: Vec<_> =
+                    matching_rules.iter().map(|rule| self.rule_to_output(table, rule)).collect();
                 Ok(serde_json::json!(outputs))
-            }
+            },
             _ => Err("Hit policy not yet implemented".to_string()),
         }
     }
@@ -314,29 +305,45 @@ impl DmnDecision {
             DecisionLogic::DecisionTable { table } => {
                 xml.push_str("    <decisionTable>\n");
                 for input in &table.inputs {
-                    xml.push_str(&format!("      <input id=\"{}\" label=\"{}\">\n", input.id, input.label));
-                    xml.push_str(&format!("        <inputExpression>{}</inputExpression>\n", input.input_expression));
+                    xml.push_str(&format!(
+                        "      <input id=\"{}\" label=\"{}\">\n",
+                        input.id, input.label
+                    ));
+                    xml.push_str(&format!(
+                        "        <inputExpression>{}</inputExpression>\n",
+                        input.input_expression
+                    ));
                     xml.push_str("      </input>\n");
                 }
                 for output in &table.outputs {
-                    xml.push_str(&format!("      <output id=\"{}\" label=\"{}\" name=\"{}\" />\n",
-                        output.id, output.label, output.name));
+                    xml.push_str(&format!(
+                        "      <output id=\"{}\" label=\"{}\" name=\"{}\" />\n",
+                        output.id, output.label, output.name
+                    ));
                 }
                 for rule in &table.rules {
                     xml.push_str(&format!("      <rule id=\"{}\">\n", rule.id));
                     for entry in &rule.input_entries {
-                        xml.push_str(&format!("        <inputEntry><text>{}</text></inputEntry>\n", entry));
+                        xml.push_str(&format!(
+                            "        <inputEntry><text>{}</text></inputEntry>\n",
+                            entry
+                        ));
                     }
                     for entry in &rule.output_entries {
-                        xml.push_str(&format!("        <outputEntry><text>{}</text></outputEntry>\n", entry));
+                        xml.push_str(&format!(
+                            "        <outputEntry><text>{}</text></outputEntry>\n",
+                            entry
+                        ));
                     }
                     xml.push_str("      </rule>\n");
                 }
                 xml.push_str("    </decisionTable>\n");
-            }
+            },
             _ => {
-                xml.push_str("    <!-- Decision logic type not yet implemented in XML export -->\n");
-            }
+                xml.push_str(
+                    "    <!-- Decision logic type not yet implemented in XML export -->\n",
+                );
+            },
         }
 
         xml.push_str("  </decision>\n");

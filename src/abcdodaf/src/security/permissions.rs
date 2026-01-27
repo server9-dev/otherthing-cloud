@@ -137,10 +137,7 @@ impl ResourcePermissionModel {
 
     /// Grant permission to a subject
     pub fn grant_permission(&mut self, subject_id: impl Into<String>, action: impl Into<String>) {
-        let perms = self
-            .permissions
-            .entry(subject_id.into())
-            .or_insert_with(Vec::new);
+        let perms = self.permissions.entry(subject_id.into()).or_insert_with(Vec::new);
         let action_str = action.into();
         if !perms.contains(&action_str) {
             perms.push(action_str);
@@ -149,10 +146,7 @@ impl ResourcePermissionModel {
 
     /// Deny permission to a subject
     pub fn deny_permission(&mut self, subject_id: impl Into<String>, action: impl Into<String>) {
-        let perms = self
-            .denied_permissions
-            .entry(subject_id.into())
-            .or_insert_with(Vec::new);
+        let perms = self.denied_permissions.entry(subject_id.into()).or_insert_with(Vec::new);
         let action_str = action.into();
         if !perms.contains(&action_str) {
             perms.push(action_str);
@@ -189,10 +183,7 @@ pub struct PermissionChecker {
 impl PermissionChecker {
     /// Create a new permission checker
     pub fn new(role_manager: Arc<RoleManager>) -> Self {
-        Self {
-            role_manager,
-            resource_permissions: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { role_manager, resource_permissions: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Check if subject can perform action
@@ -304,18 +295,17 @@ impl PermissionChecker {
 
         resource_permissions.insert(
             resource_id_str.clone(),
-            ResourcePermissionModel::new(
-                resource_id_str,
-                resource_type,
-                owner_id.into(),
-            ),
+            ResourcePermissionModel::new(resource_id_str, resource_type, owner_id.into()),
         );
 
         Ok(())
     }
 
     /// Get resource permission model
-    pub async fn get_resource_model(&self, resource_id: &str) -> SecurityResult<Option<ResourcePermissionModel>> {
+    pub async fn get_resource_model(
+        &self,
+        resource_id: &str,
+    ) -> SecurityResult<Option<ResourcePermissionModel>> {
         let resource_permissions = self.resource_permissions.read().await;
         Ok(resource_permissions.get(resource_id).cloned())
     }
@@ -330,9 +320,7 @@ pub struct PermissionModel {
 impl PermissionModel {
     /// Create a new permission model
     pub fn new(role_manager: Arc<RoleManager>) -> Self {
-        Self {
-            permission_checker: Arc::new(PermissionChecker::new(role_manager)),
-        }
+        Self { permission_checker: Arc::new(PermissionChecker::new(role_manager)) }
     }
 
     /// Get the underlying permission checker
@@ -347,18 +335,10 @@ impl PermissionModel {
         resource_type: ResourceType,
         action: &str,
     ) -> SecurityResult<()> {
-        if self
-            .permission_checker
-            .can_perform(subject, resource_type, action)
-            .await?
-        {
+        if self.permission_checker.can_perform(subject, resource_type, action).await? {
             Ok(())
         } else {
-            Err(SecurityError::PermissionDenied(format!(
-                "{}:{}",
-                resource_type.as_str(),
-                action
-            )))
+            Err(SecurityError::PermissionDenied(format!("{}:{}", resource_type.as_str(), action)))
         }
     }
 
@@ -429,10 +409,7 @@ mod tests {
 
         let subject = Subject::new("user1", crate::security::rbac::SubjectType::User);
 
-        assert!(checker
-            .can_perform(&subject, ResourceType::Workflow, "read")
-            .await
-            .unwrap());
+        assert!(checker.can_perform(&subject, ResourceType::Workflow, "read").await.unwrap());
 
         assert!(!checker
             .can_perform(&subject, ResourceType::SecurityConfiguration, "read")
@@ -449,14 +426,8 @@ mod tests {
 
         let subject = Subject::new("user1", crate::security::rbac::SubjectType::User);
 
-        assert!(model
-            .verify_permission(&subject, ResourceType::Workflow, "read")
-            .await
-            .is_ok());
+        assert!(model.verify_permission(&subject, ResourceType::Workflow, "read").await.is_ok());
 
-        assert!(model
-            .verify_permission(&subject, ResourceType::Workflow, "edit")
-            .await
-            .is_err());
+        assert!(model.verify_permission(&subject, ResourceType::Workflow, "edit").await.is_err());
     }
 }

@@ -87,10 +87,7 @@ pub struct StandardsRegistry {
 impl StandardsRegistry {
     /// Create a new standards registry
     pub fn new() -> Self {
-        Self {
-            standards: HashMap::new(),
-            rule_sets: HashMap::new(),
-        }
+        Self { standards: HashMap::new(), rule_sets: HashMap::new() }
     }
 
     /// Register a standard

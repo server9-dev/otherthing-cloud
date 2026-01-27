@@ -55,10 +55,7 @@ impl Default for ValidationStatus {
 
 impl StatusBarInfo {
     pub fn new() -> Self {
-        Self {
-            zoom: 1.0,
-            ..Default::default()
-        }
+        Self { zoom: 1.0, ..Default::default() }
     }
 }
 
@@ -94,7 +91,7 @@ impl StatusBar {
                             ui.separator();
                             ui.label(
                                 RichText::new(format!("{} selected", info.selected_count))
-                                    .color(Color32::from_rgb(100, 150, 255))
+                                    .color(Color32::from_rgb(100, 150, 255)),
                             );
                         }
                     });
@@ -103,18 +100,12 @@ impl StatusBar {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         // Grid and snap indicators
                         if info.snap_enabled {
-                            ui.label(
-                                RichText::new("⊟ Snap")
-                                    .color(Color32::from_rgb(0, 200, 0))
-                            );
+                            ui.label(RichText::new("⊟ Snap").color(Color32::from_rgb(0, 200, 0)));
                             ui.separator();
                         }
 
                         if info.grid_enabled {
-                            ui.label(
-                                RichText::new("⊞ Grid")
-                                    .color(Color32::from_rgb(0, 200, 0))
-                            );
+                            ui.label(RichText::new("⊞ Grid").color(Color32::from_rgb(0, 200, 0)));
                             ui.separator();
                         }
 
@@ -131,9 +122,7 @@ impl StatusBar {
                         // File modified indicator
                         if info.is_modified {
                             ui.label(
-                                RichText::new("●")
-                                    .color(Color32::from_rgb(255, 165, 0))
-                                    .strong()
+                                RichText::new("●").color(Color32::from_rgb(255, 165, 0)).strong(),
                             )
                             .on_hover_text("File has unsaved changes");
                             ui.separator();
@@ -141,10 +130,7 @@ impl StatusBar {
 
                         // File name
                         if let Some(path) = &info.file_path {
-                            ui.label(
-                                RichText::new(path)
-                                    .color(Color32::GRAY)
-                            );
+                            ui.label(RichText::new(path).color(Color32::GRAY));
                         }
                     });
                 });
@@ -154,36 +140,28 @@ impl StatusBar {
     fn show_validation_status(ui: &mut Ui, status: &ValidationStatus) {
         match status {
             ValidationStatus::NotValidated => {
-                ui.label(
-                    RichText::new("○")
-                        .color(Color32::GRAY)
-                )
-                .on_hover_text("Not validated");
-            }
+                ui.label(RichText::new("○").color(Color32::GRAY)).on_hover_text("Not validated");
+            },
             ValidationStatus::Valid => {
-                ui.label(
-                    RichText::new("✓")
-                        .color(Color32::from_rgb(0, 200, 0))
-                        .strong()
-                )
-                .on_hover_text("Validation passed");
-            }
+                ui.label(RichText::new("✓").color(Color32::from_rgb(0, 200, 0)).strong())
+                    .on_hover_text("Validation passed");
+            },
             ValidationStatus::Warning(count) => {
                 ui.label(
                     RichText::new(format!("⚠ {}", count))
                         .color(Color32::from_rgb(255, 200, 0))
-                        .strong()
+                        .strong(),
                 )
                 .on_hover_text(format!("{} validation warnings", count));
-            }
+            },
             ValidationStatus::Error(count) => {
                 ui.label(
                     RichText::new(format!("✗ {}", count))
                         .color(Color32::from_rgb(255, 0, 0))
-                        .strong()
+                        .strong(),
                 )
                 .on_hover_text(format!("{} validation errors", count));
-            }
+            },
         }
     }
 }

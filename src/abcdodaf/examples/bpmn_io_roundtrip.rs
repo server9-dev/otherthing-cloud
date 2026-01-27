@@ -113,10 +113,7 @@ fn create_sample_diagram() -> BpmnDiagram {
                 id: "submit_task".to_string(),
                 name: Some("Submit Document".to_string()),
                 documentation: None,
-                task_type: BpmnTaskType::User {
-                    implementation: None,
-                    rendering: None,
-                },
+                task_type: BpmnTaskType::User { implementation: None, rendering: None },
                 default_flow: None,
                 io_specification: None,
                 properties: HashMap::new(),
@@ -127,10 +124,7 @@ fn create_sample_diagram() -> BpmnDiagram {
                 id: "review_task".to_string(),
                 name: Some("Review Document".to_string()),
                 documentation: None,
-                task_type: BpmnTaskType::User {
-                    implementation: None,
-                    rendering: None,
-                },
+                task_type: BpmnTaskType::User { implementation: None, rendering: None },
                 default_flow: None,
                 io_specification: None,
                 properties: HashMap::new(),
@@ -221,7 +215,9 @@ fn create_sample_diagram() -> BpmnDiagram {
     BpmnDiagram {
         id: "sample_diagram".to_string(),
         name: Some("Sample Approval Diagram".to_string()),
-        documentation: Some("A sample BPMN diagram demonstrating round-trip capability".to_string()),
+        documentation: Some(
+            "A sample BPMN diagram demonstrating round-trip capability".to_string(),
+        ),
         processes: vec![process],
         collaborations: vec![],
         data_stores: vec![],

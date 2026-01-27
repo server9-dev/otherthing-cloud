@@ -93,10 +93,8 @@ mod tests {
 
     #[test]
     fn test_type_mismatch_error() {
-        let err = DmnError::TypeMismatch {
-            expected: "String".to_string(),
-            actual: "Number".to_string(),
-        };
+        let err =
+            DmnError::TypeMismatch { expected: "String".to_string(), actual: "Number".to_string() };
         assert!(err.to_string().contains("Type mismatch"));
         assert!(err.to_string().contains("String"));
         assert!(err.to_string().contains("Number"));

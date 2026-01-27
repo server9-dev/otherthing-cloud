@@ -115,10 +115,7 @@ pub struct AuditLogExport {
 impl AuditLogExport {
     /// Create new export
     pub fn new(metadata: ExportMetadata) -> Self {
-        Self {
-            metadata,
-            events: Vec::new(),
-        }
+        Self { metadata, events: Vec::new() }
     }
 
     /// Add an event
@@ -189,7 +186,9 @@ impl AuditEventExport {
 
             // Redact details that might contain sensitive data
             for (key, value) in result.details.iter_mut() {
-                if key.contains("password") || key.contains("secret") || key.contains("key")
+                if key.contains("password")
+                    || key.contains("secret")
+                    || key.contains("key")
                     || key.contains("token")
                 {
                     *value = "[REDACTED]".to_string();
@@ -225,11 +224,8 @@ impl AuditExporter {
 
     /// Export events to JSON lines format (one event per line)
     pub fn to_jsonlines(export: &AuditLogExport) -> SecurityResult<String> {
-        let lines: Vec<String> = export
-            .events
-            .iter()
-            .filter_map(|e| serde_json::to_string(e).ok())
-            .collect();
+        let lines: Vec<String> =
+            export.events.iter().filter_map(|e| serde_json::to_string(e).ok()).collect();
 
         Ok(lines.join("\n"))
     }
@@ -279,44 +275,26 @@ impl AuditExporter {
             "    <exported_at>{}</exported_at>\n",
             escape_xml(&export.metadata.exported_at.to_string())
         ));
-        xml.push_str(&format!(
-            "    <event_count>{}</event_count>\n",
-            export.metadata.event_count
-        ));
+        xml.push_str(&format!("    <event_count>{}</event_count>\n", export.metadata.event_count));
         xml.push_str("  </metadata>\n");
 
         // Events
         xml.push_str("  <events>\n");
         for event in &export.events {
             xml.push_str("    <event>\n");
-            xml.push_str(&format!(
-                "      <event_id>{}</event_id>\n",
-                escape_xml(&event.event_id)
-            ));
+            xml.push_str(&format!("      <event_id>{}</event_id>\n", escape_xml(&event.event_id)));
             xml.push_str(&format!(
                 "      <timestamp>{}</timestamp>\n",
                 escape_xml(&event.timestamp.to_string())
             ));
-            xml.push_str(&format!(
-                "      <level>{}</level>\n",
-                escape_xml(&event.level)
-            ));
-            xml.push_str(&format!(
-                "      <category>{}</category>\n",
-                escape_xml(&event.category)
-            ));
+            xml.push_str(&format!("      <level>{}</level>\n", escape_xml(&event.level)));
+            xml.push_str(&format!("      <category>{}</category>\n", escape_xml(&event.category)));
             xml.push_str(&format!(
                 "      <subject_id>{}</subject_id>\n",
                 escape_xml(&event.subject_id)
             ));
-            xml.push_str(&format!(
-                "      <action>{}</action>\n",
-                escape_xml(&event.action)
-            ));
-            xml.push_str(&format!(
-                "      <result>{}</result>\n",
-                escape_xml(&event.result)
-            ));
+            xml.push_str(&format!("      <action>{}</action>\n", escape_xml(&event.action)));
+            xml.push_str(&format!("      <result>{}</result>\n", escape_xml(&event.result)));
             xml.push_str("    </event>\n");
         }
         xml.push_str("  </events>\n");

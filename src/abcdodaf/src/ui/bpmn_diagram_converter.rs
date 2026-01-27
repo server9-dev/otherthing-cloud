@@ -586,16 +586,21 @@ impl BpmnDiagramConverter {
                     });
                 }
                 BpmnNodeType::Subprocess(n) => {
-                    process.subprocesses.push(Subprocess {
+                    // For embedded subprocesses, we currently don't preserve the nested process
+                    // structure in the Snarl format. Future enhancement could store nested
+                    // processes separately or use a hierarchical node structure.
+                    // For now, subprocesses are treated as collapsed/referenced.
+                    let subprocess = Subprocess {
                         id: node.id.clone(),
                         name: Some(n.name.clone()),
                         documentation: n.documentation.clone(),
                         subprocess_type: n.subprocess_type.clone(),
-                        triggered_by_event: false,
-                        process: None, // TODO: Handle embedded subprocesses
-                        called_element: None,
+                        triggered_by_event: n.subprocess_type == SubprocessType::EventSubprocess,
+                        process: None, // Embedded processes not preserved in flat Snarl structure
+                        called_element: None, // Could be set for Call Activities
                         loop_characteristics: n.loop_characteristics.clone(),
-                    });
+                    };
+                    process.subprocesses.push(subprocess);
                 }
                 BpmnNodeType::Gateway(n) => {
                     process.gateways.push(BpmnGateway {

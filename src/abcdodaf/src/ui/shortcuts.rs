@@ -186,10 +186,7 @@ pub struct ShortcutManager {
 
 impl ShortcutManager {
     pub fn new() -> Self {
-        let mut manager = Self {
-            bindings: HashMap::new(),
-            reverse_bindings: HashMap::new(),
-        };
+        let mut manager = Self { bindings: HashMap::new(), reverse_bindings: HashMap::new() };
 
         manager.load_default_bindings();
         manager
@@ -290,7 +287,9 @@ impl ShortcutManager {
     /// Check if a shortcut is pressed without consuming it
     pub fn check_pressed(&self, ctx: &Context, action: EditorAction) -> bool {
         if let Some(shortcut) = self.get_shortcut(action) {
-            ctx.input(|i| i.modifiers.matches_exact(shortcut.modifiers) && i.key_pressed(shortcut.logical_key))
+            ctx.input(|i| {
+                i.modifiers.matches_exact(shortcut.modifiers) && i.key_pressed(shortcut.logical_key)
+            })
         } else {
             false
         }
@@ -343,61 +342,73 @@ pub fn show_shortcut_help(ui: &mut egui::Ui, manager: &ShortcutManager) {
 
     // Group actions by category
     let categories = vec![
-        ("File Operations", vec![
-            EditorAction::NewFile,
-            EditorAction::OpenFile,
-            EditorAction::Save,
-            EditorAction::SaveAs,
-            EditorAction::CloseFile,
-        ]),
-        ("Edit Operations", vec![
-            EditorAction::Undo,
-            EditorAction::Redo,
-            EditorAction::Cut,
-            EditorAction::Copy,
-            EditorAction::Paste,
-            EditorAction::Delete,
-            EditorAction::SelectAll,
-            EditorAction::DuplicateSelection,
-        ]),
-        ("View Operations", vec![
-            EditorAction::ZoomIn,
-            EditorAction::ZoomOut,
-            EditorAction::ZoomReset,
-            EditorAction::ZoomFit,
-            EditorAction::ToggleMinimap,
-            EditorAction::ToggleGrid,
-            EditorAction::ToggleSnapping,
-        ]),
-        ("Search & Validation", vec![
-            EditorAction::Find,
-            EditorAction::FindNext,
-            EditorAction::Replace,
-            EditorAction::Validate,
-        ]),
-        ("Panels", vec![
-            EditorAction::ToggleProperties,
-            EditorAction::ToggleFileBrowser,
-            EditorAction::ToggleValidationPanel,
-        ]),
+        (
+            "File Operations",
+            vec![
+                EditorAction::NewFile,
+                EditorAction::OpenFile,
+                EditorAction::Save,
+                EditorAction::SaveAs,
+                EditorAction::CloseFile,
+            ],
+        ),
+        (
+            "Edit Operations",
+            vec![
+                EditorAction::Undo,
+                EditorAction::Redo,
+                EditorAction::Cut,
+                EditorAction::Copy,
+                EditorAction::Paste,
+                EditorAction::Delete,
+                EditorAction::SelectAll,
+                EditorAction::DuplicateSelection,
+            ],
+        ),
+        (
+            "View Operations",
+            vec![
+                EditorAction::ZoomIn,
+                EditorAction::ZoomOut,
+                EditorAction::ZoomReset,
+                EditorAction::ZoomFit,
+                EditorAction::ToggleMinimap,
+                EditorAction::ToggleGrid,
+                EditorAction::ToggleSnapping,
+            ],
+        ),
+        (
+            "Search & Validation",
+            vec![
+                EditorAction::Find,
+                EditorAction::FindNext,
+                EditorAction::Replace,
+                EditorAction::Validate,
+            ],
+        ),
+        (
+            "Panels",
+            vec![
+                EditorAction::ToggleProperties,
+                EditorAction::ToggleFileBrowser,
+                EditorAction::ToggleValidationPanel,
+            ],
+        ),
     ];
 
     for (category, actions) in categories {
         ui.collapsing(category, |ui| {
-            egui::Grid::new(category)
-                .num_columns(2)
-                .striped(true)
-                .show(ui, |ui| {
-                    for action in actions {
-                        ui.label(action.name());
-                        if let Some(shortcut_str) = manager.format_shortcut(action) {
-                            ui.label(egui::RichText::new(shortcut_str).monospace());
-                        } else {
-                            ui.label("-");
-                        }
-                        ui.end_row();
+            egui::Grid::new(category).num_columns(2).striped(true).show(ui, |ui| {
+                for action in actions {
+                    ui.label(action.name());
+                    if let Some(shortcut_str) = manager.format_shortcut(action) {
+                        ui.label(egui::RichText::new(shortcut_str).monospace());
+                    } else {
+                        ui.label("-");
                     }
-                });
+                    ui.end_row();
+                }
+            });
         });
     }
 }

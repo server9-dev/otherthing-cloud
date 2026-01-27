@@ -166,7 +166,11 @@ impl CapabilityVision {
 
 impl StrategicObjective {
     /// Create a new strategic objective
-    pub fn new(id: impl Into<String>, name: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -191,11 +195,7 @@ impl StrategicObjective {
 
 impl CapabilityIncrement {
     /// Create a new capability increment
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        start_date: DateTime<Utc>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, start_date: DateTime<Utc>) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -235,17 +235,17 @@ impl CapabilityIncrement {
 
 impl Default for TimeFrame {
     fn default() -> Self {
-        Self {
-            near_term: None,
-            mid_term: None,
-            far_term: None,
-        }
+        Self { near_term: None, mid_term: None, far_term: None }
     }
 }
 
 impl TimeFrame {
     /// Create a timeframe with all periods
-    pub fn with_all(near: impl Into<String>, mid: impl Into<String>, far: impl Into<String>) -> Self {
+    pub fn with_all(
+        near: impl Into<String>,
+        mid: impl Into<String>,
+        far: impl Into<String>,
+    ) -> Self {
         Self {
             near_term: Some(near.into()),
             mid_term: Some(mid.into()),
@@ -291,21 +291,13 @@ mod tests {
 
     #[test]
     fn test_vision_with_objectives() {
-        let obj1 = StrategicObjective::new(
-            "obj_1",
-            "System Integration",
-            "Integrate disparate systems",
-        )
-        .with_priority(1)
-        .add_measure("Integration success rate");
+        let obj1 =
+            StrategicObjective::new("obj_1", "System Integration", "Integrate disparate systems")
+                .with_priority(1)
+                .add_measure("Integration success rate");
 
-        let vision = CapabilityVision::new(
-            "cv1_1",
-            "Vision",
-            "Test",
-            "Test vision",
-        )
-        .add_objective(obj1);
+        let vision =
+            CapabilityVision::new("cv1_1", "Vision", "Test", "Test vision").add_objective(obj1);
 
         assert_eq!(vision.strategic_objectives.len(), 1);
         assert_eq!(vision.strategic_objectives[0].priority, 1);

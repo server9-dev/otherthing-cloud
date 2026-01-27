@@ -2,10 +2,9 @@
 //!
 //! Real-time event streaming from executor to clients using PostgreSQL LISTEN/NOTIFY
 
-use crate::executor::database::{ExecutionLog, DatabaseManager};
 use crate::error::Result;
+use crate::executor::database::DatabaseManager;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::PgListener;
 use sqlx::types::Uuid;
 use tokio::sync::broadcast;
 
@@ -59,7 +58,7 @@ pub enum StreamEvent {
     WorkflowUpdate {
         workflow_id: Uuid,
         workflow_name: String,
-        update_type: String,  // "created", "updated", "deleted"
+        update_type: String, // "created", "updated", "deleted"
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 
@@ -105,10 +104,7 @@ impl EventStream {
     /// Create a new event stream
     pub fn new(db: DatabaseManager, buffer_size: usize) -> Self {
         let (tx, _) = broadcast::channel(buffer_size);
-        Self {
-            db,
-            broadcast_tx: tx,
-        }
+        Self { db, broadcast_tx: tx }
     }
 
     /// Start listening to PostgreSQL notifications
@@ -134,42 +130,58 @@ impl EventStream {
                         // Parse notification and broadcast event
                         match channel {
                             "execution_status_change" => {
-                                if let Ok(data) = serde_json::from_str::<serde_json::Value>(payload) {
-                                    let event = StreamEvent::ExecutionStatusChange {
-                                        execution_id: Uuid::parse_str(
-                                            data["execution_id"].as_str().unwrap_or("")
-                                        ).unwrap_or_default(),
-                                        workflow_id: Uuid::parse_str(
-                                            data["workflow_id"].as_str().unwrap_or("")
-                                        ).unwrap_or_default(),
-                                        status: data["status"].as_str().unwrap_or("").to_string(),
-                                        timestamp: chrono::Utc::now(),
-                                    };
-                                    let _ = tx.send(event);
+                                if let Ok(data) = serde_json::from_str::<serde_json::Value>(payload)
+                                {
+                                    // Parse UUIDs with proper error handling
+                                    let execution_id = data["execution_id"]
+                                        .as_str()
+                                        .and_then(|s| Uuid::parse_str(s).ok());
+                                    let workflow_id = data["workflow_id"]
+                                        .as_str()
+                                        .and_then(|s| Uuid::parse_str(s).ok());
+
+                                    if let (Some(execution_id), Some(workflow_id)) = (execution_id, workflow_id) {
+                                        let event = StreamEvent::ExecutionStatusChange {
+                                            execution_id,
+                                            workflow_id,
+                                            status: data["status"].as_str().unwrap_or("unknown").to_string(),
+                                            timestamp: chrono::Utc::now(),
+                                        };
+                                        let _ = tx.send(event);
+                                    } else {
+                                        eprintln!("Invalid UUID in execution_status_change notification: {:?}", data);
+                                    }
                                 }
-                            }
+                            },
                             "execution_log" => {
-                                if let Ok(data) = serde_json::from_str::<serde_json::Value>(payload) {
-                                    let event = StreamEvent::ExecutionLog {
-                                        execution_id: Uuid::parse_str(
-                                            data["execution_id"].as_str().unwrap_or("")
-                                        ).unwrap_or_default(),
-                                        level: data["level"].as_str().unwrap_or("").to_string(),
-                                        source: data["source"].as_str().map(|s| s.to_string()),
-                                        message: data["message"].as_str().unwrap_or("").to_string(),
-                                        timestamp: chrono::Utc::now(),
-                                        context: data.get("context").cloned(),
-                                    };
-                                    let _ = tx.send(event);
+                                if let Ok(data) = serde_json::from_str::<serde_json::Value>(payload)
+                                {
+                                    // Parse execution_id with proper error handling
+                                    if let Some(execution_id) = data["execution_id"]
+                                        .as_str()
+                                        .and_then(|s| Uuid::parse_str(s).ok())
+                                    {
+                                        let event = StreamEvent::ExecutionLog {
+                                            execution_id,
+                                            level: data["level"].as_str().unwrap_or("info").to_string(),
+                                            source: data["source"].as_str().map(|s| s.to_string()),
+                                            message: data["message"].as_str().unwrap_or("").to_string(),
+                                            timestamp: chrono::Utc::now(),
+                                            context: data.get("context").cloned(),
+                                        };
+                                        let _ = tx.send(event);
+                                    } else {
+                                        eprintln!("Invalid execution_id in execution_log notification: {:?}", data);
+                                    }
                                 }
-                            }
-                            _ => {}
+                            },
+                            _ => {},
                         }
-                    }
+                    },
                     Err(e) => {
                         eprintln!("Error receiving notification: {:?}", e);
                         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                    }
+                    },
                 }
             }
         });
@@ -178,14 +190,15 @@ impl EventStream {
     }
 
     /// Subscribe to events with filter
-    pub fn subscribe(&self, _filter: EventSubscription) -> broadcast::Receiver<StreamEvent> {
-        // TODO: Implement filtering logic
-        self.broadcast_tx.subscribe()
+    pub fn subscribe(&self, filter: EventSubscription) -> FilteredReceiver {
+        let receiver = self.broadcast_tx.subscribe();
+        FilteredReceiver { receiver, filter }
     }
 
     /// Manually broadcast an event
     pub fn broadcast(&self, event: StreamEvent) -> Result<()> {
-        self.broadcast_tx.send(event)
+        self.broadcast_tx
+            .send(event)
             .map_err(|e| crate::error::AbcdodafError::Other(anyhow::anyhow!(e)))?;
         Ok(())
     }
@@ -193,6 +206,126 @@ impl EventStream {
     /// Get number of active subscribers
     pub fn subscriber_count(&self) -> usize {
         self.broadcast_tx.receiver_count()
+    }
+}
+
+/// Filtered event receiver
+pub struct FilteredReceiver {
+    receiver: broadcast::Receiver<StreamEvent>,
+    filter: EventSubscription,
+}
+
+impl FilteredReceiver {
+    /// Receive next event that matches the filter
+    pub async fn recv(&mut self) -> Result<StreamEvent> {
+        loop {
+            let event = self
+                .receiver
+                .recv()
+                .await
+                .map_err(|e| crate::error::AbcdodafError::Other(anyhow::anyhow!(e)))?;
+
+            if self.matches_filter(&event) {
+                return Ok(event);
+            }
+            // Skip events that don't match filter
+        }
+    }
+
+    /// Check if event matches the subscription filter
+    fn matches_filter(&self, event: &StreamEvent) -> bool {
+        // Check event type filter
+        let event_type = match event {
+            StreamEvent::ExecutionStatusChange { .. } => EventType::ExecutionStatus,
+            StreamEvent::ExecutionLog { .. } => EventType::ExecutionLog,
+            StreamEvent::ConnectionHealth { .. } => EventType::ConnectionHealth,
+            StreamEvent::WorkflowUpdate { .. } => EventType::WorkflowUpdate,
+            StreamEvent::ComplianceUpdate { .. } => EventType::ComplianceUpdate,
+        };
+
+        if !self.filter.event_types.contains(&event_type) {
+            return false;
+        }
+
+        // Check workflow filter
+        if let Some(workflow_id) = &self.filter.workflow_filter {
+            match event {
+                StreamEvent::ExecutionStatusChange {
+                    workflow_id: event_workflow_id,
+                    ..
+                } => {
+                    if event_workflow_id != workflow_id {
+                        return false;
+                    }
+                }
+                StreamEvent::WorkflowUpdate {
+                    workflow_id: event_workflow_id,
+                    ..
+                } => {
+                    if event_workflow_id != workflow_id {
+                        return false;
+                    }
+                }
+                StreamEvent::ComplianceUpdate {
+                    workflow_id: event_workflow_id,
+                    ..
+                } => {
+                    if event_workflow_id != workflow_id {
+                        return false;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Check execution filter
+        if let Some(execution_id) = &self.filter.execution_filter {
+            match event {
+                StreamEvent::ExecutionStatusChange {
+                    execution_id: event_execution_id,
+                    ..
+                } => {
+                    if event_execution_id != execution_id {
+                        return false;
+                    }
+                }
+                StreamEvent::ExecutionLog {
+                    execution_id: event_execution_id,
+                    ..
+                } => {
+                    if event_execution_id != execution_id {
+                        return false;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Check log level filter
+        if let Some(ref log_level) = self.filter.log_level_filter {
+            if let StreamEvent::ExecutionLog { level, .. } = event {
+                if level != log_level {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Try to receive next event without blocking
+    pub fn try_recv(&mut self) -> Result<StreamEvent> {
+        loop {
+            let event = self
+                .receiver
+                .try_recv()
+                .map_err(|e| crate::error::AbcdodafError::Other(anyhow::anyhow!(e)))?;
+
+            if self.matches_filter(&event) {
+                return Ok(event);
+            }
+            // Skip events that don't match filter
+        }
     }
 }
 

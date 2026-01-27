@@ -2,13 +2,12 @@
 //!
 //! Monitors health of all backend connections (PostgreSQL, PGVector, Qdrant, MCP)
 
-use crate::executor::database::{ConnectionHealth, DatabaseManager};
-use crate::integration::connectors::*;
 use crate::error::Result;
+use crate::executor::database::{ConnectionHealth, DatabaseManager};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
 
 /// Health monitor for backend connections
 pub struct HealthMonitor {
@@ -19,10 +18,7 @@ pub struct HealthMonitor {
 impl HealthMonitor {
     /// Create a new health monitor
     pub fn new(db: DatabaseManager) -> Self {
-        Self {
-            db,
-            connections: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { db, connections: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Start health monitoring loop
@@ -55,7 +51,10 @@ impl HealthMonitor {
     }
 
     /// Check PostgreSQL connection
-    async fn check_postgres(db: &DatabaseManager, connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>) {
+    async fn check_postgres(
+        db: &DatabaseManager,
+        connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>,
+    ) {
         let start = std::time::Instant::now();
 
         let status = match sqlx::query("SELECT 1").fetch_one(db.pool()).await {
@@ -103,38 +102,42 @@ impl HealthMonitor {
     }
 
     /// Check PGVector extension
-    async fn check_pgvector(db: &DatabaseManager, connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>) {
+    async fn check_pgvector(
+        db: &DatabaseManager,
+        connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>,
+    ) {
         let start = std::time::Instant::now();
 
-        let status = match sqlx::query("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
-            .fetch_optional(db.pool())
-            .await
-        {
-            Ok(Some(_)) => ConnectionStatus {
-                connection_type: "pgvector".to_string(),
-                connection_name: "extension".to_string(),
-                status: "connected".to_string(),
-                response_time_ms: start.elapsed().as_millis() as i32,
-                error_message: None,
-                last_check: chrono::Utc::now(),
-            },
-            Ok(None) => ConnectionStatus {
-                connection_type: "pgvector".to_string(),
-                connection_name: "extension".to_string(),
-                status: "disconnected".to_string(),
-                response_time_ms: 0,
-                error_message: Some("PGVector extension not installed".to_string()),
-                last_check: chrono::Utc::now(),
-            },
-            Err(e) => ConnectionStatus {
-                connection_type: "pgvector".to_string(),
-                connection_name: "extension".to_string(),
-                status: "error".to_string(),
-                response_time_ms: 0,
-                error_message: Some(e.to_string()),
-                last_check: chrono::Utc::now(),
-            },
-        };
+        let status =
+            match sqlx::query("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+                .fetch_optional(db.pool())
+                .await
+            {
+                Ok(Some(_)) => ConnectionStatus {
+                    connection_type: "pgvector".to_string(),
+                    connection_name: "extension".to_string(),
+                    status: "connected".to_string(),
+                    response_time_ms: start.elapsed().as_millis() as i32,
+                    error_message: None,
+                    last_check: chrono::Utc::now(),
+                },
+                Ok(None) => ConnectionStatus {
+                    connection_type: "pgvector".to_string(),
+                    connection_name: "extension".to_string(),
+                    status: "disconnected".to_string(),
+                    response_time_ms: 0,
+                    error_message: Some("PGVector extension not installed".to_string()),
+                    last_check: chrono::Utc::now(),
+                },
+                Err(e) => ConnectionStatus {
+                    connection_type: "pgvector".to_string(),
+                    connection_name: "extension".to_string(),
+                    status: "error".to_string(),
+                    response_time_ms: 0,
+                    error_message: Some(e.to_string()),
+                    last_check: chrono::Utc::now(),
+                },
+            };
 
         let health = ConnectionHealth {
             id: None,
@@ -160,20 +163,224 @@ impl HealthMonitor {
     }
 
     /// Check Qdrant connection
-    async fn check_qdrant(_db: &DatabaseManager, _connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>) {
-        // TODO: Implement Qdrant health check
-        // This would require Qdrant client configuration from environment
+    async fn check_qdrant(
+        db: &DatabaseManager,
+        connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>,
+    ) {
+        let start = std::time::Instant::now();
+
+        // Get Qdrant URL from environment or config
+        let qdrant_url = match std::env::var("QDRANT_URL") {
+            Ok(url) => url,
+            Err(_) => {
+                // No Qdrant configured, skip check
+                return;
+            }
+        };
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build();
+
+        let status = match client {
+            Ok(client) => {
+                let health_url = format!("{}/healthz", qdrant_url.trim_end_matches('/'));
+                match client.get(&health_url).send().await {
+                    Ok(response) if response.status().is_success() => ConnectionStatus {
+                        connection_type: "qdrant".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "connected".to_string(),
+                        response_time_ms: start.elapsed().as_millis() as i32,
+                        error_message: None,
+                        last_check: chrono::Utc::now(),
+                    },
+                    Ok(response) => ConnectionStatus {
+                        connection_type: "qdrant".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "error".to_string(),
+                        response_time_ms: start.elapsed().as_millis() as i32,
+                        error_message: Some(format!("HTTP {}", response.status())),
+                        last_check: chrono::Utc::now(),
+                    },
+                    Err(e) => ConnectionStatus {
+                        connection_type: "qdrant".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "error".to_string(),
+                        response_time_ms: 0,
+                        error_message: Some(e.to_string()),
+                        last_check: chrono::Utc::now(),
+                    },
+                }
+            }
+            Err(e) => ConnectionStatus {
+                connection_type: "qdrant".to_string(),
+                connection_name: "main".to_string(),
+                status: "error".to_string(),
+                response_time_ms: 0,
+                error_message: Some(e.to_string()),
+                last_check: chrono::Utc::now(),
+            },
+        };
+
+        let health = ConnectionHealth {
+            id: None,
+            connection_type: status.connection_type.clone(),
+            connection_name: status.connection_name.clone(),
+            host: Some(qdrant_url),
+            port: None,
+            status: status.status.clone(),
+            last_check_at: status.last_check,
+            last_success_at: if status.status == "connected" {
+                Some(status.last_check)
+            } else {
+                None
+            },
+            error_message: status.error_message.clone(),
+            metadata: None,
+        };
+
+        let _ = db.update_connection_health(&health).await;
+
+        let mut conns = connections.write().await;
+        conns.insert("qdrant:main".to_string(), status);
     }
 
     /// Check MCP servers
-    async fn check_mcp_servers(_db: &DatabaseManager, _connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>) {
-        // TODO: Implement MCP server health checks
-        // This would iterate through configured MCP servers
+    async fn check_mcp_servers(
+        db: &DatabaseManager,
+        connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>,
+    ) {
+        // Get MCP server configurations from environment
+        // Format: MCP_SERVERS=server1:command1:arg1,arg2;server2:command2:arg3
+        let mcp_config = match std::env::var("MCP_SERVERS") {
+            Ok(config) => config,
+            Err(_) => {
+                // No MCP servers configured, skip check
+                return;
+            }
+        };
+
+        for server_config in mcp_config.split(';') {
+            if server_config.trim().is_empty() {
+                continue;
+            }
+
+            let parts: Vec<&str> = server_config.split(':').collect();
+            if parts.is_empty() {
+                continue;
+            }
+
+            let server_name = parts[0].trim();
+            let start = std::time::Instant::now();
+
+            // For MCP servers, we check if the process is responsive
+            // In a full implementation, this would use the MCP protocol
+            let status = ConnectionStatus {
+                connection_type: "mcp".to_string(),
+                connection_name: server_name.to_string(),
+                status: "disconnected".to_string(),
+                response_time_ms: start.elapsed().as_millis() as i32,
+                error_message: Some("MCP health check not fully implemented".to_string()),
+                last_check: chrono::Utc::now(),
+            };
+
+            let health = ConnectionHealth {
+                id: None,
+                connection_type: status.connection_type.clone(),
+                connection_name: status.connection_name.clone(),
+                host: None,
+                port: None,
+                status: status.status.clone(),
+                last_check_at: status.last_check,
+                last_success_at: None,
+                error_message: status.error_message.clone(),
+                metadata: None,
+            };
+
+            let _ = db.update_connection_health(&health).await;
+
+            let mut conns = connections.write().await;
+            conns.insert(format!("mcp:{}", server_name), status);
+        }
     }
 
     /// Check Ollama connection
-    async fn check_ollama(_db: &DatabaseManager, _connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>) {
-        // TODO: Implement Ollama health check using ai::OllamaClient
+    async fn check_ollama(
+        db: &DatabaseManager,
+        connections: &Arc<RwLock<HashMap<String, ConnectionStatus>>>,
+    ) {
+        let start = std::time::Instant::now();
+
+        // Get Ollama URL from environment or use default
+        let ollama_url = std::env::var("OLLAMA_URL")
+            .unwrap_or_else(|_| "http://localhost:11434".to_string());
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build();
+
+        let status = match client {
+            Ok(client) => {
+                // Ollama health check endpoint
+                let health_url = format!("{}/api/tags", ollama_url.trim_end_matches('/'));
+                match client.get(&health_url).send().await {
+                    Ok(response) if response.status().is_success() => ConnectionStatus {
+                        connection_type: "ollama".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "connected".to_string(),
+                        response_time_ms: start.elapsed().as_millis() as i32,
+                        error_message: None,
+                        last_check: chrono::Utc::now(),
+                    },
+                    Ok(response) => ConnectionStatus {
+                        connection_type: "ollama".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "error".to_string(),
+                        response_time_ms: start.elapsed().as_millis() as i32,
+                        error_message: Some(format!("HTTP {}", response.status())),
+                        last_check: chrono::Utc::now(),
+                    },
+                    Err(e) => ConnectionStatus {
+                        connection_type: "ollama".to_string(),
+                        connection_name: "main".to_string(),
+                        status: "disconnected".to_string(),
+                        response_time_ms: 0,
+                        error_message: Some(e.to_string()),
+                        last_check: chrono::Utc::now(),
+                    },
+                }
+            }
+            Err(e) => ConnectionStatus {
+                connection_type: "ollama".to_string(),
+                connection_name: "main".to_string(),
+                status: "error".to_string(),
+                response_time_ms: 0,
+                error_message: Some(e.to_string()),
+                last_check: chrono::Utc::now(),
+            },
+        };
+
+        let health = ConnectionHealth {
+            id: None,
+            connection_type: status.connection_type.clone(),
+            connection_name: status.connection_name.clone(),
+            host: Some(ollama_url),
+            port: None,
+            status: status.status.clone(),
+            last_check_at: status.last_check,
+            last_success_at: if status.status == "connected" {
+                Some(status.last_check)
+            } else {
+                None
+            },
+            error_message: status.error_message.clone(),
+            metadata: None,
+        };
+
+        let _ = db.update_connection_health(&health).await;
+
+        let mut conns = connections.write().await;
+        conns.insert("ollama:main".to_string(), status);
     }
 
     /// Get current connection statuses
@@ -190,11 +397,8 @@ impl HealthMonitor {
         let error = statuses.values().filter(|s| s.status == "error").count();
         let disconnected = statuses.values().filter(|s| s.status == "disconnected").count();
 
-        let health_percentage = if total > 0 {
-            (connected as f64 / total as f64) * 100.0
-        } else {
-            0.0
-        };
+        let health_percentage =
+            if total > 0 { (connected as f64 / total as f64) * 100.0 } else { 0.0 };
 
         OverallHealth {
             total_connections: total,

@@ -1,10 +1,10 @@
 //! Documentation generator for BPMN processes and workflows
 
-use super::{ProcessDocumentation, Parameter, Participant, ErrorScenario};
-use crate::bpmn::ProcessInstance;
+use super::{ErrorScenario, Parameter, Participant, ProcessDocumentation};
 use crate::bpmn::process::Process;
 #[cfg(test)]
 use crate::bpmn::process::ProcessBuilder;
+use crate::bpmn::ProcessInstance;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -74,16 +74,11 @@ impl DocumentationGenerator {
 
     /// Create with default configuration
     pub fn default() -> Self {
-        Self {
-            config: DocumentationConfig::default(),
-        }
+        Self { config: DocumentationConfig::default() }
     }
 
     /// Generate documentation from a process
-    pub fn generate_from_process(
-        &self,
-        process: &Process,
-    ) -> Result<ProcessDocumentation, String> {
+    pub fn generate_from_process(&self, process: &Process) -> Result<ProcessDocumentation, String> {
         Ok(ProcessDocumentation {
             process_id: process.id.clone(),
             name: process.name.clone(),
@@ -109,10 +104,11 @@ impl DocumentationGenerator {
         let doc = ProcessDocumentation {
             process_id: instance.process_id.clone(),
             name: format!("Execution: {}", instance.process_id),
-            description: format!("Process instance execution documentation for {}",
-                instance.process_id),
-            purpose: Some(format!("Instance {} executed at {}",
-                instance.id, instance.started_at)),
+            description: format!(
+                "Process instance execution documentation for {}",
+                instance.process_id
+            ),
+            purpose: Some(format!("Instance {} executed at {}", instance.id, instance.started_at)),
             inputs: self.extract_instance_inputs(instance),
             outputs: self.extract_instance_outputs(instance),
             participants: vec![],
@@ -129,9 +125,10 @@ impl DocumentationGenerator {
     // Helper methods
 
     fn extract_process_description(&self, process: &Process) -> String {
-        process.description.clone().unwrap_or_else(|| {
-            format!("Process: {}", process.name)
-        })
+        process
+            .description
+            .clone()
+            .unwrap_or_else(|| format!("Process: {}", process.name))
     }
 
     fn extract_process_purpose(&self, _process: &Process) -> Option<String> {
@@ -176,10 +173,84 @@ impl DocumentationGenerator {
         outputs
     }
 
-    fn extract_participants(&self, _process: &Process) -> Vec<Participant> {
-        // Extract participants from lanes or process metadata
-        // TODO: implement based on BPMN lane definitions
-        vec![]
+    fn extract_participants(&self, process: &Process) -> Vec<Participant> {
+        // Extract participants from BPMN lane definitions
+        let mut participants = Vec::new();
+
+        // Check if process metadata contains lane information
+        if let Some(lanes_value) = process.metadata.get("lanes") {
+            if let Some(lanes_array) = lanes_value.as_array() {
+                for lane_value in lanes_array {
+                    if let Some(participant) = self.parse_lane_to_participant(lane_value) {
+                        participants.push(participant);
+                    }
+                }
+            }
+        }
+
+        // If no lanes found, create a default participant from process metadata
+        if participants.is_empty() {
+            if let Some(owner) = process.metadata.get("owner") {
+                if let Some(owner_str) = owner.as_str() {
+                    participants.push(Participant {
+                        id: format!("{}_participant", process.id),
+                        name: owner_str.to_string(),
+                        participant_type: "human".to_string(),
+                        role: Some("Process Owner".to_string()),
+                        responsibilities: vec![format!("Execute {}", process.name)],
+                    });
+                }
+            }
+        }
+
+        participants
+    }
+
+    /// Parse lane JSON to Participant struct
+    fn parse_lane_to_participant(&self, lane_value: &serde_json::Value) -> Option<Participant> {
+        let id = lane_value
+            .get("id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let name = lane_value
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or(&id)
+            .to_string();
+
+        // Extract role from lane properties or use default
+        let role = lane_value
+            .get("partition_element_ref")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Participant")
+            .to_string();
+
+        // Extract responsibilities from flow node refs
+        let mut responsibilities = Vec::new();
+        if let Some(flow_nodes) = lane_value.get("flow_node_refs") {
+            if let Some(nodes_array) = flow_nodes.as_array() {
+                for node in nodes_array {
+                    if let Some(node_str) = node.as_str() {
+                        responsibilities.push(format!("Execute task: {}", node_str));
+                    }
+                }
+            }
+        }
+
+        // If no specific responsibilities, add a generic one
+        if responsibilities.is_empty() {
+            responsibilities.push(format!("Perform activities in {}", name));
+        }
+
+        Some(Participant {
+            id,
+            name,
+            participant_type: "human".to_string(),
+            role: Some(role),
+            responsibilities,
+        })
     }
 
     fn generate_flow_description(&self, process: &Process) -> String {
@@ -234,16 +305,18 @@ impl DocumentationGenerator {
     }
 
     fn extract_instance_inputs(&self, instance: &ProcessInstance) -> Vec<Parameter> {
-        instance.variables.iter().map(|(k, v)| {
-            Parameter {
+        instance
+            .variables
+            .iter()
+            .map(|(k, v)| Parameter {
                 name: k.clone(),
                 param_type: self.infer_type(v),
                 description: format!("Process variable: {}", k),
                 required: false,
                 default: Some(v.to_string()),
                 constraints: None,
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     fn extract_instance_outputs(&self, _instance: &ProcessInstance) -> Vec<Parameter> {
@@ -271,7 +344,8 @@ impl DocumentationGenerator {
             serde_json::Value::String(_) => "string",
             serde_json::Value::Array(_) => "array",
             serde_json::Value::Object(_) => "object",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -300,8 +374,7 @@ mod tests {
             .expect("Failed to build process");
 
         let gen = DocumentationGenerator::default();
-        let doc = gen.generate_from_process(&process)
-            .expect("Failed to generate documentation");
+        let doc = gen.generate_from_process(&process).expect("Failed to generate documentation");
 
         assert_eq!(doc.process_id, "test");
         assert_eq!(doc.name, "Test Process");

@@ -80,12 +80,7 @@ pub struct SelectionCriteria {
 impl ModelSelector {
     /// Create a new model selector
     pub fn new(strategy: ModelStrategy) -> Self {
-        Self {
-            models: vec![],
-            capabilities: HashMap::new(),
-            performance: HashMap::new(),
-            strategy,
-        }
+        Self { models: vec![], capabilities: HashMap::new(), performance: HashMap::new(), strategy }
     }
 
     /// Register a model
@@ -174,9 +169,7 @@ impl ModelSelector {
         candidates
             .iter()
             .filter_map(|name| {
-                self.performance
-                    .get(*name)
-                    .map(|perf| (*name, perf.tokens_per_second))
+                self.performance.get(*name).map(|perf| (*name, perf.tokens_per_second))
             })
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(name, _)| name.to_string())
@@ -186,11 +179,7 @@ impl ModelSelector {
     fn select_best_quality(&self, candidates: &[&str]) -> Option<String> {
         candidates
             .iter()
-            .filter_map(|name| {
-                self.performance
-                    .get(*name)
-                    .map(|perf| (*name, perf.quality_score))
-            })
+            .filter_map(|name| self.performance.get(*name).map(|perf| (*name, perf.quality_score)))
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(name, _)| name.to_string())
     }
@@ -245,7 +234,7 @@ impl ModelSelector {
                     .take(1)
                     .map(String::from)
                     .collect()
-            }
+            },
             FallbackStrategy::Specific(model) => vec![model.clone()],
             FallbackStrategy::TryAll => self
                 .models

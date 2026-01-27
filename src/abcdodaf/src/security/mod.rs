@@ -14,26 +14,26 @@
 //! - Compliance validation rules
 //! - Audit log export capabilities
 
-pub mod rbac;
-pub mod permissions;
 pub mod audit;
-pub mod encryption;
-pub mod compliance;
-pub mod secrets;
-pub mod session;
-pub mod security_policy;
 pub mod audit_export;
+pub mod compliance;
+pub mod encryption;
 pub mod error;
+pub mod permissions;
+pub mod rbac;
+pub mod secrets;
+pub mod security_policy;
+pub mod session;
 
-pub use error::{SecurityError, SecurityResult};
-pub use rbac::{Role, RoleManager, Subject, SubjectType};
-pub use permissions::{Permission, PermissionChecker, PermissionModel, ResourceType};
-pub use audit::{AuditLogger, AuditEvent, AuditLevel, EventCategory};
-pub use compliance::{ComplianceValidator, ComplianceRule, ComplianceReport};
-pub use secrets::{SecretManager, SecretValue};
-pub use session::{SessionManager, Session};
-pub use security_policy::SecurityPolicyEngine;
+pub use audit::{AuditEvent, AuditLevel, AuditLogger, EventCategory};
 pub use audit_export::AuditExporter;
+pub use compliance::{ComplianceReport, ComplianceRule, ComplianceValidator};
+pub use error::{SecurityError, SecurityResult};
+pub use permissions::{Permission, PermissionChecker, PermissionModel, ResourceType};
+pub use rbac::{Role, RoleManager, Subject, SubjectType};
+pub use secrets::{SecretManager, SecretValue};
+pub use security_policy::SecurityPolicyEngine;
+pub use session::{Session, SessionManager};
 
 /// Security context for evaluating access control and permissions
 #[derive(Debug, Clone)]
@@ -51,12 +51,7 @@ pub struct SecurityContext {
 impl SecurityContext {
     /// Create a new security context
     pub fn new(subject: Subject) -> Self {
-        Self {
-            subject,
-            roles: Vec::new(),
-            session_id: None,
-            created_at: chrono::Utc::now(),
-        }
+        Self { subject, roles: Vec::new(), session_id: None, created_at: chrono::Utc::now() }
     }
 
     /// Add a role to the context
@@ -84,9 +79,7 @@ impl SecurityContext {
 
     /// Check if context has any of the given roles
     pub fn has_any_role(&self, role_names: &[&str]) -> bool {
-        self.roles
-            .iter()
-            .any(|r| role_names.contains(&r.name.as_str()))
+        self.roles.iter().any(|r| role_names.contains(&r.name.as_str()))
     }
 
     /// Get all permission names from assigned roles

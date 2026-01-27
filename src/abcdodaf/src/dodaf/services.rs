@@ -20,11 +20,7 @@ pub struct ServiceView {
 impl ServiceView {
     /// Create a new services view
     pub fn new() -> Self {
-        Self {
-            services: Vec::new(),
-            specifications: Vec::new(),
-            interactions: Vec::new(),
-        }
+        Self { services: Vec::new(), specifications: Vec::new(), interactions: Vec::new() }
     }
 
     /// Add a service
@@ -174,11 +170,7 @@ pub enum InteractionType {
 
 impl Service {
     /// Create a new service
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        service_type: ServiceType,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, service_type: ServiceType) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -227,8 +219,11 @@ mod tests {
 
     #[test]
     fn test_service_view() {
-        let view = ServiceView::new()
-            .add_service(Service::new("s1", "Service 1", ServiceType::DataProcessing));
+        let view = ServiceView::new().add_service(Service::new(
+            "s1",
+            "Service 1",
+            ServiceType::DataProcessing,
+        ));
 
         assert_eq!(view.services.len(), 1);
     }

@@ -2,13 +2,13 @@
 //!
 //! Implements SnarlViewer for EnhancedBpmnNode with full BPMN 2.0 support
 
-use super::enhanced_nodes::*;
 use super::bpmn_shapes;
+use super::enhanced_nodes::*;
 use crate::bpmn::elements::*;
-use egui::{Color32, Ui, RichText, FontId};
+use egui::{Color32, FontId, RichText, Ui};
 use egui_snarl::{
-    InPin, NodeId, OutPin, Snarl,
     ui::{PinInfo, SnarlStyle, SnarlViewer},
+    InPin, NodeId, OutPin, Snarl,
 };
 
 const FLOW_COLOR: Color32 = Color32::from_rgb(100, 100, 100);
@@ -78,24 +78,24 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
         match &node.node_type {
             BpmnNodeType::EndEvent(_) => {
                 ui.label("in");
-            }
+            },
             BpmnNodeType::Task(_) => {
                 ui.label("in");
-            }
+            },
             BpmnNodeType::Gateway(_) => {
                 ui.label("in");
-            }
+            },
             BpmnNodeType::IntermediateEvent(e) => {
                 if e.is_catching {
                     ui.label("trigger");
                 } else {
                     ui.label("in");
                 }
-            }
+            },
             BpmnNodeType::Subprocess(_) => {
                 ui.label("in");
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         PinInfo::circle().with_fill(FLOW_COLOR)
@@ -113,37 +113,35 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
         match &node.node_type {
             BpmnNodeType::StartEvent(_) => {
                 ui.label("start");
-            }
+            },
             BpmnNodeType::Task(_) => {
                 ui.label("out");
-            }
-            BpmnNodeType::Gateway(g) => {
-                match &g.gateway_type {
-                    BpmnGatewayType::Exclusive => {
-                        if pin.id.output == 0 {
-                            ui.label("yes");
-                        } else {
-                            ui.label("no");
-                        }
+            },
+            BpmnNodeType::Gateway(g) => match &g.gateway_type {
+                BpmnGatewayType::Exclusive => {
+                    if pin.id.output == 0 {
+                        ui.label("yes");
+                    } else {
+                        ui.label("no");
                     }
-                    BpmnGatewayType::Parallel => {
-                        ui.label(format!("branch {}", pin.id.output + 1));
-                    }
-                    BpmnGatewayType::Inclusive => {
-                        ui.label(format!("option {}", pin.id.output + 1));
-                    }
-                    _ => {
-                        ui.label("out");
-                    }
-                }
-            }
+                },
+                BpmnGatewayType::Parallel => {
+                    ui.label(format!("branch {}", pin.id.output + 1));
+                },
+                BpmnGatewayType::Inclusive => {
+                    ui.label(format!("option {}", pin.id.output + 1));
+                },
+                _ => {
+                    ui.label("out");
+                },
+            },
             BpmnNodeType::IntermediateEvent(_) => {
                 ui.label("out");
-            }
+            },
             BpmnNodeType::Subprocess(_) => {
                 ui.label("out");
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         PinInfo::circle().with_fill(FLOW_COLOR)
@@ -163,7 +161,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
             (BpmnNodeType::DataObject(_), _) | (_, BpmnNodeType::DataObject(_)) => return,
             (BpmnNodeType::DataStore(_), _) | (_, BpmnNodeType::DataStore(_)) => return,
             // All other connections are valid
-            _ => {}
+            _ => {},
         }
 
         // Disconnect existing connections to this input
@@ -191,29 +189,29 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
 
         // Determine appropriate size for each node type
         let (width, height) = match &enhanced_node.node_type {
-            BpmnNodeType::StartEvent(_) | BpmnNodeType::EndEvent(_) | BpmnNodeType::IntermediateEvent(_) => {
-                (60.0, 60.0)  // Circular events
-            }
+            BpmnNodeType::StartEvent(_)
+            | BpmnNodeType::EndEvent(_)
+            | BpmnNodeType::IntermediateEvent(_) => {
+                (60.0, 60.0) // Circular events
+            },
             BpmnNodeType::Gateway(_) => {
-                (60.0, 60.0)  // Diamond gateways
-            }
+                (60.0, 60.0) // Diamond gateways
+            },
             BpmnNodeType::Task(_) | BpmnNodeType::Subprocess(_) => {
-                (100.0, 60.0)  // Rectangular tasks
-            }
+                (100.0, 60.0) // Rectangular tasks
+            },
             BpmnNodeType::DataObject(_) => {
-                (50.0, 70.0)  // Tall data objects
-            }
+                (50.0, 70.0) // Tall data objects
+            },
             BpmnNodeType::DataStore(_) => {
-                (60.0, 50.0)  // Wide data stores
-            }
-            _ => (80.0, 60.0)  // Default
+                (60.0, 50.0) // Wide data stores
+            },
+            _ => (80.0, 60.0), // Default
         };
 
         // Allocate space for the shape
-        let (rect, response) = ui.allocate_exact_size(
-            egui::vec2(width, height),
-            egui::Sense::hover(),
-        );
+        let (rect, response) =
+            ui.allocate_exact_size(egui::vec2(width, height), egui::Sense::hover());
 
         // Show validation error tooltips
         if let Some(ref validation) = self.validation_result {
@@ -227,8 +225,10 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                             ui.heading("❌ Errors:");
                             for error in &errors {
                                 ui.label(
-                                    RichText::new(crate::ui::validation::Validator::error_message(error))
-                                        .color(Color32::from_rgb(255, 0, 0))
+                                    RichText::new(crate::ui::validation::Validator::error_message(
+                                        error,
+                                    ))
+                                    .color(Color32::from_rgb(255, 0, 0)),
                                 );
                             }
                         }
@@ -239,8 +239,10 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                             ui.heading("⚠ Warnings:");
                             for warning in warnings {
                                 ui.label(
-                                    RichText::new(crate::ui::validation::Validator::warning_message(warning))
-                                        .color(Color32::from_rgb(255, 200, 0))
+                                    RichText::new(
+                                        crate::ui::validation::Validator::warning_message(warning),
+                                    )
+                                    .color(Color32::from_rgb(255, 200, 0)),
                                 );
                             }
                         }
@@ -287,13 +289,13 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
         match &enhanced_node.node_type {
             BpmnNodeType::StartEvent(_) => {
                 bpmn_shapes::draw_start_event(painter, rect, Color32::from_rgb(0, 128, 0));
-            }
+            },
             BpmnNodeType::EndEvent(_) => {
                 bpmn_shapes::draw_end_event(painter, rect, Color32::from_rgb(200, 0, 0));
-            }
+            },
             BpmnNodeType::IntermediateEvent(_) => {
                 bpmn_shapes::draw_intermediate_event(painter, rect, Color32::from_rgb(255, 140, 0));
-            }
+            },
             BpmnNodeType::Gateway(g) => {
                 let fill = Color32::from_rgb(255, 255, 200);
                 let stroke = Color32::from_rgb(200, 150, 0);
@@ -303,51 +305,51 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                 match g.gateway_type {
                     BpmnGatewayType::Exclusive => {
                         bpmn_shapes::draw_exclusive_gateway_symbol(painter, rect, stroke);
-                    }
+                    },
                     BpmnGatewayType::Parallel => {
                         bpmn_shapes::draw_parallel_gateway_symbol(painter, rect, stroke);
-                    }
+                    },
                     BpmnGatewayType::Inclusive => {
                         bpmn_shapes::draw_inclusive_gateway_symbol(painter, rect, stroke);
-                    }
+                    },
                     BpmnGatewayType::EventBased { .. } => {
                         bpmn_shapes::draw_event_based_gateway_symbol(painter, rect, stroke);
-                    }
+                    },
                     BpmnGatewayType::Complex { .. } => {
                         bpmn_shapes::draw_complex_gateway_symbol(painter, rect, stroke);
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
-            }
+            },
             BpmnNodeType::Task(_) => {
                 let fill = Color32::from_rgb(255, 250, 240);
                 let stroke = Color32::from_rgb(100, 100, 200);
                 bpmn_shapes::draw_task(painter, rect, stroke, fill);
-            }
+            },
             BpmnNodeType::Subprocess(_) => {
                 let fill = Color32::from_rgb(255, 250, 240);
                 let stroke = Color32::from_rgb(100, 100, 200);
                 bpmn_shapes::draw_task(painter, rect, stroke, fill);
                 bpmn_shapes::draw_subprocess_indicator(painter, rect, stroke);
-            }
+            },
             BpmnNodeType::DataObject(_) => {
                 let fill = Color32::from_rgb(240, 248, 255);
                 let stroke = Color32::from_rgb(100, 149, 237);
                 bpmn_shapes::draw_data_object(painter, rect, stroke, fill);
-            }
+            },
             BpmnNodeType::DataStore(_) => {
                 let fill = Color32::from_rgb(224, 255, 255);
                 let stroke = Color32::from_rgb(0, 139, 139);
                 bpmn_shapes::draw_data_store(painter, rect, stroke, fill);
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         // Show node type label below shape
         ui.label(
             RichText::new(enhanced_node.type_name())
                 .font(FontId::proportional(10.0))
-                .color(Color32::DARK_GRAY)
+                .color(Color32::DARK_GRAY),
         );
 
         // Show visual markers
@@ -374,10 +376,10 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                         ui.label(RichText::new(doc).font(FontId::proportional(9.0)).italics());
                     }
                 }
-            }
+            },
             BpmnNodeType::Gateway(g) => {
                 ui.label(format!("{:?}", g.gateway_direction));
-            }
+            },
             BpmnNodeType::IntermediateEvent(e) => {
                 if let Some(def) = &e.event_definition {
                     let event_type = match def {
@@ -392,7 +394,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                     };
                     ui.label(event_type);
                 }
-            }
+            },
             BpmnNodeType::DataObject(d) => {
                 // Data objects with light blue background
                 egui::Frame::new()
@@ -405,19 +407,19 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                                 ui.label(
                                     RichText::new("📚 Collection")
                                         .strong()
-                                        .color(Color32::from_rgb(70, 130, 180))
+                                        .color(Color32::from_rgb(70, 130, 180)),
                                 );
                             }
                             if let Some(state) = &d.data_state {
                                 ui.label(
                                     RichText::new(format!("State: {}", state))
                                         .font(FontId::proportional(9.0))
-                                        .color(Color32::DARK_GRAY)
+                                        .color(Color32::DARK_GRAY),
                                 );
                             }
                         });
                     });
-            }
+            },
             BpmnNodeType::DataStore(d) => {
                 // Data stores with cyan background
                 egui::Frame::new()
@@ -429,17 +431,17 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                             if d.is_unlimited {
                                 ui.label(
                                     RichText::new("∞ Unlimited")
-                                        .color(Color32::from_rgb(0, 128, 128))
+                                        .color(Color32::from_rgb(0, 128, 128)),
                                 );
                             } else if let Some(cap) = d.capacity {
                                 ui.label(
                                     RichText::new(format!("Capacity: {} items", cap))
-                                        .color(Color32::from_rgb(0, 128, 128))
+                                        .color(Color32::from_rgb(0, 128, 128)),
                                 );
                             }
                         });
                     });
-            }
+            },
             BpmnNodeType::TextAnnotation(a) => {
                 // Text annotations displayed in italic with light background
                 egui::Frame::new()
@@ -451,10 +453,10 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                             RichText::new(&a.text)
                                 .italics()
                                 .font(FontId::proportional(9.0))
-                                .color(Color32::from_rgb(100, 100, 100))
+                                .color(Color32::from_rgb(100, 100, 100)),
                         );
                     });
-            }
+            },
             BpmnNodeType::Group(g) => {
                 // Groups displayed as containers
                 egui::Frame::new()
@@ -467,17 +469,16 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                             ui.label(
                                 RichText::new(category)
                                     .strong()
-                                    .color(Color32::from_rgb(50, 100, 200))
+                                    .color(Color32::from_rgb(50, 100, 200)),
                             );
                         } else {
                             ui.label(
-                                RichText::new("Group")
-                                    .color(Color32::from_rgb(100, 150, 200))
+                                RichText::new("Group").color(Color32::from_rgb(100, 150, 200)),
                             );
                         }
                     });
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         // Show DoDAF metadata if present
@@ -539,6 +540,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                         is_catching: true,
                         is_interrupting: true,
                         is_boundary: false,
+                        attached_to_activity_id: None,
                     }),
                 );
                 snarl.insert_node(pos, node);
@@ -557,6 +559,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                         is_catching: true,
                         is_interrupting: true,
                         is_boundary: false,
+                        attached_to_activity_id: None,
                     }),
                 );
                 snarl.insert_node(pos, node);
@@ -608,10 +611,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                 BpmnNodeType::Task(TaskNode {
                     name: "Business Rule Task".to_string(),
                     documentation: None,
-                    task_type: BpmnTaskType::BusinessRule {
-                        implementation: None,
-                        rule_ref: None,
-                    },
+                    task_type: BpmnTaskType::BusinessRule { implementation: None, rule_ref: None },
                     loop_characteristics: None,
                     is_for_compensation: false,
                 }),
@@ -714,9 +714,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
             let id = format!("group_{}", ui.next_auto_id().value());
             let node = EnhancedBpmnNode::new(
                 id,
-                BpmnNodeType::Group(GroupNode {
-                    category: Some("Group".to_string()),
-                }),
+                BpmnNodeType::Group(GroupNode { category: Some("Group".to_string()) }),
             );
             snarl.insert_node(pos, node);
             ui.close();

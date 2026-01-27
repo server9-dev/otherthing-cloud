@@ -67,10 +67,7 @@ pub struct BpmnCmmnIntegration {
 impl BpmnCmmnIntegration {
     /// Create a new BPMN-CMMN integration engine
     pub fn new(case_engine: CaseRuntimeEngine) -> Self {
-        Self {
-            case_engine,
-            case_calls: HashMap::new(),
-        }
+        Self { case_engine, case_calls: HashMap::new() }
     }
 
     /// Execute a BPMN-to-CMMN call activity
@@ -82,9 +79,7 @@ impl BpmnCmmnIntegration {
         debug!("Executing case call activity: {}", call_activity.name);
 
         // Start a new case instance
-        let case_instance_id = self.case_engine
-            .start_case(&call_activity.case_ref)
-            .await?;
+        let case_instance_id = self.case_engine.start_case(&call_activity.case_ref).await?;
 
         // Map input variables from process to case file
         for (case_item, process_var) in &call_activity.input_mappings {
@@ -119,13 +114,13 @@ impl BpmnCmmnIntegration {
         call_id: &str,
         _call_activity: &CaseCallActivity,
     ) -> Result<CaseCallInstance> {
-        let call = self.case_calls.get(call_id)
+        let call = self
+            .case_calls
+            .get(call_id)
             .ok_or_else(|| AbcdodafError::WorkflowError(format!("Call {} not found", call_id)))?
             .clone();
 
-        let case_instance = self.case_engine
-            .get_case_instance(&call.case_instance_id)
-            .await?;
+        let case_instance = self.case_engine.get_case_instance(&call.case_instance_id).await?;
 
         let mut updated_call = call.clone();
 
@@ -133,15 +128,15 @@ impl BpmnCmmnIntegration {
         match case_instance.state {
             CaseInstanceState::Active | CaseInstanceState::Suspended => {
                 updated_call.status = CallStatus::Running;
-            }
+            },
             CaseInstanceState::Completed => {
                 updated_call.status = CallStatus::Completed;
                 updated_call.completed_at = Some(chrono::Utc::now());
-            }
+            },
             CaseInstanceState::Terminated => {
                 updated_call.status = CallStatus::Terminated;
                 updated_call.completed_at = Some(chrono::Utc::now());
-            }
+            },
         }
 
         self.case_calls.insert(call_id.to_string(), updated_call.clone());
@@ -154,18 +149,19 @@ impl BpmnCmmnIntegration {
         call_id: &str,
         call_activity: &CaseCallActivity,
     ) -> Result<HashMap<String, serde_json::Value>> {
-        let call = self.case_calls.get(call_id)
+        let call = self
+            .case_calls
+            .get(call_id)
             .ok_or_else(|| AbcdodafError::WorkflowError(format!("Call {} not found", call_id)))?;
 
         if call.status != CallStatus::Completed {
-            return Err(AbcdodafError::WorkflowError(
-                format!("Case call {} is not completed", call_id)
-            ));
+            return Err(AbcdodafError::WorkflowError(format!(
+                "Case call {} is not completed",
+                call_id
+            )));
         }
 
-        let case_instance = self.case_engine
-            .get_case_instance(&call.case_instance_id)
-            .await?;
+        let case_instance = self.case_engine.get_case_instance(&call.case_instance_id).await?;
 
         let mut output_variables = HashMap::new();
 
@@ -187,9 +183,8 @@ impl BpmnCmmnIntegration {
         process: &Process,
     ) -> Result<String> {
         // Create a plan item instance for the process task
-        let item_instance_id = self.case_engine
-            .create_plan_item(case_instance_id, plan_item_id)
-            .await?;
+        let item_instance_id =
+            self.case_engine.create_plan_item(case_instance_id, plan_item_id).await?;
 
         // In production, would execute the BPMN process here
         debug!("Created process task call for BPMN process: {}", process.id);
@@ -213,9 +208,7 @@ impl BpmnCmmnIntegration {
     /// Terminate a case call
     pub async fn terminate_case_call(&mut self, call_id: &str) -> Result<()> {
         if let Some(call) = self.case_calls.get_mut(call_id) {
-            self.case_engine
-                .terminate_case(&call.case_instance_id)
-                .await?;
+            self.case_engine.terminate_case(&call.case_instance_id).await?;
             call.status = CallStatus::Terminated;
             call.completed_at = Some(chrono::Utc::now());
             Ok(())
@@ -303,13 +296,21 @@ impl CaseCallActivityBuilder {
     }
 
     /// Add input mapping
-    pub fn add_input_mapping(mut self, case_item: impl Into<String>, process_var: impl Into<String>) -> Self {
+    pub fn add_input_mapping(
+        mut self,
+        case_item: impl Into<String>,
+        process_var: impl Into<String>,
+    ) -> Self {
         self.input_mappings.insert(case_item.into(), process_var.into());
         self
     }
 
     /// Add output mapping
-    pub fn add_output_mapping(mut self, process_var: impl Into<String>, case_item: impl Into<String>) -> Self {
+    pub fn add_output_mapping(
+        mut self,
+        process_var: impl Into<String>,
+        case_item: impl Into<String>,
+    ) -> Self {
         self.output_mappings.insert(process_var.into(), case_item.into());
         self
     }

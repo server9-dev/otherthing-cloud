@@ -1,7 +1,7 @@
 //! Webhook connectors for incoming and outgoing webhooks
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
     ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
@@ -56,11 +56,7 @@ pub struct OutgoingWebhookConnector {
 impl OutgoingWebhookConnector {
     /// Create a new outgoing webhook connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            client: None,
-        }
+        Self { config, status: ConnectionStatus::Disconnected, client: None }
     }
 
     /// Get the webhook URL
@@ -72,7 +68,6 @@ impl OutgoingWebhookConnector {
             .map(String::from)
             .ok_or_else(|| ConnectorError::config("Webhook URL not configured"))
     }
-
 
     /// Get timeout in seconds
     fn get_timeout_secs(&self) -> u64 {
@@ -151,10 +146,7 @@ impl Connector for OutgoingWebhookConnector {
             })?;
 
         let status_code = response.status().as_u16();
-        let body = response
-            .json::<Value>()
-            .await
-            .unwrap_or(json!({}));
+        let body = response.json::<Value>().await.unwrap_or_else(|_| json!({}));
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
 
@@ -188,7 +180,7 @@ impl Connector for OutgoingWebhookConnector {
                                 response.status()
                             )))
                         }
-                    }
+                    },
                     Err(e) => Ok(HealthStatus::Unhealthy(e.to_string())),
                 }
             } else {
@@ -210,11 +202,7 @@ pub struct IncomingWebhookConnector {
 impl IncomingWebhookConnector {
     /// Create a new incoming webhook connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            events: Vec::new(),
-        }
+        Self { config, status: ConnectionStatus::Disconnected, events: Vec::new() }
     }
 
     /// Get the listening port
@@ -290,10 +278,7 @@ impl Connector for IncomingWebhookConnector {
         if self.status == ConnectionStatus::Connected {
             Ok(HealthStatus::Healthy)
         } else {
-            Ok(HealthStatus::Unhealthy(format!(
-                "Webhook listener status: {}",
-                self.status
-            )))
+            Ok(HealthStatus::Unhealthy(format!("Webhook listener status: {}", self.status)))
         }
     }
 }
@@ -309,10 +294,7 @@ mod tests {
             .with_header("X-Custom", "value");
 
         assert_eq!(event.event_type, "user.created");
-        assert_eq!(
-            event.payload.get("user_id"),
-            Some(&json!("123"))
-        );
+        assert_eq!(event.payload.get("user_id"), Some(&json!("123")));
         assert_eq!(event.headers.get("X-Custom"), Some(&"value".to_string()));
     }
 

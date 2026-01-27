@@ -1,6 +1,6 @@
 use crate::ui::workspace::Workspace;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 #[derive(Clone)]
@@ -63,7 +63,8 @@ impl FileBrowser {
                                 .unwrap_or("Unknown")
                                 .to_string();
 
-                            let last_modified = entry.metadata().ok().and_then(|m| m.modified().ok());
+                            let last_modified =
+                                entry.metadata().ok().and_then(|m| m.modified().ok());
 
                             self.workflow_files.push(FileEntry {
                                 path: path.clone(),
@@ -146,69 +147,67 @@ impl FileBrowser {
         self.update_open_state(workspace);
 
         // File list
-        egui::ScrollArea::vertical()
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                let filtered_files: Vec<_> = self
-                    .workflow_files
-                    .iter()
-                    .filter(|f| {
-                        self.filter_text.is_empty()
-                            || f.name.to_lowercase().contains(&self.filter_text.to_lowercase())
-                    })
-                    .collect();
+        egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            let filtered_files: Vec<_> = self
+                .workflow_files
+                .iter()
+                .filter(|f| {
+                    self.filter_text.is_empty()
+                        || f.name.to_lowercase().contains(&self.filter_text.to_lowercase())
+                })
+                .collect();
 
-                if filtered_files.is_empty() {
-                    ui.label("No workflow files found");
-                } else {
-                    for file in filtered_files {
-                        ui.horizontal(|ui| {
-                            // File icon
-                            let icon = if file.is_open { "📄" } else { "📃" };
-                            ui.label(icon);
+            if filtered_files.is_empty() {
+                ui.label("No workflow files found");
+            } else {
+                for file in filtered_files {
+                    ui.horizontal(|ui| {
+                        // File icon
+                        let icon = if file.is_open { "📄" } else { "📃" };
+                        ui.label(icon);
 
-                            // File name (clickable)
-                            let mut text = file.name.clone();
-                            if file.is_open {
-                                text = format!("{} ●", text);
-                            }
+                        // File name (clickable)
+                        let mut text = file.name.clone();
+                        if file.is_open {
+                            text = format!("{} ●", text);
+                        }
 
-                            let response = ui.selectable_label(
-                                self.selected_file.as_ref() == Some(&file.path),
-                                text,
-                            );
+                        let response = ui.selectable_label(
+                            self.selected_file.as_ref() == Some(&file.path),
+                            text,
+                        );
 
-                            // Single click to select
-                            if response.clicked() {
-                                self.selected_file = Some(file.path.clone());
-                            }
+                        // Single click to select
+                        if response.clicked() {
+                            self.selected_file = Some(file.path.clone());
+                        }
 
-                            // Double click to open
-                            if response.double_clicked() {
+                        // Double click to open
+                        if response.double_clicked() {
+                            action = Some(FileAction::OpenFile(file.path.clone()));
+                        }
+
+                        // Context menu
+                        response.context_menu(|ui| {
+                            if ui.button("Open").clicked() {
                                 action = Some(FileAction::OpenFile(file.path.clone()));
+                                ui.close();
                             }
 
-                            // Context menu
-                            response.context_menu(|ui| {
-                                if ui.button("Open").clicked() {
-                                    action = Some(FileAction::OpenFile(file.path.clone()));
-                                    ui.close();
-                                }
+                            if ui.button("Delete").clicked() {
+                                action = Some(FileAction::DeleteFile(file.path.clone()));
+                                ui.close();
+                            }
 
-                                if ui.button("Delete").clicked() {
-                                    action = Some(FileAction::DeleteFile(file.path.clone()));
-                                    ui.close();
-                                }
-
-                                if ui.button("Rename").clicked() {
-                                    action = Some(FileAction::RenameFile(file.path.clone()));
-                                    ui.close();
-                                }
-                            });
+                            if ui.button("Rename").clicked() {
+                                action = Some(FileAction::RenameFile(file.path.clone()));
+                                ui.close();
+                            }
                         });
-                    }
+                    });
                 }
-            });
+            }
+        });
 
         ui.separator();
 

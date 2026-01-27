@@ -107,10 +107,7 @@ pub struct PerformanceSummary {
 impl PerformanceTracker {
     /// Create a new performance tracker
     pub fn new() -> Self {
-        Self {
-            metrics: HashMap::new(),
-            cost_tracker: CostTracker::new(),
-        }
+        Self { metrics: HashMap::new(), cost_tracker: CostTracker::new() }
     }
 
     /// Record a request
@@ -124,13 +121,7 @@ impl PerformanceTracker {
     }
 
     /// Record cost
-    pub fn record_cost(
-        &mut self,
-        agent_id: &str,
-        model: &str,
-        tokens: u64,
-        cost_per_1k: f64,
-    ) {
+    pub fn record_cost(&mut self, agent_id: &str, model: &str, tokens: u64, cost_per_1k: f64) {
         let cost = (tokens as f64 / 1000.0) * cost_per_1k;
         self.cost_tracker.add_entry(CostEntry {
             id: uuid::Uuid::new_v4().to_string(),
@@ -164,8 +155,7 @@ impl PerformanceTracker {
         };
 
         let avg_latency = if !self.metrics.is_empty() {
-            self.metrics.values().map(|m| m.avg_latency_ms).sum::<f64>()
-                / self.metrics.len() as f64
+            self.metrics.values().map(|m| m.avg_latency_ms).sum::<f64>() / self.metrics.len() as f64
         } else {
             0.0
         };
@@ -266,10 +256,7 @@ impl AgentMetrics {
 impl CostTracker {
     /// Create a new cost tracker
     pub fn new() -> Self {
-        Self {
-            entries: vec![],
-            total_cost: 0.0,
-        }
+        Self { entries: vec![], total_cost: 0.0 }
     }
 
     /// Add a cost entry
@@ -285,20 +272,12 @@ impl CostTracker {
 
     /// Get cost by agent
     pub fn cost_by_agent(&self, agent_id: &str) -> f64 {
-        self.entries
-            .iter()
-            .filter(|e| e.agent_id == agent_id)
-            .map(|e| e.cost)
-            .sum()
+        self.entries.iter().filter(|e| e.agent_id == agent_id).map(|e| e.cost).sum()
     }
 
     /// Get cost by model
     pub fn cost_by_model(&self, model: &str) -> f64 {
-        self.entries
-            .iter()
-            .filter(|e| e.model == model)
-            .map(|e| e.cost)
-            .sum()
+        self.entries.iter().filter(|e| e.model == model).map(|e| e.cost).sum()
     }
 
     /// Get all entries

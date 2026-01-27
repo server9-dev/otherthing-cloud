@@ -7,19 +7,19 @@
 //! - Tracks DODAF metadata and compliance
 //! - Streams logs and status to connected clients
 
+pub mod api;
 pub mod daemon;
 pub mod database;
-pub mod api;
+pub mod dodaf_tracker;
 pub mod event_stream;
 pub mod health;
-pub mod dodaf_tracker;
 
-pub use daemon::{ExecutorDaemon, ExecutorConfig};
-pub use database::{DatabaseManager, ConnectionHealth};
 pub use api::ApiServer;
+pub use daemon::{ExecutorConfig, ExecutorDaemon};
+pub use database::{ConnectionHealth, DatabaseManager};
+pub use dodaf_tracker::DodafTracker;
 pub use event_stream::{EventStream, EventSubscription, EventType};
 pub use health::HealthMonitor;
-pub use dodaf_tracker::DodafTracker;
 
 use crate::error::AbcdodafError;
 

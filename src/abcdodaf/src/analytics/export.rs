@@ -34,7 +34,11 @@ impl CsvExporter {
     }
 
     /// Export to CSV writer
-    pub fn export_to_writer(&self, snapshot: &MetricSnapshot, writer: &mut dyn Write) -> Result<()> {
+    pub fn export_to_writer(
+        &self,
+        snapshot: &MetricSnapshot,
+        writer: &mut dyn Write,
+    ) -> Result<()> {
         // Write header
         writeln!(
             writer,
@@ -178,17 +182,10 @@ impl ReportGenerator {
         snapshot: &MetricSnapshot,
         title: impl Into<String>,
     ) -> AnalyticsReport {
-        let total_processes: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.total_instances)
-            .sum();
+        let total_processes: u64 =
+            snapshot.process_metrics.values().map(|m| m.total_instances).sum();
 
-        let completed: u64 = snapshot
-            .process_metrics
-            .values()
-            .map(|m| m.completed_instances)
-            .sum();
+        let completed: u64 = snapshot.process_metrics.values().map(|m| m.completed_instances).sum();
 
         let success_rate = if total_processes > 0 {
             (completed as f64 / total_processes as f64) * 100.0
@@ -207,11 +204,7 @@ impl ReportGenerator {
             0.0
         };
 
-        let total_cost: f64 = snapshot
-            .cost_metrics
-            .values()
-            .map(|c| c.total_cost)
-            .sum();
+        let total_cost: f64 = snapshot.cost_metrics.values().map(|c| c.total_cost).sum();
 
         let mut findings = Vec::new();
 
@@ -286,27 +279,23 @@ pub struct ExportManager;
 
 impl ExportManager {
     /// Export snapshot in specified format
-    pub fn export(
-        snapshot: &MetricSnapshot,
-        format: ExportFormat,
-    ) -> Result<String> {
+    pub fn export(snapshot: &MetricSnapshot, format: ExportFormat) -> Result<String> {
         match format {
             ExportFormat::Csv => {
                 let exporter = CsvExporter::new();
                 exporter.export(snapshot)
-            }
+            },
             ExportFormat::Json => {
                 let exporter = JsonExporter::new();
                 exporter.export(snapshot)
-            }
+            },
             ExportFormat::Yaml => {
                 let json_str = serde_json::to_value(snapshot)?;
-                let yaml = serde_yaml::to_string(&json_str)
-                    .map_err(|e| {
-                        crate::error::AbcdodafError::YamlSerializationError(e.to_string())
-                    })?;
+                let yaml = serde_yaml::to_string(&json_str).map_err(|e| {
+                    crate::error::AbcdodafError::YamlSerializationError(e.to_string())
+                })?;
                 Ok(yaml)
-            }
+            },
         }
     }
 
@@ -334,24 +323,23 @@ impl ExportManager {
             ExportFormat::Json => Ok(serde_json::to_string_pretty(&report)?),
             ExportFormat::Yaml => {
                 let json = serde_json::to_value(&report)?;
-                let yaml = serde_yaml::to_string(&json)
-                    .map_err(|e| {
-                        crate::error::AbcdodafError::YamlSerializationError(e.to_string())
-                    })?;
+                let yaml = serde_yaml::to_string(&json).map_err(|e| {
+                    crate::error::AbcdodafError::YamlSerializationError(e.to_string())
+                })?;
                 Ok(yaml)
-            }
+            },
             ExportFormat::Csv => {
                 // For reports, JSON is more appropriate
                 Ok(serde_json::to_string_pretty(&report)?)
-            }
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::metrics::ProcessMetrics;
+    use super::*;
     use chrono::Utc;
     use std::collections::HashMap;
 

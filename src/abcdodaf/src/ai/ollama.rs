@@ -138,12 +138,11 @@ impl OllamaClient {
         let http_client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(config.timeout_secs))
             .build()
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Failed to create HTTP client: {}", e)))?;
+            .map_err(|e| {
+                AbcdodafError::IntegrationError(format!("Failed to create HTTP client: {}", e))
+            })?;
 
-        Ok(Self {
-            config,
-            http_client,
-        })
+        Ok(Self { config, http_client })
     }
 
     /// Create client with default configuration
@@ -155,17 +154,13 @@ impl OllamaClient {
     pub async fn list_models(&self) -> Result<Vec<ModelInfo>> {
         let url = format!("{}/api/tags", self.config.base_url);
 
-        let response = self
-            .http_client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Failed to list models: {}", e)))?;
+        let response = self.http_client.get(&url).send().await.map_err(|e| {
+            AbcdodafError::IntegrationError(format!("Failed to list models: {}", e))
+        })?;
 
-        let list: ListModelsResponse = response
-            .json()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Failed to parse response: {}", e)))?;
+        let list: ListModelsResponse = response.json().await.map_err(|e| {
+            AbcdodafError::IntegrationError(format!("Failed to parse response: {}", e))
+        })?;
 
         Ok(list
             .models
@@ -184,13 +179,10 @@ impl OllamaClient {
     pub async fn chat(&self, request: ChatRequest) -> Result<ChatResponse> {
         let url = format!("{}/api/chat", self.config.base_url);
 
-        let response = self
-            .http_client
-            .post(&url)
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Chat request failed: {}", e)))?;
+        let response =
+            self.http_client.post(&url).json(&request).send().await.map_err(|e| {
+                AbcdodafError::IntegrationError(format!("Chat request failed: {}", e))
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -201,10 +193,9 @@ impl OllamaClient {
             )));
         }
 
-        response
-            .json()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Failed to parse response: {}", e)))
+        response.json().await.map_err(|e| {
+            AbcdodafError::IntegrationError(format!("Failed to parse response: {}", e))
+        })
     }
 
     /// Send a streaming chat completion request
@@ -215,13 +206,9 @@ impl OllamaClient {
         request.stream = true;
         let url = format!("{}/api/chat", self.config.base_url);
 
-        let response = self
-            .http_client
-            .post(&url)
-            .json(&request)
-            .send()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Stream request failed: {}", e)))?;
+        let response = self.http_client.post(&url).json(&request).send().await.map_err(|e| {
+            AbcdodafError::IntegrationError(format!("Stream request failed: {}", e))
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -264,24 +251,28 @@ impl OllamaClient {
                                     if done {
                                         return;
                                     }
-                                }
+                                },
                                 Err(e) => {
-                                    let _ = tx.send(Err(AbcdodafError::IntegrationError(format!(
-                                        "Failed to parse stream chunk: {}",
-                                        e
-                                    )))).await;
+                                    let _ = tx
+                                        .send(Err(AbcdodafError::IntegrationError(format!(
+                                            "Failed to parse stream chunk: {}",
+                                            e
+                                        ))))
+                                        .await;
                                     return;
-                                }
+                                },
                             }
                         }
-                    }
+                    },
                     Err(e) => {
-                        let _ = tx.send(Err(AbcdodafError::IntegrationError(format!(
-                            "Stream error: {}",
-                            e
-                        )))).await;
+                        let _ = tx
+                            .send(Err(AbcdodafError::IntegrationError(format!(
+                                "Stream error: {}",
+                                e
+                            ))))
+                            .await;
                         return;
-                    }
+                    },
                 }
             }
         });
@@ -324,13 +315,10 @@ impl OllamaClient {
             "name": model_name,
         });
 
-        let response = self
-            .http_client
-            .post(&url)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| AbcdodafError::IntegrationError(format!("Failed to pull model: {}", e)))?;
+        let response =
+            self.http_client.post(&url).json(&payload).send().await.map_err(|e| {
+                AbcdodafError::IntegrationError(format!("Failed to pull model: {}", e))
+            })?;
 
         if !response.status().is_success() {
             return Err(AbcdodafError::IntegrationError(format!(
@@ -372,29 +360,17 @@ impl Default for OllamaConfig {
 impl ChatMessage {
     /// Create a system message
     pub fn system(content: impl Into<String>) -> Self {
-        Self {
-            role: "system".to_string(),
-            content: content.into(),
-            images: None,
-        }
+        Self { role: "system".to_string(), content: content.into(), images: None }
     }
 
     /// Create a user message
     pub fn user(content: impl Into<String>) -> Self {
-        Self {
-            role: "user".to_string(),
-            content: content.into(),
-            images: None,
-        }
+        Self { role: "user".to_string(), content: content.into(), images: None }
     }
 
     /// Create an assistant message
     pub fn assistant(content: impl Into<String>) -> Self {
-        Self {
-            role: "assistant".to_string(),
-            content: content.into(),
-            images: None,
-        }
+        Self { role: "assistant".to_string(), content: content.into(), images: None }
     }
 }
 

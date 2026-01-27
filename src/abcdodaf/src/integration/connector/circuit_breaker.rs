@@ -79,7 +79,7 @@ impl CircuitBreakerStateTracker {
         match self.state {
             CircuitBreakerState::Closed => {
                 self.failure_count = 0;
-            }
+            },
             CircuitBreakerState::HalfOpen => {
                 self.success_count += 1;
                 if self.success_count >= self.config.success_threshold {
@@ -87,10 +87,10 @@ impl CircuitBreakerStateTracker {
                     self.failure_count = 0;
                     self.success_count = 0;
                 }
-            }
+            },
             CircuitBreakerState::Open => {
                 // Do nothing in open state
-            }
+            },
         }
     }
 
@@ -103,16 +103,16 @@ impl CircuitBreakerStateTracker {
                     self.state = CircuitBreakerState::Open;
                     self.opened_at = Some(SystemTime::now());
                 }
-            }
+            },
             CircuitBreakerState::HalfOpen => {
                 self.state = CircuitBreakerState::Open;
                 self.opened_at = Some(SystemTime::now());
                 self.failure_count = 0;
                 self.success_count = 0;
-            }
+            },
             CircuitBreakerState::Open => {
                 // Stay open
-            }
+            },
         }
     }
 }
@@ -126,15 +126,9 @@ pub struct CircuitBreaker {
 impl CircuitBreaker {
     /// Create a new circuit breaker
     pub fn new(failure_threshold: usize, timeout: Duration) -> Self {
-        let config = CircuitBreakerConfig {
-            failure_threshold,
-            timeout,
-            success_threshold: 1,
-        };
+        let config = CircuitBreakerConfig { failure_threshold, timeout, success_threshold: 1 };
 
-        Self {
-            inner: Arc::new(Mutex::new(CircuitBreakerStateTracker::new(config))),
-        }
+        Self { inner: Arc::new(Mutex::new(CircuitBreakerStateTracker::new(config))) }
     }
 
     /// Create a circuit breaker with custom success threshold
@@ -143,15 +137,9 @@ impl CircuitBreaker {
         timeout: Duration,
         success_threshold: usize,
     ) -> Self {
-        let config = CircuitBreakerConfig {
-            failure_threshold,
-            timeout,
-            success_threshold,
-        };
+        let config = CircuitBreakerConfig { failure_threshold, timeout, success_threshold };
 
-        Self {
-            inner: Arc::new(Mutex::new(CircuitBreakerStateTracker::new(config))),
-        }
+        Self { inner: Arc::new(Mutex::new(CircuitBreakerStateTracker::new(config))) }
     }
 
     /// Get current state

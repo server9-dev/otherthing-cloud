@@ -19,16 +19,25 @@ impl CmmnXmlExporter {
         // Definitions element with CMMN 1.1 namespace
         xml.push_str("<definitions xmlns=\"http://www.omg.org/spec/CMMN/20151109/MODEL\"\n");
         xml.push_str("             xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
-        xml.push_str("             xmlns:cmmndi=\"http://www.omg.org/spec/CMMN/20151109/CMMNDI\"\n");
+        xml.push_str(
+            "             xmlns:cmmndi=\"http://www.omg.org/spec/CMMN/20151109/CMMNDI\"\n",
+        );
         xml.push_str("             xmlns:dc=\"http://www.omg.org/spec/CMMN/20151109/DC\"\n");
         xml.push_str("             id=\"abcdodaf_case_definitions\"\n");
         xml.push_str("             targetNamespace=\"http://abcdodaf.local/cmmn\">\n\n");
 
         // Case element
-        xml.push_str(&format!("  <case id=\"{}\" name=\"{}\">\n", Self::escape_xml(&case.id), Self::escape_xml(&case.name)));
+        xml.push_str(&format!(
+            "  <case id=\"{}\" name=\"{}\">\n",
+            Self::escape_xml(&case.id),
+            Self::escape_xml(&case.name)
+        ));
 
         if let Some(desc) = &case.description {
-            xml.push_str(&format!("    <documentation>{}</documentation>\n", Self::escape_xml(desc)));
+            xml.push_str(&format!(
+                "    <documentation>{}</documentation>\n",
+                Self::escape_xml(desc)
+            ));
         }
 
         // Case Plan Model
@@ -87,7 +96,10 @@ impl CmmnXmlExporter {
                     Self::escape_xml(name),
                     Self::escape_xml(id)
                 );
-                xml.push_str(&format!("{}      isRequired=\"{}\" isRepeatable=\"{}\">\n", spaces, required, repeatable));
+                xml.push_str(&format!(
+                    "{}      isRequired=\"{}\" isRepeatable=\"{}\">\n",
+                    spaces, required, repeatable
+                ));
 
                 // Entry criteria
                 for sentry_id in entry_criteria {
@@ -120,18 +132,30 @@ impl CmmnXmlExporter {
                 xml.push_str(&format!("{}</planItem>\n", spaces));
 
                 // Human Task definition
-                xml.push_str(&format!("{}<humanTask id=\"humanTask_{}\"\n", spaces, Self::escape_xml(id)));
+                xml.push_str(&format!(
+                    "{}<humanTask id=\"humanTask_{}\"\n",
+                    spaces,
+                    Self::escape_xml(id)
+                ));
                 if let Some(perf) = performer {
-                    xml.push_str(&format!("{}              performer=\"{}\"", spaces, Self::escape_xml(perf)));
+                    xml.push_str(&format!(
+                        "{}              performer=\"{}\"",
+                        spaces,
+                        Self::escape_xml(perf)
+                    ));
                 }
                 xml.push_str(">\n");
                 if let Some(doc) = documentation {
-                    xml.push_str(&format!("{}<documentation>{}</documentation>\n", spaces, Self::escape_xml(doc)));
+                    xml.push_str(&format!(
+                        "{}<documentation>{}</documentation>\n",
+                        spaces,
+                        Self::escape_xml(doc)
+                    ));
                 }
                 xml.push_str(&format!("{}</humanTask>\n", spaces));
 
                 xml
-            }
+            },
             PlanItem::ProcessTask {
                 id,
                 name,
@@ -174,7 +198,7 @@ impl CmmnXmlExporter {
                 ));
 
                 xml
-            }
+            },
             PlanItem::Milestone { id, name, entry_criteria } => {
                 let mut xml = format!(
                     "{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"milestone_{}\">\n",
@@ -206,7 +230,7 @@ impl CmmnXmlExporter {
                 ));
 
                 xml
-            }
+            },
             PlanItem::DecisionTask {
                 id,
                 name,
@@ -231,7 +255,7 @@ impl CmmnXmlExporter {
                 ));
 
                 xml
-            }
+            },
             _ => String::new(),
         }
     }
@@ -262,7 +286,11 @@ impl CmmnXmlExporter {
 
         // If Part
         if let Some(condition) = &sentry.if_part {
-            xml.push_str(&format!("{}  <ifPart>{}</ifPart>\n", spaces, Self::escape_xml(condition)));
+            xml.push_str(&format!(
+                "{}  <ifPart>{}</ifPart>\n",
+                spaces,
+                Self::escape_xml(condition)
+            ));
         }
 
         xml.push_str(&format!("{}</sentry>\n", spaces));
@@ -289,7 +317,10 @@ impl CmmnXmlExporter {
                 xml.push_str(&format!(" definitionRef=\"{}\"", Self::escape_xml(def_ref)));
             }
 
-            xml.push_str(&format!(" multiplicity=\"{}\" />\n", Self::multiplicity_to_string(&item.multiplicity)));
+            xml.push_str(&format!(
+                " multiplicity=\"{}\" />\n",
+                Self::multiplicity_to_string(&item.multiplicity)
+            ));
         }
 
         xml.push_str(&format!("{}</caseFileModel>\n", spaces));
@@ -387,14 +418,19 @@ impl CmmnXmlImporter {
             if let Some(bracket_pos) = xml[start_pos..].find('>') {
                 let content_start = start_pos + bracket_pos + 1;
                 if let Some(end_pos) = xml[content_start..].find(&close_tag) {
-                    return Some(xml[start_pos..content_start + end_pos + close_tag.len()].to_string());
+                    return Some(
+                        xml[start_pos..content_start + end_pos + close_tag.len()].to_string(),
+                    );
                 }
             }
         }
         None
     }
 
-    fn parse_case_plan_model(cpm_xml: &str, case: &mut CmmnCase) -> std::result::Result<(), String> {
+    fn parse_case_plan_model(
+        cpm_xml: &str,
+        case: &mut CmmnCase,
+    ) -> std::result::Result<(), String> {
         // Extract plan items
         let plan_items_pattern = "<planItem";
         let mut search_pos = 0;
@@ -409,7 +445,9 @@ impl CmmnXmlImporter {
 
                 if let Some(id) = Self::extract_attr_from_tag(item_tag, "id") {
                     if let Some(name) = Self::extract_attr_from_tag(item_tag, "name") {
-                        if let Some(def_ref) = Self::extract_attr_from_tag(item_tag, "definitionRef") {
+                        if let Some(def_ref) =
+                            Self::extract_attr_from_tag(item_tag, "definitionRef")
+                        {
                             if def_ref.contains("milestone") {
                                 case.add_plan_item(PlanItem::Milestone {
                                     id: id.clone(),
@@ -439,7 +477,10 @@ impl CmmnXmlImporter {
         Ok(())
     }
 
-    fn parse_case_file_model(cfm_xml: &str, case: &mut CmmnCase) -> std::result::Result<(), String> {
+    fn parse_case_file_model(
+        cfm_xml: &str,
+        case: &mut CmmnCase,
+    ) -> std::result::Result<(), String> {
         let item_pattern = "<caseFileItem";
         let mut search_pos = 0;
 
@@ -569,6 +610,9 @@ mod tests {
 
         assert_eq!(original.id, imported.id);
         assert_eq!(original.name, imported.name);
-        assert_eq!(original.case_plan_model.plan_items.len(), imported.case_plan_model.plan_items.len());
+        assert_eq!(
+            original.case_plan_model.plan_items.len(),
+            imported.case_plan_model.plan_items.len()
+        );
     }
 }

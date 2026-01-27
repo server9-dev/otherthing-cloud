@@ -2,11 +2,11 @@
 //!
 //! Demonstrates advanced AI agent orchestration with DoDAF architecture
 
-use abcdodaf::prelude::*;
 use abcdodaf::dodaf::{
     BaseCapability as Capability, BaseCapabilityType as CapabilityType, CapabilityView,
-    Service, ServiceType, ServiceView, OperationalView, MissionArea,
+    MissionArea, OperationalView, Service, ServiceType, ServiceView,
 };
+use abcdodaf::prelude::*;
 // BPM+ triple threat is demonstrated in examples/bpm_plus_triple_threat.rs
 
 #[tokio::main]
@@ -27,40 +27,42 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     capabilities: vec!["cap-nlp".to_string(), "cap-reasoning".to_string()],
                 })
                 .add_activity(
-                    abcdodaf::dodaf::OperationalActivity::new(
-                        "oa-1",
-                        "Analyze Complex Problem",
-                    )
-                    .with_type(abcdodaf::dodaf::ActivityType::Automated)
-                    .add_performer("Reasoning Agent")
-                    .add_input("problem_description")
-                    .add_output("analysis_result"),
+                    abcdodaf::dodaf::OperationalActivity::new("oa-1", "Analyze Complex Problem")
+                        .with_type(abcdodaf::dodaf::ActivityType::Automated)
+                        .add_performer("Reasoning Agent")
+                        .add_input("problem_description")
+                        .add_output("analysis_result"),
                 )
                 .add_activity(
-                    abcdodaf::dodaf::OperationalActivity::new(
-                        "oa-2",
-                        "Generate Solution",
-                    )
-                    .with_type(abcdodaf::dodaf::ActivityType::Hybrid)
-                    .add_performer("Code Generation Agent")
-                    .add_performer("Human Expert")
-                    .add_input("analysis_result")
-                    .add_output("solution"),
+                    abcdodaf::dodaf::OperationalActivity::new("oa-2", "Generate Solution")
+                        .with_type(abcdodaf::dodaf::ActivityType::Hybrid)
+                        .add_performer("Code Generation Agent")
+                        .add_performer("Human Expert")
+                        .add_input("analysis_result")
+                        .add_output("solution"),
                 ),
         )
         .with_capability_view(
             CapabilityView::new()
                 .add_capability(
-                    Capability::new("cap-nlp", "Natural Language Processing", CapabilityType::Cognitive)
-                        .with_description("Advanced NLP for understanding and generation")
-                        .add_resource("LLM Model")
-                        .add_metric("accuracy", serde_json::json!(0.95)),
+                    Capability::new(
+                        "cap-nlp",
+                        "Natural Language Processing",
+                        CapabilityType::Cognitive,
+                    )
+                    .with_description("Advanced NLP for understanding and generation")
+                    .add_resource("LLM Model")
+                    .add_metric("accuracy", serde_json::json!(0.95)),
                 )
                 .add_capability(
-                    Capability::new("cap-reasoning", "Logical Reasoning", CapabilityType::Cognitive)
-                        .with_description("Multi-step logical reasoning capability")
-                        .add_resource("Reasoning Engine")
-                        .add_metric("consistency", serde_json::json!(0.92)),
+                    Capability::new(
+                        "cap-reasoning",
+                        "Logical Reasoning",
+                        CapabilityType::Cognitive,
+                    )
+                    .with_description("Multi-step logical reasoning capability")
+                    .add_resource("Reasoning Engine")
+                    .add_metric("consistency", serde_json::json!(0.92)),
                 )
                 .add_capability(
                     Capability::new("cap-code", "Code Generation", CapabilityType::Cognitive)

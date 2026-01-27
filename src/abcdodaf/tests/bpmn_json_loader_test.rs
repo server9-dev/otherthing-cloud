@@ -133,10 +133,7 @@ mod tests {
         assert_eq!(nodes.len(), 6);
 
         // Verify node types
-        let node_types: Vec<_> = nodes
-            .iter()
-            .map(|(_, node)| node.type_name())
-            .collect();
+        let node_types: Vec<_> = nodes.iter().map(|(_, node)| node.type_name()).collect();
 
         assert!(node_types.contains(&"User Task"));
         assert!(node_types.contains(&"Service Task"));
@@ -199,9 +196,7 @@ mod tests {
 
         let result = convert_bpmn_json(json);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("Source node not found"));
+        assert!(result.unwrap_err().contains("Source node not found"));
     }
 
     #[test]
@@ -223,9 +218,7 @@ mod tests {
 
         let result = convert_bpmn_json(json);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("Target node not found"));
+        assert!(result.unwrap_err().contains("Target node not found"));
     }
 
     #[test]

@@ -42,17 +42,11 @@ impl Default for MappingConfig {
 
 impl BpmnDodafMapper {
     pub fn new() -> Self {
-        Self {
-            config: MappingConfig::default(),
-            element_map: HashMap::new(),
-        }
+        Self { config: MappingConfig::default(), element_map: HashMap::new() }
     }
 
     pub fn with_config(config: MappingConfig) -> Self {
-        Self {
-            config,
-            element_map: HashMap::new(),
-        }
+        Self { config, element_map: HashMap::new() }
     }
 
     // ========================================================================
@@ -121,49 +115,47 @@ impl BpmnDodafMapper {
                     performer_id: "human_performer".to_string(),
                     role: Some("User".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Service { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "system_performer".to_string(),
                     role: Some("Service".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Script { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "system_performer".to_string(),
                     role: Some("Script".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Manual { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "human_performer".to_string(),
                     role: Some("Manual".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Send { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "system_performer".to_string(),
                     role: Some("Sender".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Receive { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "system_performer".to_string(),
                     role: Some("Receiver".to_string()),
                 };
-            }
+            },
             BpmnTaskType::BusinessRule { .. } => {
                 activity.performer = PerformerRef {
                     performer_id: "system_performer".to_string(),
                     role: Some("RulesEngine".to_string()),
                 };
-            }
+            },
             BpmnTaskType::Abstract => {
-                activity.performer = PerformerRef {
-                    performer_id: "unassigned".to_string(),
-                    role: None,
-                };
-            }
+                activity.performer =
+                    PerformerRef { performer_id: "unassigned".to_string(), role: None };
+            },
         }
 
         // Map loop characteristics to frequency
@@ -171,12 +163,10 @@ impl BpmnDodafMapper {
             match loop_char {
                 LoopCharacteristics::Standard { loop_maximum, .. } => {
                     if let Some(max) = loop_maximum {
-                        activity.frequency = Some(Frequency {
-                            occurrences: *max,
-                            per_time_unit: TimeUnit::Hours,
-                        });
+                        activity.frequency =
+                            Some(Frequency { occurrences: *max, per_time_unit: TimeUnit::Hours });
                     }
-                }
+                },
                 LoopCharacteristics::MultiInstance { loop_cardinality, .. } => {
                     if let Some(cardinality) = loop_cardinality {
                         activity.frequency = Some(Frequency {
@@ -184,7 +174,7 @@ impl BpmnDodafMapper {
                             per_time_unit: TimeUnit::Hours,
                         });
                     }
-                }
+                },
             }
         }
 
@@ -198,7 +188,10 @@ impl BpmnDodafMapper {
     }
 
     /// Map BPMN Subprocess to DoDAF Hierarchical Activity
-    fn map_subprocess_to_activity(&mut self, subprocess: &Subprocess) -> Result<OperationalActivity> {
+    fn map_subprocess_to_activity(
+        &mut self,
+        subprocess: &Subprocess,
+    ) -> Result<OperationalActivity> {
         let mut activity = OperationalActivity::new(
             subprocess.id.clone(),
             subprocess.name.clone().unwrap_or_default(),
@@ -217,7 +210,10 @@ impl BpmnDodafMapper {
     }
 
     /// Map BPMN Sequence Flow to DoDAF Resource Flow
-    fn map_sequence_flow_to_resource_flow(&self, flow: &SequenceFlow) -> Result<Option<ResourceFlow>> {
+    fn map_sequence_flow_to_resource_flow(
+        &self,
+        flow: &SequenceFlow,
+    ) -> Result<Option<ResourceFlow>> {
         // Sequence flows represent control flow, which we map to information flow
         let resource_flow = ResourceFlow::new(
             flow.id.clone(),
@@ -300,13 +296,11 @@ impl BpmnDodafMapper {
     fn map_activity_to_task(&mut self, activity: &OperationalActivity) -> Result<BpmnTask> {
         // Determine BPMN task type from performer
         let task_type = match &activity.performer.role {
-            Some(role) if role == "User" || role == "Manual" => BpmnTaskType::User {
-                implementation: None,
-                rendering: None,
+            Some(role) if role == "User" || role == "Manual" => {
+                BpmnTaskType::User { implementation: None, rendering: None }
             },
-            Some(role) if role == "Service" => BpmnTaskType::Service {
-                implementation: None,
-                operation_ref: None,
+            Some(role) if role == "Service" => {
+                BpmnTaskType::Service { implementation: None, operation_ref: None }
             },
             Some(role) if role == "Script" => BpmnTaskType::Script {
                 script_format: "application/javascript".to_string(),
@@ -332,7 +326,10 @@ impl BpmnDodafMapper {
     }
 
     /// Map DoDAF Resource Flow to BPMN Sequence Flow
-    fn map_resource_flow_to_sequence_flow(&self, flow: &ResourceFlow) -> Result<Option<SequenceFlow>> {
+    fn map_resource_flow_to_sequence_flow(
+        &self,
+        flow: &ResourceFlow,
+    ) -> Result<Option<SequenceFlow>> {
         // Only map information flows to sequence flows
         if flow.resource_type == ResourceType::Information {
             let sequence_flow = SequenceFlow {
@@ -367,7 +364,11 @@ impl BpmnDodafMapper {
     // ========================================================================
 
     /// Create OV-6c Event-Trace from BPMN Process
-    pub fn bpmn_to_ov6c(&self, process: &BpmnProcess, scenario: String) -> Result<EventTraceDescription> {
+    pub fn bpmn_to_ov6c(
+        &self,
+        process: &BpmnProcess,
+        scenario: String,
+    ) -> Result<EventTraceDescription> {
         let mut trace_events = Vec::new();
         let mut sequence = 0;
 
@@ -425,10 +426,7 @@ mod tests {
             id: "task1".to_string(),
             name: Some("Review Application".to_string()),
             documentation: Some("Review submitted application".to_string()),
-            task_type: BpmnTaskType::User {
-                implementation: None,
-                rendering: None,
-            },
+            task_type: BpmnTaskType::User { implementation: None, rendering: None },
             default_flow: None,
             io_specification: None,
             properties: HashMap::new(),

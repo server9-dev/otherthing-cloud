@@ -34,10 +34,7 @@ pub enum PlanItemState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CaseEvent {
     /// Manual activation of a discretionary item
-    DiscretionaryItemActivated {
-        item_id: String,
-        triggered_at: chrono::DateTime<chrono::Utc>,
-    },
+    DiscretionaryItemActivated { item_id: String, triggered_at: chrono::DateTime<chrono::Utc> },
     /// Plan item state change
     PlanItemStateChanged {
         item_id: String,
@@ -58,10 +55,7 @@ pub enum CaseEvent {
         triggered_at: chrono::DateTime<chrono::Utc>,
     },
     /// Timer fired
-    TimerFired {
-        listener_id: String,
-        triggered_at: chrono::DateTime<chrono::Utc>,
-    },
+    TimerFired { listener_id: String, triggered_at: chrono::DateTime<chrono::Utc> },
 }
 
 /// State tracking for a plan item instance
@@ -172,7 +166,9 @@ impl CaseInstance {
         new_state: PlanItemState,
     ) -> Result<()> {
         // First phase: extract data we need
-        let (old_state, plan_item_id) = if let Some(item) = self.plan_items.get_mut(item_instance_id) {
+        let (old_state, plan_item_id) = if let Some(item) =
+            self.plan_items.get_mut(item_instance_id)
+        {
             let old_state = item.state;
             item.state = new_state;
 
@@ -180,11 +176,11 @@ impl CaseInstance {
             match new_state {
                 PlanItemState::Active if item.started_at.is_none() => {
                     item.started_at = Some(chrono::Utc::now());
-                }
+                },
                 PlanItemState::Completed | PlanItemState::Terminated | PlanItemState::Failed => {
                     item.completed_at = Some(chrono::Utc::now());
-                }
-                _ => {}
+                },
+                _ => {},
             }
 
             (old_state, item.plan_item_id.clone())
@@ -218,18 +214,12 @@ impl CaseInstance {
 
     /// Check if case is in a terminal state
     pub fn is_terminal(&self) -> bool {
-        matches!(
-            self.state,
-            CaseInstanceState::Completed | CaseInstanceState::Terminated
-        )
+        matches!(self.state, CaseInstanceState::Completed | CaseInstanceState::Terminated)
     }
 
     /// Get all plan items in a specific state
     pub fn get_items_in_state(&self, state: PlanItemState) -> Vec<&PlanItemInstance> {
-        self.plan_items
-            .values()
-            .filter(|item| item.state == state)
-            .collect()
+        self.plan_items.values().filter(|item| item.state == state).collect()
     }
 
     /// Check if all required plan items are completed
@@ -242,9 +232,10 @@ impl CaseInstance {
             };
 
             if let Some(id) = plan_item_id {
-                let completed = self.plan_items.values().any(|pi| {
-                    pi.plan_item_id == *id && pi.state == PlanItemState::Completed
-                });
+                let completed = self
+                    .plan_items
+                    .values()
+                    .any(|pi| pi.plan_item_id == *id && pi.state == PlanItemState::Completed);
 
                 if !completed {
                     return false;
@@ -261,17 +252,12 @@ pub struct SentryEvaluator;
 
 impl SentryEvaluator {
     /// Evaluate if a sentry should fire
-    pub fn evaluate_sentry(
-        sentry: &Sentry,
-        context: &SentryContext,
-    ) -> bool {
+    pub fn evaluate_sentry(sentry: &Sentry, context: &SentryContext) -> bool {
         // Check on_parts (event-based conditions)
         let on_parts_satisfied = if sentry.on_parts.is_empty() {
             true
         } else {
-            sentry.on_parts.iter().all(|on_part| {
-                Self::evaluate_on_part(on_part, context)
-            })
+            sentry.on_parts.iter().all(|on_part| Self::evaluate_on_part(on_part, context))
         };
 
         // Check if_part (condition expression)
@@ -287,9 +273,7 @@ impl SentryEvaluator {
     /// Evaluate a single on_part
     fn evaluate_on_part(on_part: &OnPart, context: &SentryContext) -> bool {
         // Find the referenced plan item
-        let item = context.plan_items.values().find(|item| {
-            item.plan_item_id == on_part.source_ref
-        });
+        let item = context.plan_items.values().find(|item| item.plan_item_id == on_part.source_ref);
 
         if let Some(item) = item {
             match on_part.standard_event {
@@ -358,8 +342,7 @@ impl CaseRuntimeEngine {
 
     /// Register a case model
     pub async fn register_case(&self, case_model: CmmnCase) -> Result<()> {
-        case_model.validate()
-            .map_err(|e| AbcdodafError::WorkflowError(e))?;
+        case_model.validate().map_err(|e| AbcdodafError::WorkflowError(e))?;
         let mut models = self.case_models.write().await;
         models.insert(case_model.id.clone(), case_model);
         info!("Registered case model");
@@ -386,12 +369,9 @@ impl CaseRuntimeEngine {
     /// Get a case instance
     pub async fn get_case_instance(&self, instance_id: &str) -> Result<CaseInstance> {
         let instances = self.instances.read().await;
-        instances
-            .get(instance_id)
-            .cloned()
-            .ok_or_else(|| {
-                AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id))
-            })
+        instances.get(instance_id).cloned().ok_or_else(|| {
+            AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id))
+        })
     }
 
     /// Create a plan item in a case instance
@@ -402,13 +382,11 @@ impl CaseRuntimeEngine {
     ) -> Result<String> {
         let mut instances = self.instances.write().await;
         if let Some(instance) = instances.get_mut(instance_id) {
-            let item_instance_id = instance.create_plan_item(plan_item_id, PlanItemState::Available);
+            let item_instance_id =
+                instance.create_plan_item(plan_item_id, PlanItemState::Available);
             Ok(item_instance_id)
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
@@ -423,28 +401,18 @@ impl CaseRuntimeEngine {
             instance.change_plan_item_state(item_instance_id, PlanItemState::Enabled)?;
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
     /// Start executing a plan item
-    pub async fn start_plan_item(
-        &self,
-        instance_id: &str,
-        item_instance_id: &str,
-    ) -> Result<()> {
+    pub async fn start_plan_item(&self, instance_id: &str, item_instance_id: &str) -> Result<()> {
         let mut instances = self.instances.write().await;
         if let Some(instance) = instances.get_mut(instance_id) {
             instance.change_plan_item_state(item_instance_id, PlanItemState::Active)?;
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
@@ -469,10 +437,7 @@ impl CaseRuntimeEngine {
             }
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
@@ -488,10 +453,7 @@ impl CaseRuntimeEngine {
             instance.update_case_file(key, value);
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
@@ -519,10 +481,7 @@ impl CaseRuntimeEngine {
 
             Ok(fired_sentries)
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 
@@ -535,10 +494,7 @@ impl CaseRuntimeEngine {
             info!("Case instance {} terminated", instance_id);
             Ok(())
         } else {
-            Err(AbcdodafError::WorkflowError(format!(
-                "Case instance '{}' not found",
-                instance_id
-            )))
+            Err(AbcdodafError::WorkflowError(format!("Case instance '{}' not found", instance_id)))
         }
     }
 }
@@ -632,11 +588,15 @@ mod tests {
         engine.register_case(case_model).await.unwrap();
 
         let instance_id = engine.start_case("case1").await.unwrap();
-        let item_instance_id = engine.create_plan_item(&instance_id, "task1".to_string()).await.unwrap();
+        let item_instance_id =
+            engine.create_plan_item(&instance_id, "task1".to_string()).await.unwrap();
 
         engine.activate_plan_item(&instance_id, &item_instance_id).await.unwrap();
         let instance = engine.get_case_instance(&instance_id).await.unwrap();
-        assert_eq!(instance.get_plan_item(&item_instance_id).unwrap().state, PlanItemState::Enabled);
+        assert_eq!(
+            instance.get_plan_item(&item_instance_id).unwrap().state,
+            PlanItemState::Enabled
+        );
 
         engine.start_plan_item(&instance_id, &item_instance_id).await.unwrap();
         let instance = engine.get_case_instance(&instance_id).await.unwrap();

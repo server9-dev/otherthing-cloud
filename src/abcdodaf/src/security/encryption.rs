@@ -190,16 +190,15 @@ impl EncryptionProvider for Aes256GcmProvider {
 
     fn decrypt(&self, data: &EncryptedData) -> SecurityResult<Vec<u8>> {
         if data.algorithm != EncryptionAlgorithm::Aes256Gcm {
-            return Err(SecurityError::DecryptionError(
-                "Algorithm mismatch".to_string(),
-            ));
+            return Err(SecurityError::DecryptionError("Algorithm mismatch".to_string()));
         }
 
         // Check if the key version is revoked
         if self.revoked_versions.contains(&data.key_version) {
-            return Err(SecurityError::DecryptionError(
-                format!("Key version {} has been revoked", data.key_version),
-            ));
+            return Err(SecurityError::DecryptionError(format!(
+                "Key version {} has been revoked",
+                data.key_version
+            )));
         }
 
         // Select the appropriate key based on version
@@ -208,9 +207,10 @@ impl EncryptionProvider for Aes256GcmProvider {
         } else if let Some(old_key) = self.old_keys.get(&data.key_version) {
             old_key
         } else {
-            return Err(SecurityError::DecryptionError(
-                format!("Key version {} not found", data.key_version),
-            ));
+            return Err(SecurityError::DecryptionError(format!(
+                "Key version {} not found",
+                data.key_version
+            )));
         };
 
         // Verify tag (simplified check)
@@ -302,8 +302,7 @@ impl EncryptionUtils {
         data: &EncryptedData,
     ) -> SecurityResult<String> {
         let bytes = provider.decrypt(data)?;
-        String::from_utf8(bytes)
-            .map_err(|e| SecurityError::DecryptionError(e.to_string()))
+        String::from_utf8(bytes).map_err(|e| SecurityError::DecryptionError(e.to_string()))
     }
 
     /// Encrypt JSON data
@@ -433,10 +432,7 @@ mod tests {
             value: i32,
         }
 
-        let data = TestData {
-            key: "secret".to_string(),
-            value: 42,
-        };
+        let data = TestData { key: "secret".to_string(), value: 42 };
 
         let encrypted = EncryptionUtils::encrypt_json(&provider, &data).unwrap();
         let decrypted: TestData = EncryptionUtils::decrypt_json(&provider, &encrypted).unwrap();

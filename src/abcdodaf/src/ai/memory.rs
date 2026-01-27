@@ -141,16 +141,19 @@ impl AgentMemory {
     }
 
     /// Get or create conversation history
-    pub fn get_or_create_conversation(&mut self, conversation_id: &str) -> &mut ConversationHistory {
-        self.conversations
-            .entry(conversation_id.to_string())
-            .or_insert_with(|| ConversationHistory {
+    pub fn get_or_create_conversation(
+        &mut self,
+        conversation_id: &str,
+    ) -> &mut ConversationHistory {
+        self.conversations.entry(conversation_id.to_string()).or_insert_with(|| {
+            ConversationHistory {
                 conversation_id: conversation_id.to_string(),
                 messages: vec![],
                 metadata: HashMap::new(),
                 started_at: Utc::now(),
                 updated_at: Utc::now(),
-            })
+            }
+        })
     }
 
     /// Add message to conversation
@@ -197,11 +200,7 @@ impl AgentMemory {
             short_term_count: self.short_term.len(),
             long_term_count: self.long_term.len(),
             conversation_count: self.conversations.len(),
-            total_messages: self
-                .conversations
-                .values()
-                .map(|c| c.messages.len())
-                .sum(),
+            total_messages: self.conversations.values().map(|c| c.messages.len()).sum(),
         }
     }
 }
@@ -221,11 +220,7 @@ pub struct MemoryStats {
 
 impl MemoryEntry {
     /// Create a new memory entry
-    pub fn new(
-        id: impl Into<String>,
-        entry_type: MemoryType,
-        content: impl Into<String>,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, entry_type: MemoryType, content: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             entry_type,

@@ -59,11 +59,9 @@ impl FeelValue {
     pub fn to_number(&self) -> DmnResult<f64> {
         match self {
             FeelValue::Number(n) => Ok(*n),
-            FeelValue::String(s) => s.parse::<f64>().map_err(|_| {
-                DmnError::TypeMismatch {
-                    expected: "Number".to_string(),
-                    actual: format!("String({})", s),
-                }
+            FeelValue::String(s) => s.parse::<f64>().map_err(|_| DmnError::TypeMismatch {
+                expected: "Number".to_string(),
+                actual: format!("String({})", s),
             }),
             FeelValue::Boolean(b) => Ok(if *b { 1.0 } else { 0.0 }),
             _ => Err(DmnError::TypeMismatch {
@@ -84,19 +82,15 @@ impl FeelValue {
                 } else {
                     n.to_string()
                 }
-            }
+            },
             FeelValue::String(s) => s.clone(),
             FeelValue::Date(d) => d.clone(),
             FeelValue::Time(t) => t.clone(),
             FeelValue::DateTime(dt) => dt.clone(),
             FeelValue::List(items) => {
-                let items_str = items
-                    .iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
+                let items_str = items.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
                 format!("[{}]", items_str)
-            }
+            },
             FeelValue::Context(map) => {
                 let items_str = map
                     .iter()
@@ -104,7 +98,7 @@ impl FeelValue {
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("{{{}}}", items_str)
-            }
+            },
         }
     }
 
@@ -137,7 +131,7 @@ impl FeelValue {
                     return Ok((a - b).abs() < 1e-10);
                 }
                 Ok(false)
-            }
+            },
         }
     }
 }
@@ -158,27 +152,13 @@ pub enum FeelExpression {
     /// Variable reference
     Variable(String),
     /// Unary operation
-    Unary {
-        operator: UnaryOp,
-        operand: Box<FeelExpression>,
-    },
+    Unary { operator: UnaryOp, operand: Box<FeelExpression> },
     /// Binary operation
-    Binary {
-        operator: BinaryOp,
-        left: Box<FeelExpression>,
-        right: Box<FeelExpression>,
-    },
+    Binary { operator: BinaryOp, left: Box<FeelExpression>, right: Box<FeelExpression> },
     /// Comparison operation
-    Comparison {
-        operator: ComparisonOp,
-        left: Box<FeelExpression>,
-        right: Box<FeelExpression>,
-    },
+    Comparison { operator: ComparisonOp, left: Box<FeelExpression>, right: Box<FeelExpression> },
     /// Function call
-    FunctionCall {
-        name: String,
-        arguments: Vec<FeelExpression>,
-    },
+    FunctionCall { name: String, arguments: Vec<FeelExpression> },
     /// List construction
     List(Vec<FeelExpression>),
     /// Context construction
@@ -238,9 +218,7 @@ pub struct FeelEvaluator {
 impl FeelEvaluator {
     /// Create a new evaluator with empty context
     pub fn new() -> Self {
-        Self {
-            context: HashMap::new(),
-        }
+        Self { context: HashMap::new() }
     }
 
     /// Create evaluator with initial context
@@ -263,42 +241,41 @@ impl FeelEvaluator {
         match expr {
             FeelExpression::Literal(val) => Ok(val.clone()),
 
-            FeelExpression::Variable(name) => {
-                self.context
-                    .get(name)
-                    .cloned()
-                    .ok_or_else(|| DmnError::MissingInput(name.clone()))
-            }
+            FeelExpression::Variable(name) => self
+                .context
+                .get(name)
+                .cloned()
+                .ok_or_else(|| DmnError::MissingInput(name.clone())),
 
             FeelExpression::Unary { operator, operand } => {
                 let val = self.evaluate(operand)?;
                 self.evaluate_unary(*operator, val)
-            }
+            },
 
             FeelExpression::Binary { operator, left, right } => {
                 let left_val = self.evaluate(left)?;
                 let right_val = self.evaluate(right)?;
                 self.evaluate_binary(*operator, left_val, right_val)
-            }
+            },
 
             FeelExpression::Comparison { operator, left, right } => {
                 let left_val = self.evaluate(left)?;
                 let right_val = self.evaluate(right)?;
                 let result = self.evaluate_comparison(*operator, &left_val, &right_val)?;
                 Ok(FeelValue::Boolean(result))
-            }
+            },
 
             FeelExpression::FunctionCall { name, arguments } => {
                 let args: DmnResult<Vec<_>> =
                     arguments.iter().map(|arg| self.evaluate(arg)).collect();
                 self.evaluate_function(name, args?)
-            }
+            },
 
             FeelExpression::List(items) => {
                 let values: DmnResult<Vec<_>> =
                     items.iter().map(|item| self.evaluate(item)).collect();
                 Ok(FeelValue::List(values?))
-            }
+            },
 
             FeelExpression::Context(items) => {
                 let mut map = HashMap::new();
@@ -307,7 +284,7 @@ impl FeelEvaluator {
                     map.insert(key.clone(), value);
                 }
                 Ok(FeelValue::Context(map))
-            }
+            },
         }
     }
 
@@ -318,48 +295,51 @@ impl FeelEvaluator {
         }
     }
 
-    fn evaluate_binary(&self, op: BinaryOp, left: FeelValue, right: FeelValue) -> DmnResult<FeelValue> {
+    fn evaluate_binary(
+        &self,
+        op: BinaryOp,
+        left: FeelValue,
+        right: FeelValue,
+    ) -> DmnResult<FeelValue> {
         match op {
             BinaryOp::Add => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(FeelValue::Number(l + r))
-            }
+            },
             BinaryOp::Subtract => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(FeelValue::Number(l - r))
-            }
+            },
             BinaryOp::Multiply => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(FeelValue::Number(l * r))
-            }
+            },
             BinaryOp::Divide => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 if r == 0.0 {
-                    return Err(DmnError::OperationError(
-                        "Division by zero".to_string(),
-                    ));
+                    return Err(DmnError::OperationError("Division by zero".to_string()));
                 }
                 Ok(FeelValue::Number(l / r))
-            }
+            },
             BinaryOp::Power => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(FeelValue::Number(l.powf(r)))
-            }
+            },
             BinaryOp::And => {
                 let l = left.to_bool()?;
                 let r = right.to_bool()?;
                 Ok(FeelValue::Boolean(l && r))
-            }
+            },
             BinaryOp::Or => {
                 let l = left.to_bool()?;
                 let r = right.to_bool()?;
                 Ok(FeelValue::Boolean(l || r))
-            }
+            },
         }
     }
 
@@ -376,22 +356,22 @@ impl FeelEvaluator {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(l < r)
-            }
+            },
             ComparisonOp::LessEqual => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(l <= r)
-            }
+            },
             ComparisonOp::GreaterThan => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(l > r)
-            }
+            },
             ComparisonOp::GreaterEqual => {
                 let l = left.to_number()?;
                 let r = right.to_number()?;
                 Ok(l >= r)
-            }
+            },
         }
     }
 
@@ -400,9 +380,7 @@ impl FeelEvaluator {
             // List functions
             "count" => {
                 if args.len() != 1 {
-                    return Err(DmnError::OperationError(
-                        "count expects 1 argument".to_string(),
-                    ));
+                    return Err(DmnError::OperationError("count expects 1 argument".to_string()));
                 }
                 match &args[0] {
                     FeelValue::List(items) => Ok(FeelValue::Number(items.len() as f64)),
@@ -411,18 +389,16 @@ impl FeelEvaluator {
                         actual: args[0].type_name().to_string(),
                     }),
                 }
-            }
+            },
 
             // Numeric functions
             "abs" => {
                 if args.len() != 1 {
-                    return Err(DmnError::OperationError(
-                        "abs expects 1 argument".to_string(),
-                    ));
+                    return Err(DmnError::OperationError("abs expects 1 argument".to_string()));
                 }
                 let n = args[0].to_number()?;
                 Ok(FeelValue::Number(n.abs()))
-            }
+            },
 
             "max" => {
                 if args.is_empty() {
@@ -432,11 +408,9 @@ impl FeelEvaluator {
                 }
                 let numbers: DmnResult<Vec<f64>> = args.iter().map(|a| a.to_number()).collect();
                 let nums = numbers?;
-                let max = nums
-                    .into_iter()
-                    .fold(f64::NEG_INFINITY, f64::max);
+                let max = nums.into_iter().fold(f64::NEG_INFINITY, f64::max);
                 Ok(FeelValue::Number(max))
-            }
+            },
 
             "min" => {
                 if args.is_empty() {
@@ -448,7 +422,7 @@ impl FeelEvaluator {
                 let nums = numbers?;
                 let min = nums.into_iter().fold(f64::INFINITY, f64::min);
                 Ok(FeelValue::Number(min))
-            }
+            },
 
             // String functions
             "substring" => {
@@ -465,13 +439,9 @@ impl FeelEvaluator {
                     s.len() - start + 1
                 };
 
-                let result = s
-                    .chars()
-                    .skip(start - 1)
-                    .take(length)
-                    .collect::<String>();
+                let result = s.chars().skip(start - 1).take(length).collect::<String>();
                 Ok(FeelValue::String(result))
-            }
+            },
 
             "upper case" | "uppercase" => {
                 if args.len() != 1 {
@@ -481,7 +451,7 @@ impl FeelEvaluator {
                 }
                 let s = args[0].to_string();
                 Ok(FeelValue::String(s.to_uppercase()))
-            }
+            },
 
             "lower case" | "lowercase" => {
                 if args.len() != 1 {
@@ -491,12 +461,9 @@ impl FeelEvaluator {
                 }
                 let s = args[0].to_string();
                 Ok(FeelValue::String(s.to_lowercase()))
-            }
+            },
 
-            _ => Err(DmnError::OperationError(format!(
-                "Unknown function: {}",
-                name
-            ))),
+            _ => Err(DmnError::OperationError(format!("Unknown function: {}", name))),
         }
     }
 }

@@ -3,17 +3,17 @@
 //! Comprehensive validation system for enforcing DODAF, BPMN, and custom business rules.
 //! Provides declarative rule definitions, automated compliance checking, and detailed reporting.
 
-pub mod rules;
-pub mod engine;
-pub mod standards;
 pub mod compliance;
+pub mod engine;
+pub mod rules;
+pub mod standards;
 pub mod violations;
 
-pub use rules::{Rule, RuleSet, RuleDefinition, RuleSeverity, RuleCategory};
-pub use engine::{ValidationEngine, ValidationContext, ValidationResult};
+pub use compliance::{ComplianceLevel, ComplianceReport, ComplianceScore};
+pub use engine::{ValidationContext, ValidationEngine, ValidationResult};
+pub use rules::{Rule, RuleCategory, RuleDefinition, RuleSet, RuleSeverity};
 pub use standards::{Standard, StandardVersion, StandardsRegistry};
-pub use compliance::{ComplianceReport, ComplianceScore, ComplianceLevel};
-pub use violations::{Violation, ViolationType, ViolationSeverity};
+pub use violations::{Violation, ViolationSeverity, ViolationType};
 
 /// Validation error types
 #[derive(Debug, Clone)]

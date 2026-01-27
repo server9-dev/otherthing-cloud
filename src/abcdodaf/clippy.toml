@@ -1,0 +1,105 @@
+# ============================================================================
+# Clippy Linting Configuration for ABCDODAF Project
+# ============================================================================
+# This file configures Clippy, Rust's official linter for catching common
+# mistakes and enforcing best practices.
+#
+# Purpose:
+# - Catch common bugs and anti-patterns at compile time
+# - Enforce performance best practices
+# - Maintain code quality and consistency
+# - Prevent unsafe patterns in production code
+#
+# Usage:
+#   cargo clippy --all-features              # Run clippy
+#   cargo clippy --all-features --fix        # Auto-fix issues
+#   cargo clippy -- -D warnings              # Treat warnings as errors
+#
+# Documentation: https://rust-lang.github.io/rust-clippy/
+# ============================================================================
+
+# Minimum Supported Rust Version (MSRV)
+# Ensures code remains compatible with this Rust version
+msrv = "1.70.0"
+
+# Cognitive complexity threshold
+# Functions exceeding this score should be refactored
+cognitive-complexity-threshold = 25
+
+# Type complexity threshold
+# Warns when types become too complex
+type-complexity-threshold = 250
+
+# Single character binding names allowed in closures
+single-char-binding-names-threshold = 4
+
+# Maximum allowed size for copying types (bytes)
+# Types larger than this should be passed by reference
+trivial-copy-size-limit = 128
+
+# Maximum allowed size for passing by value (bytes)
+pass-by-value-size-limit = 256
+
+# Maximum function lines before warning
+too-many-lines-threshold = 150
+
+# Maximum struct fields of bool type before warning
+max-struct-bools = 3
+
+# Array size threshold for indexing warnings
+array-size-threshold = 512000
+
+# Vec box size threshold
+vec-box-size-threshold = 4096
+
+# Verbose bit mask threshold
+verbose-bit-mask-threshold = 1
+
+# Stack frame size limit (bytes)
+stack-size-threshold = 512000
+
+# Enum variant name length threshold
+enum-variant-name-threshold = 3
+
+# Maximum trait bounds before warning about complexity
+max-trait-bounds = 3
+
+# Maximum suggested slice pattern length
+max-suggested-slice-pattern-length = 3
+
+# Allow certain functions in .expect() calls
+# These are considered descriptive enough to use .expect()
+allow-expect-in-tests = true
+
+# Allow unwrap in tests
+allow-unwrap-in-tests = true
+
+# Warn on wildcard imports
+warn-on-all-wildcard-imports = true
+
+# Allow certain names that clippy might flag
+allowed-idents-below-min-chars = ["id", "db", "ui", "io", "tx", "rx"]
+
+# Disallowed function names - these should never be used
+disallowed-methods = [
+    # Dangerous methods that can panic
+    { path = "std::env::set_var", reason = "use std::env::set_var is not thread-safe" },
+]
+
+# Disallowed types - these should not be used in the codebase
+disallowed-types = []
+
+# Suppress false positives for certain patterns
+suppress-restriction-lint-in-const = false
+
+# Allow certain doc markdown issues
+doc-valid-idents = ["DoDAF", "BPMN", "CMMN", "DMN", "BPM", "UUID", "JSON", "YAML", "TOML", "XML", "PostgreSQL", "SQLx"]
+
+# Enforce trailing zeros in float literals
+enforced-import-renames = []
+
+# Standard library function configuration
+avoid-breaking-exported-api = true
+
+# Literal representation
+literal-representation-threshold = 1024

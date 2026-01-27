@@ -50,34 +50,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--- Simulating Process Executions ---\n");
 
     // Order processing metrics
-    dashboard
-        .collector
-        .record_process_execution("order_processing", 2500.0, true);
-    dashboard
-        .collector
-        .record_process_execution("order_processing", 3200.0, true);
-    dashboard
-        .collector
-        .record_process_execution("order_processing", 2800.0, true);
-    dashboard
-        .collector
-        .record_process_execution("order_processing", 5500.0, false); // High latency + failure
+    dashboard.collector.record_process_execution("order_processing", 2500.0, true);
+    dashboard.collector.record_process_execution("order_processing", 3200.0, true);
+    dashboard.collector.record_process_execution("order_processing", 2800.0, true);
+    dashboard.collector.record_process_execution("order_processing", 5500.0, false); // High latency + failure
 
     // Payment processing metrics
-    dashboard
-        .collector
-        .record_process_execution("payment_processing", 1200.0, true);
-    dashboard
-        .collector
-        .record_process_execution("payment_processing", 1500.0, true);
-    dashboard
-        .collector
-        .record_process_execution("payment_processing", 1100.0, true);
+    dashboard.collector.record_process_execution("payment_processing", 1200.0, true);
+    dashboard.collector.record_process_execution("payment_processing", 1500.0, true);
+    dashboard.collector.record_process_execution("payment_processing", 1100.0, true);
 
     // Record cost metrics
-    dashboard.collector.record_cost("payment_processing", "compute".to_string(), 25.50, "USD");
-    dashboard.collector.record_cost("payment_processing", "storage".to_string(), 5.00, "USD");
-    dashboard.collector.record_cost("order_processing", "compute".to_string(), 15.75, "USD");
+    dashboard
+        .collector
+        .record_cost("payment_processing", "compute".to_string(), 25.50, "USD");
+    dashboard
+        .collector
+        .record_cost("payment_processing", "storage".to_string(), 5.00, "USD");
+    dashboard
+        .collector
+        .record_cost("order_processing", "compute".to_string(), 15.75, "USD");
 
     // Get current snapshot
     let snapshot = dashboard.collector.current_snapshot();
@@ -85,7 +77,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (process_id, metrics) in &snapshot.process_metrics {
         println!(
             "  {}: {} executions, {:.1}% completion rate, {:.0}ms avg time",
-            process_id, metrics.total_instances, metrics.completion_rate, metrics.avg_execution_time_ms
+            process_id,
+            metrics.total_instances,
+            metrics.completion_rate,
+            metrics.avg_execution_time_ms
         );
     }
     println!();
@@ -112,10 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Trend analysis
     let trend_analyzer = abcdodaf::analytics::TrendAnalyzer::new();
-    let trends = trend_analyzer.analyze_trends(
-        &snapshot.recent_metrics,
-        Duration::days(7),
-    );
+    let trends = trend_analyzer.analyze_trends(&snapshot.recent_metrics, Duration::days(7));
     if !trends.is_empty() {
         println!("Trends (7-day period):");
         for trend in trends {
@@ -133,9 +125,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let violations_order = dashboard.alerting.check_sla_compliance(
         "order_processing",
         Some(3500.0), // avg response time
-        Some(99.5),  // availability
-        Some(1.5),   // error rate
-        Some(97.5),  // completion rate
+        Some(99.5),   // availability
+        Some(1.5),    // error rate
+        Some(97.5),   // completion rate
     );
 
     let violations_payment = dashboard.alerting.check_sla_compliance(
@@ -151,7 +143,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for violation in violations_order {
             println!(
                 "  {}: Expected {}, Got {} ({})",
-                violation.metric, violation.expected, violation.actual, if violation.severity == AlertLevel::Critical { "CRITICAL" } else { "WARNING" }
+                violation.metric,
+                violation.expected,
+                violation.actual,
+                if violation.severity == AlertLevel::Critical { "CRITICAL" } else { "WARNING" }
             );
         }
     } else {
@@ -241,11 +236,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Generate report
     println!("--- Analytics Report ---\n");
 
-    let report = ExportManager::generate_report(
-        &snapshot,
-        "Weekly Analytics Report",
-        ExportFormat::Json,
-    )?;
+    let report =
+        ExportManager::generate_report(&snapshot, "Weekly Analytics Report", ExportFormat::Json)?;
     println!("Report Generated:\n{}\n", &report[..report.len().min(300)]);
 
     // Dashboard snapshot

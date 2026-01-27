@@ -4,7 +4,7 @@
 //! Supports collections, points, filtering, and payload management.
 
 use crate::integration::connector::{
-    Connector, ConnectionStatus, ConnectorConfig, ConnectorError, ConnectorRequest,
+    ConnectionStatus, Connector, ConnectorConfig, ConnectorError, ConnectorRequest,
     ConnectorResponse, ConnectorResult, HealthStatus,
 };
 use async_trait::async_trait;
@@ -45,36 +45,17 @@ pub struct QdrantConnector {
 impl QdrantConnector {
     /// Create a new Qdrant connector
     pub fn new(config: ConnectorConfig) -> Self {
-        Self {
-            config,
-            status: ConnectionStatus::Disconnected,
-            api_url: None,
-            api_key: None,
-        }
+        Self { config, status: ConnectionStatus::Disconnected, api_url: None, api_key: None }
     }
 
     /// Build API URL from config
     fn build_api_url(&self) -> ConnectorResult<String> {
-        let host = self
-            .config
-            .params
-            .get("host")
-            .and_then(|v| v.as_str())
-            .unwrap_or("localhost");
+        let host = self.config.params.get("host").and_then(|v| v.as_str()).unwrap_or("localhost");
 
-        let port = self
-            .config
-            .params
-            .get("port")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(6333);
+        let port = self.config.params.get("port").and_then(|v| v.as_u64()).unwrap_or(6333);
 
-        let use_https = self
-            .config
-            .config
-            .get("use_https")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+        let use_https =
+            self.config.config.get("use_https").and_then(|v| v.as_bool()).unwrap_or(false);
 
         let scheme = if use_https { "https" } else { "http" };
 
@@ -83,11 +64,7 @@ impl QdrantConnector {
 
     /// Get API key if configured
     fn get_api_key(&self) -> Option<String> {
-        self.config
-            .params
-            .get("api_key")
-            .and_then(|v| v.as_str())
-            .map(String::from)
+        self.config.params.get("api_key").and_then(|v| v.as_str()).map(String::from)
     }
 
     /// Create a collection
@@ -183,13 +160,11 @@ impl Connector for QdrantConnector {
                     .parameters
                     .get("vector_size")
                     .and_then(|v| v.as_u64())
-                    .ok_or_else(|| ConnectorError::request("Vector size not specified"))? as usize;
+                    .ok_or_else(|| ConnectorError::request("Vector size not specified"))?
+                    as usize;
 
-                let distance_str = request
-                    .parameters
-                    .get("distance")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Cosine");
+                let distance_str =
+                    request.parameters.get("distance").and_then(|v| v.as_str()).unwrap_or("Cosine");
 
                 let distance = match distance_str {
                     "Cosine" => DistanceMetric::Cosine,
@@ -198,7 +173,8 @@ impl Connector for QdrantConnector {
                     _ => DistanceMetric::Cosine,
                 };
 
-                let payload = self.create_collection_payload(collection_name, vector_size, &distance);
+                let payload =
+                    self.create_collection_payload(collection_name, vector_size, &distance);
 
                 json!({
                     "operation": "create_collection",
@@ -208,7 +184,7 @@ impl Connector for QdrantConnector {
                     "payload": payload,
                     "status": "success"
                 })
-            }
+            },
             "DELETE_COLLECTION" => {
                 let collection_name = request
                     .parameters
@@ -221,7 +197,7 @@ impl Connector for QdrantConnector {
                     "collection": collection_name,
                     "status": "success"
                 })
-            }
+            },
             "UPSERT" => {
                 let collection_name = request
                     .parameters
@@ -242,7 +218,7 @@ impl Connector for QdrantConnector {
                     "points_count": points.len(),
                     "status": "success"
                 })
-            }
+            },
             "SEARCH" => {
                 let collection_name = request
                     .parameters
@@ -262,16 +238,10 @@ impl Connector for QdrantConnector {
                     })
                     .ok_or_else(|| ConnectorError::request("Valid vector not specified"))?;
 
-                let limit = request
-                    .parameters
-                    .get("limit")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(10) as usize;
+                let limit =
+                    request.parameters.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
-                let filter = request
-                    .body
-                    .as_ref()
-                    .and_then(|v| v.get("filter"));
+                let filter = request.body.as_ref().and_then(|v| v.get("filter"));
 
                 let payload = self.create_search_payload(vector, limit, filter.cloned());
 
@@ -284,7 +254,7 @@ impl Connector for QdrantConnector {
                     "results": [],
                     "status": "success"
                 })
-            }
+            },
             "SCROLL" => {
                 let collection_name = request
                     .parameters
@@ -292,11 +262,8 @@ impl Connector for QdrantConnector {
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| ConnectorError::request("Collection name not specified"))?;
 
-                let limit = request
-                    .parameters
-                    .get("limit")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(10) as usize;
+                let limit =
+                    request.parameters.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
                 json!({
                     "operation": "scroll",
@@ -306,7 +273,7 @@ impl Connector for QdrantConnector {
                     "next_page_offset": null,
                     "status": "success"
                 })
-            }
+            },
             "COUNT" => {
                 let collection_name = request
                     .parameters
@@ -320,13 +287,13 @@ impl Connector for QdrantConnector {
                     "count": 0,
                     "status": "success"
                 })
-            }
+            },
             _ => {
                 return Err(ConnectorError::validation(format!(
                     "Unsupported operation: {}",
                     request.operation
                 )))
-            }
+            },
         };
 
         let execution_time_ms = start.elapsed().as_millis() as u64;
@@ -338,10 +305,7 @@ impl Connector for QdrantConnector {
 
     async fn health_check(&self) -> ConnectorResult<HealthStatus> {
         if self.status != ConnectionStatus::Connected {
-            return Ok(HealthStatus::Unhealthy(format!(
-                "Qdrant status: {}",
-                self.status
-            )));
+            return Ok(HealthStatus::Unhealthy(format!("Qdrant status: {}", self.status)));
         }
 
         // In production, make a GET request to /health or /collections

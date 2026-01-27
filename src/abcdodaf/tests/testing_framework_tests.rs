@@ -1,8 +1,8 @@
 //! Comprehensive tests for the testing framework itself
 
-use abcdodaf::testing::*;
 use abcdodaf::bpmn::ProcessExecutor;
 use abcdodaf::prelude::TaskHandler;
+use abcdodaf::testing::*;
 use std::collections::HashMap;
 
 #[tokio::test]
@@ -26,12 +26,12 @@ async fn test_harness_multiple_tests() {
     let executor = ProcessExecutor::new();
     let harness = TestHarness::new(executor);
 
-    let test1 = TaskTestCase::new("t1", "Test 1", "task_1")
-        .with_input("value", serde_json::json!(1));
-    let test2 = TaskTestCase::new("t2", "Test 2", "task_2")
-        .with_input("value", serde_json::json!(2));
-    let test3 = TaskTestCase::new("t3", "Test 3", "task_3")
-        .with_input("value", serde_json::json!(3));
+    let test1 =
+        TaskTestCase::new("t1", "Test 1", "task_1").with_input("value", serde_json::json!(1));
+    let test2 =
+        TaskTestCase::new("t2", "Test 2", "task_2").with_input("value", serde_json::json!(2));
+    let test3 =
+        TaskTestCase::new("t3", "Test 3", "task_3").with_input("value", serde_json::json!(3));
 
     let results = harness.run_task_tests(vec![test1, test2, test3]).await.unwrap();
 
@@ -62,9 +62,7 @@ async fn test_mock_handler_fixed_response() {
 
 #[tokio::test]
 async fn test_mock_handler_failure() {
-    let handler = MockHandlerBuilder::new()
-        .failure("Test error")
-        .build();
+    let handler = MockHandlerBuilder::new().failure("Test error").build();
 
     let result = handler.execute("task1", &HashMap::new()).await;
     assert!(result.is_err());

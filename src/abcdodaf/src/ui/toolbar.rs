@@ -80,11 +80,7 @@ pub struct Toolbar {
 
 impl Toolbar {
     pub fn new() -> Self {
-        Self {
-            buttons: Vec::new(),
-            show_labels: false,
-            icon_size: 20.0,
-        }
+        Self { buttons: Vec::new(), show_labels: false, icon_size: 20.0 }
     }
 
     pub fn with_labels(mut self, show: bool) -> Self {
@@ -116,7 +112,7 @@ impl Toolbar {
                 match button.style {
                     ToolbarButtonStyle::Separator => {
                         ui.separator();
-                    }
+                    },
                     ToolbarButtonStyle::Normal | ToolbarButtonStyle::Toggle => {
                         let btn_response = self.show_button(ui, button);
                         if btn_response.clicked() {
@@ -124,7 +120,7 @@ impl Toolbar {
                                 clicked_action = Some(action);
                             }
                         }
-                    }
+                    },
                 }
             }
         });
@@ -180,68 +176,52 @@ pub fn create_standard_toolbar(
     let mut toolbar = Toolbar::new();
 
     // File operations
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::NewFile, "📄", "New workflow (Ctrl+N)")
-    );
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::OpenFile, "📁", "Open workflow (Ctrl+O)")
-    );
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::Save, "💾", "Save workflow (Ctrl+S)")
-    );
+    toolbar.add_button(ToolbarButton::new(EditorAction::NewFile, "📄", "New workflow (Ctrl+N)"));
+    toolbar.add_button(ToolbarButton::new(EditorAction::OpenFile, "📁", "Open workflow (Ctrl+O)"));
+    toolbar.add_button(ToolbarButton::new(EditorAction::Save, "💾", "Save workflow (Ctrl+S)"));
     toolbar.add_separator();
 
     // Edit operations
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::Undo, "↶", "Undo (Ctrl+Z)")
-            .enabled(can_undo)
-    );
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::Redo, "↷", "Redo (Ctrl+Y)")
-            .enabled(can_redo)
-    );
+    toolbar
+        .add_button(ToolbarButton::new(EditorAction::Undo, "↶", "Undo (Ctrl+Z)").enabled(can_undo));
+    toolbar
+        .add_button(ToolbarButton::new(EditorAction::Redo, "↷", "Redo (Ctrl+Y)").enabled(can_redo));
     toolbar.add_separator();
 
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::Cut, "✂", "Cut (Ctrl+X)")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::Cut, "✂", "Cut (Ctrl+X)").enabled(has_selection),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::Copy, "📋", "Copy (Ctrl+C)")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::Copy, "📋", "Copy (Ctrl+C)").enabled(has_selection),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::Paste, "📄", "Paste (Ctrl+V)")
-            .enabled(has_clipboard)
+        ToolbarButton::new(EditorAction::Paste, "📄", "Paste (Ctrl+V)").enabled(has_clipboard),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::Delete, "🗑", "Delete (Del)")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::Delete, "🗑", "Delete (Del)").enabled(has_selection),
     );
     toolbar.add_separator();
 
     // View operations
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::ZoomIn, "🔍+", "Zoom in (Ctrl+=)")
-    );
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::ZoomOut, "🔍-", "Zoom out (Ctrl+-)")
-    );
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::ZoomFit, "⊡", "Fit to screen (Ctrl+Shift+F)")
-    );
+    toolbar.add_button(ToolbarButton::new(EditorAction::ZoomIn, "🔍+", "Zoom in (Ctrl+=)"));
+    toolbar.add_button(ToolbarButton::new(EditorAction::ZoomOut, "🔍-", "Zoom out (Ctrl+-)"));
+    toolbar.add_button(ToolbarButton::new(
+        EditorAction::ZoomFit,
+        "⊡",
+        "Fit to screen (Ctrl+Shift+F)",
+    ));
     toolbar.add_separator();
 
     // Grid and snapping
     toolbar.add_button(
         ToolbarButton::new(EditorAction::ToggleGrid, "⊞", "Toggle grid (Ctrl+G)")
             .toggle()
-            .active(show_grid)
+            .active(show_grid),
     );
     toolbar.add_button(
         ToolbarButton::new(EditorAction::ToggleSnapping, "⊟", "Toggle snapping (Ctrl+Shift+G)")
             .toggle()
-            .active(snap_to_grid)
+            .active(snap_to_grid),
     );
     toolbar.add_separator();
 
@@ -249,19 +229,19 @@ pub fn create_standard_toolbar(
     toolbar.add_button(
         ToolbarButton::new(EditorAction::ToggleMinimap, "🗺", "Toggle minimap (Ctrl+M)")
             .toggle()
-            .active(show_minimap)
+            .active(show_minimap),
     );
     toolbar.add_separator();
 
     // Validation
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::Validate, "✓", "Validate workflow (Ctrl+Shift+V)")
-    );
+    toolbar.add_button(ToolbarButton::new(
+        EditorAction::Validate,
+        "✓",
+        "Validate workflow (Ctrl+Shift+V)",
+    ));
 
     // Help
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::ShowHelp, "❓", "Show help (F1)")
-    );
+    toolbar.add_button(ToolbarButton::new(EditorAction::ShowHelp, "❓", "Show help (F1)"));
 
     toolbar
 }
@@ -272,26 +252,21 @@ pub fn create_node_toolbar() -> Toolbar {
 
     // Events
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AddStartEvent, "▶", "Add Start Event")
-            .with_label("Start")
+        ToolbarButton::new(EditorAction::AddStartEvent, "▶", "Add Start Event").with_label("Start"),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AddEndEvent, "⏹", "Add End Event")
-            .with_label("End")
+        ToolbarButton::new(EditorAction::AddEndEvent, "⏹", "Add End Event").with_label("End"),
     );
     toolbar.add_separator();
 
     // Tasks
-    toolbar.add_button(
-        ToolbarButton::new(EditorAction::AddTask, "⚙", "Add Task")
-            .with_label("Task")
-    );
+    toolbar
+        .add_button(ToolbarButton::new(EditorAction::AddTask, "⚙", "Add Task").with_label("Task"));
     toolbar.add_separator();
 
     // Gateways
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AddGateway, "◇", "Add Gateway")
-            .with_label("Gateway")
+        ToolbarButton::new(EditorAction::AddGateway, "◇", "Add Gateway").with_label("Gateway"),
     );
 
     toolbar
@@ -302,40 +277,36 @@ pub fn create_alignment_toolbar(has_selection: bool) -> Toolbar {
     let mut toolbar = Toolbar::new();
 
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AlignLeft, "⊣", "Align left")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::AlignLeft, "⊣", "Align left").enabled(has_selection),
     );
     toolbar.add_button(
         ToolbarButton::new(EditorAction::AlignCenterHorizontal, "⊢", "Align center horizontal")
-            .enabled(has_selection)
+            .enabled(has_selection),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AlignRight, "⊢", "Align right")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::AlignRight, "⊢", "Align right").enabled(has_selection),
     );
     toolbar.add_separator();
 
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AlignTop, "⊤", "Align top")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::AlignTop, "⊤", "Align top").enabled(has_selection),
     );
     toolbar.add_button(
         ToolbarButton::new(EditorAction::AlignCenterVertical, "⊥", "Align center vertical")
-            .enabled(has_selection)
+            .enabled(has_selection),
     );
     toolbar.add_button(
-        ToolbarButton::new(EditorAction::AlignBottom, "⊥", "Align bottom")
-            .enabled(has_selection)
+        ToolbarButton::new(EditorAction::AlignBottom, "⊥", "Align bottom").enabled(has_selection),
     );
     toolbar.add_separator();
 
     toolbar.add_button(
         ToolbarButton::new(EditorAction::DistributeHorizontal, "⟷", "Distribute horizontal")
-            .enabled(has_selection)
+            .enabled(has_selection),
     );
     toolbar.add_button(
         ToolbarButton::new(EditorAction::DistributeVertical, "⟥", "Distribute vertical")
-            .enabled(has_selection)
+            .enabled(has_selection),
     );
 
     toolbar

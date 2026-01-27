@@ -140,16 +140,12 @@ impl NotificationManager {
                         ui.vertical(|ui| {
                             ui.label(
                                 egui::RichText::new(&notification.message)
-                                    .color(egui::Color32::WHITE)
+                                    .color(egui::Color32::WHITE),
                             );
 
                             // Progress bar showing time remaining
                             let progress = notification.remaining_progress();
-                            ui.add(
-                                egui::ProgressBar::new(progress)
-                                    .fill(color)
-                                    .show_percentage()
-                            );
+                            ui.add(egui::ProgressBar::new(progress).fill(color).show_percentage());
                         });
                     });
                 });

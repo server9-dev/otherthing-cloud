@@ -1,11 +1,11 @@
 //! Integration tests for ABCDODAF library
 
-use abcdodaf::prelude::*;
 use abcdodaf::dodaf::{
-    BaseCapability as Capability, BaseCapabilityType as CapabilityType,
-    CapabilityView, Service, ServiceType, ServiceView, OperationalView,
-    DodafArchitecture, MissionArea, OperationalActivity, ActivityType,
+    ActivityType, BaseCapability as Capability, BaseCapabilityType as CapabilityType,
+    CapabilityView, DodafArchitecture, MissionArea, OperationalActivity, OperationalView, Service,
+    ServiceType, ServiceView,
 };
+use abcdodaf::prelude::*;
 // BPM+ is tested in bpm_plus module tests
 use abcdodaf::workforce::*;
 
@@ -17,12 +17,8 @@ async fn test_complete_workflow_execution() {
         .description("Test all workflow components")
         .add_agent_task(
             "agent1",
-            AgentTask::new(
-                "agent1",
-                "AI Analysis",
-                AgentCapability::NaturalLanguageProcessing,
-            )
-            .with_autonomy(0.9),
+            AgentTask::new("agent1", "AI Analysis", AgentCapability::NaturalLanguageProcessing)
+                .with_autonomy(0.9),
         )
         .add_human_task(
             "human1",
@@ -59,21 +55,19 @@ fn test_dodaf_architecture_complete() {
                     capabilities: vec!["c1".to_string()],
                 })
                 .add_activity(
-                    OperationalActivity::new("a1", "Activity 1")
-                        .with_type(ActivityType::Automated),
+                    OperationalActivity::new("a1", "Activity 1").with_type(ActivityType::Automated),
                 ),
         )
-        .with_capability_view(
-            CapabilityView::new()
-                .add_capability(Capability::new("c1", "Capability 1", CapabilityType::Cognitive)),
-        )
-        .with_services_view(
-            ServiceView::new().add_service(Service::new(
-                "s1",
-                "Service 1",
-                ServiceType::AiInference,
-            )),
-        );
+        .with_capability_view(CapabilityView::new().add_capability(Capability::new(
+            "c1",
+            "Capability 1",
+            CapabilityType::Cognitive,
+        )))
+        .with_services_view(ServiceView::new().add_service(Service::new(
+            "s1",
+            "Service 1",
+            ServiceType::AiInference,
+        )));
 
     assert_eq!(arch.operational_view.mission_areas.len(), 1);
     assert_eq!(arch.capability_view.capabilities.len(), 1);
@@ -145,9 +139,7 @@ fn test_process_builder_validation() {
     assert!(result.is_err());
 
     // Valid process should succeed
-    let result = ProcessBuilder::new("valid", "Valid")
-        .add_user_task("t1", "Task 1")
-        .build();
+    let result = ProcessBuilder::new("valid", "Valid").add_user_task("t1", "Task 1").build();
     assert!(result.is_ok());
 }
 
@@ -167,10 +159,7 @@ async fn test_workflow_with_context() {
         .build()
         .unwrap();
 
-    assert_eq!(
-        workflow.context.mission_area,
-        Some("Test Mission".to_string())
-    );
+    assert_eq!(workflow.context.mission_area, Some("Test Mission".to_string()));
 
     let result = workflow.execute().await.unwrap();
     assert!(result.instance.completed_at.is_some());

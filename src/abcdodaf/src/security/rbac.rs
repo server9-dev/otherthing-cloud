@@ -313,9 +313,8 @@ impl RoleManager {
         drop(roles);
 
         let mut subject_roles = self.subject_roles.write().await;
-        let subject_role_list = subject_roles
-            .entry(subject_id.to_string())
-            .or_insert_with(Vec::new);
+        let subject_role_list =
+            subject_roles.entry(subject_id.to_string()).or_insert_with(Vec::new);
 
         if !subject_role_list.contains(&role_name.to_string()) {
             subject_role_list.push(role_name.to_string());
@@ -325,7 +324,11 @@ impl RoleManager {
     }
 
     /// Assign multiple roles to a subject
-    pub async fn assign_roles(&self, subject_id: &str, role_names: Vec<&str>) -> SecurityResult<()> {
+    pub async fn assign_roles(
+        &self,
+        subject_id: &str,
+        role_names: Vec<&str>,
+    ) -> SecurityResult<()> {
         for role_name in role_names {
             self.assign_role(subject_id, role_name).await?;
         }
@@ -423,12 +426,9 @@ mod tests {
 
     #[test]
     fn test_role_inheritance() {
-        let base_role = Role::new("base")
-            .add_permission("read");
+        let base_role = Role::new("base").add_permission("read");
 
-        let derived_role = Role::new("derived")
-            .add_permission("write")
-            .with_parent(base_role);
+        let derived_role = Role::new("derived").add_permission("write").with_parent(base_role);
 
         let perms = derived_role.get_all_permissions();
         assert!(perms.contains(&"read".to_string()));

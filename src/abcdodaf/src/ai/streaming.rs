@@ -94,11 +94,11 @@ impl StreamingResponse {
                         handler.on_complete(&final_content)?;
                         break;
                     }
-                }
+                },
                 Err(e) => {
                     handler.on_error(&e.to_string());
                     return Err(e);
-                }
+                },
             }
         }
 
@@ -106,9 +106,7 @@ impl StreamingResponse {
     }
 
     /// Convert to async stream
-    pub fn into_stream(
-        mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<StreamChunk>> + Send>> {
+    pub fn into_stream(mut self) -> Pin<Box<dyn Stream<Item = Result<StreamChunk>> + Send>> {
         Box::pin(async_stream::stream! {
             while let Some(chunk) = self.next().await {
                 yield chunk;
@@ -145,10 +143,7 @@ impl StreamChunk {
 impl StreamCollector {
     /// Create a new stream collector
     pub fn new() -> Self {
-        Self {
-            chunks: vec![],
-            final_content: String::new(),
-        }
+        Self { chunks: vec![], final_content: String::new() }
     }
 
     /// Get collected chunks
@@ -186,11 +181,7 @@ impl StreamHandler for StreamCollector {
 impl ProgressTracker {
     /// Create a new progress tracker
     pub fn new() -> Self {
-        Self {
-            total_chunks: 0,
-            total_chars: 0,
-            start_time: std::time::Instant::now(),
-        }
+        Self { total_chunks: 0, total_chars: 0, start_time: std::time::Instant::now() }
     }
 
     /// Get elapsed time in seconds

@@ -99,14 +99,7 @@ impl ComplianceScore {
 
         let level = ComplianceLevel::from_percentage(percentage);
 
-        Self {
-            percentage,
-            level,
-            total_points,
-            points_earned,
-            points_deducted,
-            severity_breakdown,
-        }
+        Self { percentage, level, total_points, points_earned, points_deducted, severity_breakdown }
     }
 
     /// Get grade letter (A-F)
@@ -178,17 +171,17 @@ impl ValidationSummary {
             critical_count: result.critical_count,
             error_count: result.error_count,
             warning_count: result.warning_count,
-            info_count: result.results.len() - result.critical_count - result.error_count - result.warning_count,
+            info_count: result.results.len()
+                - result.critical_count
+                - result.error_count
+                - result.warning_count,
         }
     }
 }
 
 impl ComplianceReport {
     /// Generate a compliance report
-    pub fn generate(
-        standard: &Standard,
-        validation_result: &ValidationResult,
-    ) -> Self {
+    pub fn generate(standard: &Standard, validation_result: &ValidationResult) -> Self {
         let score = ComplianceScore::from_validation_result(validation_result);
         let validation_summary = ValidationSummary::from_validation_result(validation_result);
         let violations = validation_result.violations().into_iter().cloned().collect();
@@ -212,7 +205,8 @@ impl ComplianceReport {
 
         if score.percentage < 80.0 {
             recommendations.push(
-                "Consider reviewing standard requirements and implementing missing elements".to_string()
+                "Consider reviewing standard requirements and implementing missing elements"
+                    .to_string(),
             );
         }
 
@@ -239,16 +233,29 @@ impl ComplianceReport {
 
         md.push_str(&format!("# {} Compliance Report\n\n", self.standard_name));
         md.push_str(&format!("**Version:** {}\n", self.standard_version));
-        md.push_str(&format!("**Generated:** {}\n\n", self.generated_at.format("%Y-%m-%d %H:%M:%S UTC")));
+        md.push_str(&format!(
+            "**Generated:** {}\n\n",
+            self.generated_at.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
 
         md.push_str("## Overall Score\n\n");
-        md.push_str(&format!("- **Score:** {:.1}% (Grade: {})\n", self.score.percentage, self.score.grade()));
+        md.push_str(&format!(
+            "- **Score:** {:.1}% (Grade: {})\n",
+            self.score.percentage,
+            self.score.grade()
+        ));
         md.push_str(&format!("- **Level:** {}\n", self.score.level.as_str()));
-        md.push_str(&format!("- **Points:** {}/{}\n\n", self.score.points_earned, self.score.total_points));
+        md.push_str(&format!(
+            "- **Points:** {}/{}\n\n",
+            self.score.points_earned, self.score.total_points
+        ));
 
         md.push_str("## Validation Summary\n\n");
         md.push_str(&format!("- **Total Rules:** {}\n", self.validation_summary.total_rules));
-        md.push_str(&format!("- **Passed:** {} ({:.1}%)\n", self.validation_summary.passed, self.validation_summary.pass_rate));
+        md.push_str(&format!(
+            "- **Passed:** {} ({:.1}%)\n",
+            self.validation_summary.passed, self.validation_summary.pass_rate
+        ));
         md.push_str(&format!("- **Failed:** {}\n\n", self.validation_summary.failed));
 
         md.push_str("### Violations by Severity\n\n");

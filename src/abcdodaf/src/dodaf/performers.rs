@@ -46,19 +46,10 @@ pub enum PerformerType {
     },
 
     /// Service interface (API, protocol)
-    ServiceInterface {
-        protocol: String,
-        specification: String,
-        operations: Vec<String>,
-    },
+    ServiceInterface { protocol: String, specification: String, operations: Vec<String> },
 
     /// Physical or logical system
-    System {
-        name: String,
-        system_type: SystemType,
-        version: String,
-        vendor: Option<String>,
-    },
+    System { name: String, system_type: SystemType, version: String, vendor: Option<String> },
 
     /// Hardware/equipment
     Equipment {
@@ -215,11 +206,8 @@ mod tests {
 
     #[test]
     fn test_performer_assignment() {
-        let assignment = PerformerMapper::assign_task_to_lane(
-            "task_1",
-            "lane_1",
-            AssignmentType::Primary,
-        );
+        let assignment =
+            PerformerMapper::assign_task_to_lane("task_1", "lane_1", AssignmentType::Primary);
 
         assert_eq!(assignment.activity_id, "task_1");
         assert_eq!(assignment.performer_id, "lane_1");

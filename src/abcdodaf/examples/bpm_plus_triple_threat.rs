@@ -31,20 +31,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 id: "i1".to_string(),
                 label: "urgency".to_string(),
                 input_expression: "ticket.urgency".to_string(),
-                input_values: Some(vec!["high".to_string(), "medium".to_string(), "low".to_string()]),
+                input_values: Some(vec![
+                    "high".to_string(),
+                    "medium".to_string(),
+                    "low".to_string(),
+                ]),
             },
             dmn::InputClause {
                 id: "i2".to_string(),
                 label: "impact".to_string(),
                 input_expression: "ticket.impact".to_string(),
-                input_values: Some(vec!["high".to_string(), "medium".to_string(), "low".to_string()]),
+                input_values: Some(vec![
+                    "high".to_string(),
+                    "medium".to_string(),
+                    "low".to_string(),
+                ]),
             },
         ],
         outputs: vec![dmn::OutputClause {
             id: "o1".to_string(),
             label: "Priority".to_string(),
             name: "priority".to_string(),
-            output_values: Some(vec!["critical".to_string(), "high".to_string(), "medium".to_string(), "low".to_string()]),
+            output_values: Some(vec![
+                "critical".to_string(),
+                "high".to_string(),
+                "medium".to_string(),
+                "low".to_string(),
+            ]),
         }],
         rules: vec![
             dmn::DecisionRule {
@@ -85,7 +98,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Ticket Priority Decision",
         priority_table,
     );
-    priority_decision.description = Some("Determines ticket priority based on urgency and impact".to_string());
+    priority_decision.description =
+        Some("Determines ticket priority based on urgency and impact".to_string());
 
     println!("✅ Created DMN Decision: Ticket Priority");
     println!("   - Inputs: urgency, impact");
@@ -100,7 +114,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 id: "i1".to_string(),
                 label: "category".to_string(),
                 input_expression: "ticket.category".to_string(),
-                input_values: Some(vec!["technical".to_string(), "billing".to_string(), "general".to_string()]),
+                input_values: Some(vec![
+                    "technical".to_string(),
+                    "billing".to_string(),
+                    "general".to_string(),
+                ]),
             },
             dmn::InputClause {
                 id: "i2".to_string(),
@@ -113,7 +131,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             id: "o1".to_string(),
             label: "Agent Type".to_string(),
             name: "agent_type".to_string(),
-            output_values: Some(vec!["ai_agent".to_string(), "human_expert".to_string(), "hybrid".to_string()]),
+            output_values: Some(vec![
+                "ai_agent".to_string(),
+                "human_expert".to_string(),
+                "hybrid".to_string(),
+            ]),
         }],
         rules: vec![
             dmn::DecisionRule {
@@ -158,11 +180,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ====================================================================
     println!("🔄 Step 2: Creating BPMN Process Model\n");
 
-    let mut triage_process = bpmn::BpmnProcess::new(
-        "ticket_triage",
-        "Customer Ticket Triage Process",
-    );
-    triage_process.description = Some("Automated process for triaging customer support tickets".to_string());
+    let mut triage_process =
+        bpmn::BpmnProcess::new("ticket_triage", "Customer Ticket Triage Process");
+    triage_process.description =
+        Some("Automated process for triaging customer support tickets".to_string());
 
     // Start event
     triage_process.add_flow_element(bpmn::FlowElement::StartEvent {
@@ -317,11 +338,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ====================================================================
     println!("📋 Step 3: Creating CMMN Case Model\n");
 
-    let mut complex_case = cmmn::CmmnCase::new(
-        "complex_inquiry_case",
-        "Complex Customer Inquiry Case",
+    let mut complex_case =
+        cmmn::CmmnCase::new("complex_inquiry_case", "Complex Customer Inquiry Case");
+    complex_case.description = Some(
+        "Adaptive case for handling complex customer issues requiring multiple steps and decisions"
+            .to_string(),
     );
-    complex_case.description = Some("Adaptive case for handling complex customer issues requiring multiple steps and decisions".to_string());
 
     // Add case file items (data)
     complex_case.add_case_file_item(cmmn::CaseFileItem {

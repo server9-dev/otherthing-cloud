@@ -156,20 +156,9 @@ mod workspace_tests {
 
         // Open the same file again
         let id2 = workspace.open_workflow(path.clone()).unwrap();
-        assert_eq!(
-            id1, id2,
-            "Opening the same file should return the same workflow ID"
-        );
-        assert_eq!(
-            workspace.workflow_count(),
-            1,
-            "Should not create duplicate workflow"
-        );
-        assert_eq!(
-            workspace.active_workflow_id(),
-            Some(id2),
-            "Should make the workflow active"
-        );
+        assert_eq!(id1, id2, "Opening the same file should return the same workflow ID");
+        assert_eq!(workspace.workflow_count(), 1, "Should not create duplicate workflow");
+        assert_eq!(workspace.active_workflow_id(), Some(id2), "Should make the workflow active");
     }
 
     #[test]
@@ -629,7 +618,7 @@ mod workspace_tests {
         let error_msg = result.unwrap_err();
         assert!(
             error_msg.contains("Failed to write file")
-            || error_msg.contains("No such file or directory"),
+                || error_msg.contains("No such file or directory"),
             "Error message should mention write failure: {}",
             error_msg
         );

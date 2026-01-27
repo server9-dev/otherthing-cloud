@@ -98,7 +98,12 @@ impl ExecutionVisualizer {
 
         // Inner highlight
         let highlight_color = Color32::from_rgba_premultiplied(100, 220, 255, 200);
-        painter.rect_stroke(rect.expand(2.0), 2.0, Stroke::new(2.0, highlight_color), egui::epaint::StrokeKind::Outside);
+        painter.rect_stroke(
+            rect.expand(2.0),
+            2.0,
+            Stroke::new(2.0, highlight_color),
+            egui::epaint::StrokeKind::Outside,
+        );
     }
 
     /// Draw execution token
@@ -121,7 +126,11 @@ impl ExecutionVisualizer {
         };
 
         // Draw token with glow effect
-        painter.circle_filled(pos, size + 2.0, Color32::from_rgba_premultiplied(color.r(), color.g(), color.b(), 50));
+        painter.circle_filled(
+            pos,
+            size + 2.0,
+            Color32::from_rgba_premultiplied(color.r(), color.g(), color.b(), 50),
+        );
         painter.circle_filled(pos, size, color);
         painter.circle_stroke(pos, size, Stroke::new(1.0, Color32::WHITE));
 
@@ -144,12 +153,8 @@ impl ExecutionVisualizer {
         }
 
         // Find max duration for normalization
-        let max_duration = context
-            .performance
-            .values()
-            .map(|p| p.avg_duration_ms)
-            .max()
-            .unwrap_or(1);
+        let max_duration =
+            context.performance.values().map(|p| p.avg_duration_ms).max().unwrap_or(1);
 
         for (element_id, perf) in &context.performance {
             if let Some(rect) = self.element_positions.get(element_id) {
@@ -160,21 +165,11 @@ impl ExecutionVisualizer {
                 let color = if intensity < 0.5 {
                     // Green to yellow
                     let t = intensity * 2.0;
-                    Color32::from_rgba_premultiplied(
-                        (255.0 * t) as u8,
-                        255,
-                        0,
-                        100,
-                    )
+                    Color32::from_rgba_premultiplied((255.0 * t) as u8, 255, 0, 100)
                 } else {
                     // Yellow to red
                     let t = (intensity - 0.5) * 2.0;
-                    Color32::from_rgba_premultiplied(
-                        255,
-                        (255.0 * (1.0 - t)) as u8,
-                        0,
-                        100,
-                    )
+                    Color32::from_rgba_premultiplied(255, (255.0 * (1.0 - t)) as u8, 0, 100)
                 };
 
                 // Draw semi-transparent overlay
@@ -312,11 +307,7 @@ pub struct ExecutionControlPanel {
 
 impl Default for ExecutionControlPanel {
     fn default() -> Self {
-        Self {
-            show_tokens: true,
-            show_heatmap: false,
-            show_bottlenecks: true,
-        }
+        Self { show_tokens: true, show_heatmap: false, show_bottlenecks: true }
     }
 }
 

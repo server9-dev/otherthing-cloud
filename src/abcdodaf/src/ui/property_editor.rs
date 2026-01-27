@@ -27,11 +27,7 @@ impl PropertyEditor {
     }
 
     /// Show property editor for a node
-    pub fn show_properties(
-        &mut self,
-        ui: &mut Ui,
-        node: &mut EnhancedBpmnNode,
-    ) -> bool {
+    pub fn show_properties(&mut self, ui: &mut Ui, node: &mut EnhancedBpmnNode) -> bool {
         let mut changed = false;
 
         // Node ID (read-only)
@@ -46,34 +42,34 @@ impl PropertyEditor {
         match &mut node.node_type {
             BpmnNodeType::StartEvent(event) => {
                 changed |= self.edit_start_event(ui, event);
-            }
+            },
             BpmnNodeType::EndEvent(event) => {
                 changed |= self.edit_end_event(ui, event);
-            }
+            },
             BpmnNodeType::IntermediateEvent(event) => {
                 changed |= self.edit_intermediate_event(ui, event);
-            }
+            },
             BpmnNodeType::Task(task) => {
                 changed |= self.edit_task(ui, task);
-            }
+            },
             BpmnNodeType::Gateway(gateway) => {
                 changed |= self.edit_gateway(ui, gateway);
-            }
+            },
             BpmnNodeType::Subprocess(subprocess) => {
                 changed |= self.edit_subprocess(ui, subprocess);
-            }
+            },
             BpmnNodeType::DataObject(data_obj) => {
                 changed |= self.edit_data_object(ui, data_obj);
-            }
+            },
             BpmnNodeType::DataStore(data_store) => {
                 changed |= self.edit_data_store(ui, data_store);
-            }
+            },
             BpmnNodeType::TextAnnotation(annotation) => {
                 changed |= self.edit_text_annotation(ui, annotation);
-            }
+            },
             BpmnNodeType::Group(group) => {
                 changed |= self.edit_group(ui, group);
-            }
+            },
         }
 
         ui.separator();
@@ -233,9 +229,8 @@ impl PropertyEditor {
                         changed = true;
                     }
                     if ui.selectable_label(current_type == "Timer", "Timer").clicked() {
-                        *event_def = Some(EventDefinition::Timer {
-                            time_expression: "PT1H".to_string(),
-                        });
+                        *event_def =
+                            Some(EventDefinition::Timer { time_expression: "PT1H".to_string() });
                         changed = true;
                     }
                     if ui.selectable_label(current_type == "Signal", "Signal").clicked() {
@@ -257,20 +252,20 @@ impl PropertyEditor {
                 match def {
                     EventDefinition::Message { message_ref } => {
                         changed |= self.edit_optional_text_field(ui, "Message Ref", message_ref);
-                    }
+                    },
                     EventDefinition::Timer { time_expression } => {
                         changed |= self.edit_text_field(ui, "Time Expression", time_expression);
-                    }
+                    },
                     EventDefinition::Signal { signal_ref } => {
                         changed |= self.edit_optional_text_field(ui, "Signal Ref", signal_ref);
-                    }
+                    },
                     EventDefinition::Error { error_ref } => {
                         changed |= self.edit_optional_text_field(ui, "Error Ref", error_ref);
-                    }
+                    },
                     EventDefinition::Conditional { condition } => {
                         changed |= self.edit_text_field(ui, "Condition", condition);
-                    }
-                    _ => {}
+                    },
+                    _ => {},
                 }
             }
         });
@@ -309,17 +304,12 @@ impl PropertyEditor {
             .selected_text(task_type_name)
             .show_ui(ui, |ui| {
                 if ui.selectable_label(task_type_name == "User", "User").clicked() {
-                    task.task_type = BpmnTaskType::User {
-                        implementation: None,
-                        rendering: None,
-                    };
+                    task.task_type = BpmnTaskType::User { implementation: None, rendering: None };
                     changed = true;
                 }
                 if ui.selectable_label(task_type_name == "Service", "Service").clicked() {
-                    task.task_type = BpmnTaskType::Service {
-                        implementation: None,
-                        operation_ref: None,
-                    };
+                    task.task_type =
+                        BpmnTaskType::Service { implementation: None, operation_ref: None };
                     changed = true;
                 }
                 if ui.selectable_label(task_type_name == "Script", "Script").clicked() {
@@ -329,11 +319,12 @@ impl PropertyEditor {
                     };
                     changed = true;
                 }
-                if ui.selectable_label(task_type_name == "Business Rule", "Business Rule").clicked() {
-                    task.task_type = BpmnTaskType::BusinessRule {
-                        implementation: None,
-                        rule_ref: None,
-                    };
+                if ui
+                    .selectable_label(task_type_name == "Business Rule", "Business Rule")
+                    .clicked()
+                {
+                    task.task_type =
+                        BpmnTaskType::BusinessRule { implementation: None, rule_ref: None };
                     changed = true;
                 }
                 if ui.selectable_label(task_type_name == "Manual", "Manual").clicked() {
@@ -347,20 +338,20 @@ impl PropertyEditor {
             BpmnTaskType::User { implementation, rendering } => {
                 changed |= self.edit_optional_text_field(ui, "Implementation", implementation);
                 changed |= self.edit_optional_text_field(ui, "Rendering", rendering);
-            }
+            },
             BpmnTaskType::Service { implementation, operation_ref } => {
                 changed |= self.edit_optional_text_field(ui, "Implementation", implementation);
                 changed |= self.edit_optional_text_field(ui, "Operation Ref", operation_ref);
-            }
+            },
             BpmnTaskType::Script { script_format, script } => {
                 changed |= self.edit_text_field(ui, "Script Format", script_format);
                 changed |= self.edit_text_area(ui, "Script", script);
-            }
+            },
             BpmnTaskType::BusinessRule { implementation, rule_ref } => {
                 changed |= self.edit_optional_text_field(ui, "Implementation", implementation);
                 changed |= self.edit_optional_text_field(ui, "Rule Ref", rule_ref);
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         // Compensation
@@ -417,11 +408,17 @@ impl PropertyEditor {
                     gateway.gateway_direction = GatewayDirection::Unspecified;
                     changed = true;
                 }
-                if ui.selectable_label(direction_name == "Diverging (Split)", "Diverging (Split)").clicked() {
+                if ui
+                    .selectable_label(direction_name == "Diverging (Split)", "Diverging (Split)")
+                    .clicked()
+                {
                     gateway.gateway_direction = GatewayDirection::Diverging;
                     changed = true;
                 }
-                if ui.selectable_label(direction_name == "Converging (Merge)", "Converging (Merge)").clicked() {
+                if ui
+                    .selectable_label(direction_name == "Converging (Merge)", "Converging (Merge)")
+                    .clicked()
+                {
                     gateway.gateway_direction = GatewayDirection::Converging;
                     changed = true;
                 }
@@ -597,10 +594,8 @@ impl PropertyEditor {
         ui.collapsing("Performer", |ui| {
             if metadata.performer.is_none() {
                 if ui.button("➕ Add Performer").clicked() {
-                    metadata.performer = Some(PerformerRef {
-                        performer_id: "performer_1".to_string(),
-                        role: None,
-                    });
+                    metadata.performer =
+                        Some(PerformerRef { performer_id: "performer_1".to_string(), role: None });
                     changed = true;
                 }
             } else if let Some(performer) = &mut metadata.performer {
@@ -626,7 +621,8 @@ impl PropertyEditor {
                     changed = true;
                 }
             } else if let Some(cost) = &mut metadata.cost {
-                let mut amount_str = self.numeric_buffers
+                let mut amount_str = self
+                    .numeric_buffers
                     .entry("cost_amount".to_string())
                     .or_insert_with(|| cost.amount.to_string())
                     .clone();
@@ -651,14 +647,15 @@ impl PropertyEditor {
                     CostType::Variable => "Variable",
                 };
 
-                egui::ComboBox::from_label("Cost Type")
-                    .selected_text(cost_type_name)
-                    .show_ui(ui, |ui| {
+                egui::ComboBox::from_label("Cost Type").selected_text(cost_type_name).show_ui(
+                    ui,
+                    |ui| {
                         if ui.selectable_label(cost_type_name == "Actual", "Actual").clicked() {
                             cost.cost_type = CostType::Actual;
                             changed = true;
                         }
-                        if ui.selectable_label(cost_type_name == "Estimated", "Estimated").clicked() {
+                        if ui.selectable_label(cost_type_name == "Estimated", "Estimated").clicked()
+                        {
                             cost.cost_type = CostType::Estimated;
                             changed = true;
                         }
@@ -670,7 +667,8 @@ impl PropertyEditor {
                             cost.cost_type = CostType::Variable;
                             changed = true;
                         }
-                    });
+                    },
+                );
 
                 if ui.button("➖ Remove Cost").clicked() {
                     metadata.cost = None;
@@ -684,15 +682,13 @@ impl PropertyEditor {
         ui.collapsing("Duration", |ui| {
             if metadata.duration.is_none() {
                 if ui.button("➕ Add Duration").clicked() {
-                    metadata.duration = Some(Duration {
-                        value: 1.0,
-                        unit: TimeUnit::Hours,
-                        is_estimated: true,
-                    });
+                    metadata.duration =
+                        Some(Duration { value: 1.0, unit: TimeUnit::Hours, is_estimated: true });
                     changed = true;
                 }
             } else if let Some(duration) = &mut metadata.duration {
-                let mut value_str = self.numeric_buffers
+                let mut value_str = self
+                    .numeric_buffers
                     .entry("duration_value".to_string())
                     .or_insert_with(|| duration.value.to_string())
                     .clone();
@@ -717,34 +713,32 @@ impl PropertyEditor {
                     TimeUnit::Months => "Months",
                 };
 
-                egui::ComboBox::from_label("Unit")
-                    .selected_text(unit_name)
-                    .show_ui(ui, |ui| {
-                        if ui.selectable_label(unit_name == "Seconds", "Seconds").clicked() {
-                            duration.unit = TimeUnit::Seconds;
-                            changed = true;
-                        }
-                        if ui.selectable_label(unit_name == "Minutes", "Minutes").clicked() {
-                            duration.unit = TimeUnit::Minutes;
-                            changed = true;
-                        }
-                        if ui.selectable_label(unit_name == "Hours", "Hours").clicked() {
-                            duration.unit = TimeUnit::Hours;
-                            changed = true;
-                        }
-                        if ui.selectable_label(unit_name == "Days", "Days").clicked() {
-                            duration.unit = TimeUnit::Days;
-                            changed = true;
-                        }
-                        if ui.selectable_label(unit_name == "Weeks", "Weeks").clicked() {
-                            duration.unit = TimeUnit::Weeks;
-                            changed = true;
-                        }
-                        if ui.selectable_label(unit_name == "Months", "Months").clicked() {
-                            duration.unit = TimeUnit::Months;
-                            changed = true;
-                        }
-                    });
+                egui::ComboBox::from_label("Unit").selected_text(unit_name).show_ui(ui, |ui| {
+                    if ui.selectable_label(unit_name == "Seconds", "Seconds").clicked() {
+                        duration.unit = TimeUnit::Seconds;
+                        changed = true;
+                    }
+                    if ui.selectable_label(unit_name == "Minutes", "Minutes").clicked() {
+                        duration.unit = TimeUnit::Minutes;
+                        changed = true;
+                    }
+                    if ui.selectable_label(unit_name == "Hours", "Hours").clicked() {
+                        duration.unit = TimeUnit::Hours;
+                        changed = true;
+                    }
+                    if ui.selectable_label(unit_name == "Days", "Days").clicked() {
+                        duration.unit = TimeUnit::Days;
+                        changed = true;
+                    }
+                    if ui.selectable_label(unit_name == "Weeks", "Weeks").clicked() {
+                        duration.unit = TimeUnit::Weeks;
+                        changed = true;
+                    }
+                    if ui.selectable_label(unit_name == "Months", "Months").clicked() {
+                        duration.unit = TimeUnit::Months;
+                        changed = true;
+                    }
+                });
 
                 ui.horizontal(|ui| {
                     ui.label("Estimated:");
@@ -772,9 +766,116 @@ impl PropertyEditor {
                     });
                     changed = true;
                 }
-            } else if let Some(_domain) = &mut metadata.security_domain {
-                ui.label("Security domain configured");
-                // TODO: Full security domain editor
+            } else if let Some(domain) = &mut metadata.security_domain {
+                // Classification level
+                let current_classification = domain.classification.clone();
+                let classification_name = match &current_classification {
+                    SecurityClassification::Unclassified => "Unclassified",
+                    SecurityClassification::Confidential => "Confidential",
+                    SecurityClassification::Secret => "Secret",
+                    SecurityClassification::TopSecret => "Top Secret",
+                    SecurityClassification::Custom(s) => s.as_str(),
+                };
+
+                egui::ComboBox::from_label("Classification")
+                    .selected_text(classification_name)
+                    .show_ui(ui, |ui| {
+                        if ui
+                            .selectable_label(
+                                matches!(current_classification, SecurityClassification::Unclassified),
+                                "Unclassified",
+                            )
+                            .clicked()
+                        {
+                            domain.classification = SecurityClassification::Unclassified;
+                            changed = true;
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(current_classification, SecurityClassification::Confidential),
+                                "Confidential",
+                            )
+                            .clicked()
+                        {
+                            domain.classification = SecurityClassification::Confidential;
+                            changed = true;
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(current_classification, SecurityClassification::Secret),
+                                "Secret",
+                            )
+                            .clicked()
+                        {
+                            domain.classification = SecurityClassification::Secret;
+                            changed = true;
+                        }
+                        if ui
+                            .selectable_label(
+                                matches!(current_classification, SecurityClassification::TopSecret),
+                                "Top Secret",
+                            )
+                            .clicked()
+                        {
+                            domain.classification = SecurityClassification::TopSecret;
+                            changed = true;
+                        }
+                    });
+
+                ui.separator();
+
+                // Access Control list
+                ui.label("Access Control:");
+                ui.indent("access_control_indent", |ui| {
+                    let mut to_remove = None;
+                    for (idx, control) in domain.access_control.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            if ui.text_edit_singleline(control).changed() {
+                                changed = true;
+                            }
+                            if ui.button("✖").clicked() {
+                                to_remove = Some(idx);
+                            }
+                        });
+                    }
+                    if let Some(idx) = to_remove {
+                        domain.access_control.remove(idx);
+                        changed = true;
+                    }
+                    if ui.button("➕ Add Access Control").clicked() {
+                        domain.access_control.push(String::new());
+                        changed = true;
+                    }
+                });
+
+                ui.separator();
+
+                // Constraints list
+                ui.label("Constraints:");
+                ui.indent("constraints_indent", |ui| {
+                    let mut to_remove = None;
+                    for (idx, constraint) in domain.constraints.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            if ui.text_edit_singleline(constraint).changed() {
+                                changed = true;
+                            }
+                            if ui.button("✖").clicked() {
+                                to_remove = Some(idx);
+                            }
+                        });
+                    }
+                    if let Some(idx) = to_remove {
+                        domain.constraints.remove(idx);
+                        changed = true;
+                    }
+                    if ui.button("➕ Add Constraint").clicked() {
+                        domain.constraints.push(String::new());
+                        changed = true;
+                    }
+                });
+
+                ui.separator();
+
                 if ui.button("➖ Remove Security Domain").clicked() {
                     metadata.security_domain = None;
                     changed = true;
@@ -793,7 +894,8 @@ impl PropertyEditor {
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
             ui.text_edit_singleline(value).changed()
-        }).inner
+        })
+        .inner
     }
 
     fn edit_text_area(&mut self, ui: &mut Ui, label: &str, value: &mut String) -> bool {
@@ -801,7 +903,12 @@ impl PropertyEditor {
         ui.text_edit_multiline(value).changed()
     }
 
-    fn edit_optional_text_field(&mut self, ui: &mut Ui, label: &str, value: &mut Option<String>) -> bool {
+    fn edit_optional_text_field(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        value: &mut Option<String>,
+    ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
@@ -825,7 +932,12 @@ impl PropertyEditor {
         changed
     }
 
-    fn edit_optional_text_area(&mut self, ui: &mut Ui, label: &str, value: &mut Option<String>) -> bool {
+    fn edit_optional_text_area(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        value: &mut Option<String>,
+    ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
@@ -850,7 +962,12 @@ impl PropertyEditor {
     }
 
     #[allow(dead_code)]
-    fn edit_optional_numeric_field(&mut self, ui: &mut Ui, label: &str, value: &mut Option<u64>) -> bool {
+    fn edit_optional_numeric_field(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        value: &mut Option<u64>,
+    ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
@@ -861,7 +978,8 @@ impl PropertyEditor {
                 }
             } else {
                 let key = format!("numeric_{}", label);
-                let mut text = self.numeric_buffers
+                let mut text = self
+                    .numeric_buffers
                     .entry(key.clone())
                     .or_insert_with(|| value.unwrap().to_string())
                     .clone();
@@ -883,7 +1001,12 @@ impl PropertyEditor {
         changed
     }
 
-    fn edit_optional_i32_field(&mut self, ui: &mut Ui, label: &str, value: &mut Option<i32>) -> bool {
+    fn edit_optional_i32_field(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        value: &mut Option<i32>,
+    ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
@@ -894,7 +1017,8 @@ impl PropertyEditor {
                 }
             } else {
                 let key = format!("numeric_i32_{}", label);
-                let mut text = self.numeric_buffers
+                let mut text = self
+                    .numeric_buffers
                     .entry(key.clone())
                     .or_insert_with(|| value.unwrap().to_string())
                     .clone();
