@@ -270,8 +270,7 @@ fn main() -> Result<(), eframe::Error> {
                 .show(ui, |ui| {
                     if let Some(doc) = self.workspace.get_active_workflow_mut() {
                         if let Some(node_id) = self.viewer.selected_node_for_properties {
-                            if doc.snarl.get_node_mut(node_id).is_some() {
-                                let node = doc.snarl.get_node_mut(node_id).unwrap();
+                            if let Some(node) = doc.snarl.get_node_mut(node_id) {
                                 let changed = self.property_editor.show_properties(ui, node);
                                 if changed {
                                     self.workspace.mark_modified(doc.id);

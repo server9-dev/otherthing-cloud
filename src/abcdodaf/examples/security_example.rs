@@ -36,9 +36,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_email("viewer@example.com");
 
     println!("   Created {} subjects", 3);
-    println!("   - Admin: {}", admin_user.name.as_ref().unwrap());
-    println!("   - Editor: {}", editor_user.name.as_ref().unwrap());
-    println!("   - Viewer: {}", viewer_user.name.as_ref().unwrap());
+    println!("   - Admin: {}", admin_user.name.as_ref().unwrap_or(&"Admin User".to_string()));
+    println!("   - Editor: {}", editor_user.name.as_ref().unwrap_or(&"Editor User".to_string()));
+    println!("   - Viewer: {}", viewer_user.name.as_ref().unwrap_or(&"Viewer User".to_string()));
     println!();
 
     // Assign roles
@@ -54,10 +54,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup permission checking
     println!("4. Setting up Permission Model");
     let permission_model = PermissionModel::new(role_manager.clone());
+    let admin_role = role_manager.get_role("admin").await?
+        .ok_or_else(|| anyhow::anyhow!("Admin role not found"))?;
+    let editor_role = role_manager.get_role("editor").await?
+        .ok_or_else(|| anyhow::anyhow!("Editor role not found"))?;
     let admin_ctx = SecurityContext::new(admin_user.clone())
-        .with_role(role_manager.get_role("admin").await.unwrap().unwrap());
+        .with_role(admin_role);
     let editor_ctx = SecurityContext::new(editor_user.clone())
-        .with_role(role_manager.get_role("editor").await.unwrap().unwrap());
+        .with_role(editor_role);
 
     // Check permissions
     match permission_model
@@ -119,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "   Created session: {} for {}",
         &session.session_id[..8],
-        session.subject.name.as_ref().unwrap()
+        session.subject.name.as_ref().unwrap_or(&"Unknown".to_string())
     );
     println!("   Session valid: {}", session.is_valid());
     println!();

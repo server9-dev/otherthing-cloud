@@ -96,7 +96,7 @@ pub struct IntermediateEvent {
 }
 
 /// Event Definition (12 types per BPMN 2.0)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventDefinition {
     None,
     Message { message_ref: Option<String> },
@@ -199,7 +199,7 @@ pub enum SubprocessType {
 }
 
 /// Loop characteristics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LoopCharacteristics {
     /// Sequential loop
     Standard {

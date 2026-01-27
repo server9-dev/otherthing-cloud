@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// OV-5 Operational Activity Model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalActivityModel {
     pub id: String,
     pub name: String,
@@ -30,7 +30,7 @@ pub struct OperationalActivityModel {
 ///
 /// An activity is a transformation that produces new resources from existing resources.
 /// Activities are synonymous with Tasks in DM2.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalActivity {
     // Core Attributes
     pub id: String,
@@ -71,7 +71,7 @@ pub struct OperationalActivity {
 ///
 /// A performer performs an activity. Types include: Person, Organization,
 /// Service, ServiceInterface, System, and Interface (Port).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Performer {
     pub id: String,
     pub name: String,
@@ -80,7 +80,7 @@ pub struct Performer {
     pub properties: HashMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PerformerType {
     Person {
         role: String,
@@ -109,7 +109,7 @@ pub enum PerformerType {
 }
 
 /// Performer Reference
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PerformerRef {
     pub performer_id: String,
     pub role: Option<String>,
@@ -119,7 +119,7 @@ pub struct PerformerRef {
 ///
 /// Represents behavioral and structural interactions between activities.
 /// Temporal and results in flow/exchange of information, data, materiel, or performers.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ResourceFlow {
     pub id: String,
     pub name: String,
@@ -156,7 +156,7 @@ pub enum ResourceType {
 }
 
 /// Resource Flow Attributes (OV-3 attributes)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ResourceFlowAttributes {
     /// When the resource must be available
     pub timeliness: Option<String>,
@@ -177,7 +177,7 @@ pub struct ResourceFlowAttributes {
 }
 
 /// Resource Reference
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ResourceRef {
     pub resource_id: String,
     pub resource_type: ResourceType,
@@ -185,7 +185,7 @@ pub struct ResourceRef {
 }
 
 /// Cost information
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cost {
     pub amount: f64,
     pub currency: String,
@@ -201,7 +201,7 @@ pub enum CostType {
 }
 
 /// Duration information
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Duration {
     pub value: f64,
     pub unit: TimeUnit,
@@ -219,14 +219,14 @@ pub enum TimeUnit {
 }
 
 /// Frequency information
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Frequency {
     pub occurrences: i32,
     pub per_time_unit: TimeUnit,
 }
 
 /// Security Domain
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SecurityDomain {
     pub classification: SecurityClassification,
     pub access_control: Vec<String>,
@@ -243,7 +243,7 @@ pub enum SecurityClassification {
 }
 
 /// Location information
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     pub name: String,
     pub location_type: LocationType,
@@ -257,14 +257,14 @@ pub enum LocationType {
     Distributed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Coordinates {
     pub latitude: f64,
     pub longitude: f64,
 }
 
 /// Business Rule (from OV-6a)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BusinessRule {
     pub id: String,
     pub name: String,
@@ -282,7 +282,7 @@ pub enum RuleType {
 }
 
 /// Quality Metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct QualityMetrics {
     pub accuracy: Option<f64>,
     pub completeness: Option<f64>,
@@ -292,14 +292,14 @@ pub struct QualityMetrics {
 }
 
 /// Quantity
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Quantity {
     pub value: f64,
     pub unit: String,
 }
 
 /// OV-5a Decomposition Tree Node
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DecompositionNode {
     pub activity_id: String,
     pub level: i32,
@@ -309,7 +309,7 @@ pub struct DecompositionNode {
 }
 
 /// Activity Decomposition Tree (OV-5a)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActivityDecompositionTree {
     pub id: String,
     pub name: String,
@@ -325,7 +325,7 @@ pub struct ActivityDecompositionTree {
 ///
 /// Describes time-ordered sequence of activities and events in specific scenarios.
 /// Can be represented using BPMN 2.0.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EventTraceDescription {
     pub id: String,
     pub name: String,
@@ -336,7 +336,7 @@ pub struct EventTraceDescription {
 }
 
 /// Trace Event
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TraceEvent {
     pub timestamp: DateTime<Utc>,
     pub sequence_number: i32,
@@ -362,7 +362,7 @@ pub enum TraceEventType {
 // ============================================================================
 
 /// OV-2 Operational Node
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalNode {
     pub id: String,
     pub name: String,
@@ -381,7 +381,7 @@ pub enum OperationalNodeType {
 }
 
 /// OV-2 Model
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OperationalResourceFlowDescription {
     pub id: String,
     pub name: String,

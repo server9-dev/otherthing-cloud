@@ -225,7 +225,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                     response.on_hover_ui(|ui| {
                         if !errors.is_empty() {
                             ui.heading("❌ Errors:");
-                            for error in errors {
+                            for error in &errors {
                                 ui.label(
                                     RichText::new(crate::ui::validation::Validator::error_message(error))
                                         .color(Color32::from_rgb(255, 0, 0))

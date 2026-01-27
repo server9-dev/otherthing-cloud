@@ -1,5 +1,5 @@
 use crate::ui::enhanced_nodes::{BpmnNodeType, EnhancedBpmnNode};
-use egui_snarl::{NodeId, Snarl};
+use egui_snarl::{InPinId, NodeId, OutPinId, Snarl};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
 
@@ -91,8 +91,16 @@ impl Validator {
         }
 
         // Step 1: Find all start and end nodes
-        let start_nodes = Self::find_nodes_by_type(snarl, BpmnNodeType::StartEvent);
-        let end_nodes = Self::find_nodes_by_type(snarl, BpmnNodeType::EndEvent);
+        let start_nodes: Vec<NodeId> = snarl
+            .node_ids()
+            .filter(|&(_, node)| matches!(node.node_type, BpmnNodeType::StartEvent(_)))
+            .map(|(node_id, _)| node_id)
+            .collect();
+        let end_nodes: Vec<NodeId> = snarl
+            .node_ids()
+            .filter(|&(_, node)| matches!(node.node_type, BpmnNodeType::EndEvent(_)))
+            .map(|(node_id, _)| node_id)
+            .collect();
 
         // VE-001: Check for missing start node
         if start_nodes.is_empty() {
@@ -117,9 +125,8 @@ impl Validator {
             let reachable = Self::find_reachable_nodes(snarl, start_node);
 
             // VE-004: Check for disconnected nodes
-            for node_id in snarl.node_ids() {
+            for (node_id, node) in snarl.node_ids() {
                 if !reachable.contains(&node_id) {
-                    let node = &snarl[node_id];
                     result.errors.push(ValidationError::DisconnectedNode {
                         node_id,
                         node_name: node.name().to_string(),
@@ -129,17 +136,19 @@ impl Validator {
         }
 
         // VE-005: Check for nodes missing required inputs
-        for node_id in snarl.node_ids() {
-            let node = &snarl[node_id];
+        for (node_id, node) in snarl.node_ids() {
 
             // Start events don't need inputs
-            if node.node_type == BpmnNodeType::StartEvent {
+            if matches!(node.node_type, BpmnNodeType::StartEvent(_)) {
                 continue;
             }
 
             // Check if node has any incoming connections
-            let has_input = snarl.in_pin_ids(node_id)
-                .any(|in_pin| !snarl.in_pin(in_pin).remotes.is_empty());
+            let input_count = node.input_count();
+            let has_input = (0..input_count).any(|pin_idx| {
+                let in_pin_id = InPinId { node: node_id, input: pin_idx };
+                !snarl.in_pin(in_pin_id).remotes.is_empty()
+            });
 
             if !has_input {
                 result.errors.push(ValidationError::MissingRequiredInput {
@@ -150,17 +159,19 @@ impl Validator {
         }
 
         // VW-001: Check for unconnected outputs (warnings)
-        for node_id in snarl.node_ids() {
-            let node = &snarl[node_id];
+        for (node_id, node) in snarl.node_ids() {
 
             // End events are expected to have no outputs
-            if node.node_type == BpmnNodeType::EndEvent {
+            if matches!(node.node_type, BpmnNodeType::EndEvent(_)) {
                 continue;
             }
 
             // Check if node has any outgoing connections
-            let has_output = snarl.out_pin_ids(node_id)
-                .any(|out_pin| !snarl.out_pin(out_pin).remotes.is_empty());
+            let output_count = node.output_count();
+            let has_output = (0..output_count).any(|pin_idx| {
+                let out_pin_id = OutPinId { node: node_id, output: pin_idx };
+                !snarl.out_pin(out_pin_id).remotes.is_empty()
+            });
 
             if !has_output {
                 result.warnings.push(ValidationWarning::UnconnectedOutput {
@@ -171,8 +182,7 @@ impl Validator {
         }
 
         // VW-002: Check for missing DoDAF metadata on tasks
-        for node_id in snarl.node_ids() {
-            let node = &snarl[node_id];
+        for (node_id, node) in snarl.node_ids() {
 
             if matches!(node.node_type, BpmnNodeType::Task(_)) {
                 // Check if any DoDAF metadata is present
@@ -197,7 +207,8 @@ impl Validator {
     ) -> Vec<NodeId> {
         snarl
             .node_ids()
-            .filter(|&node_id| snarl[node_id].node_type == node_type)
+            .filter(|&(_, node)| node.node_type == node_type)
+            .map(|(node_id, _)| node_id)
             .collect()
     }
 
@@ -214,9 +225,12 @@ impl Validator {
 
         while let Some(current) = queue.pop_front() {
             // Follow all outgoing connections
-            for out_pin in snarl.out_pin_ids(current) {
-                for &remote_pin in snarl.out_pin(out_pin).remotes.iter() {
-                    let (remote_node, _) = snarl.in_pin(remote_pin).id;
+            let current_node = &snarl[current];
+            let output_count = current_node.output_count();
+            for pin_idx in 0..output_count {
+                let out_pin_id = OutPinId { node: current, output: pin_idx };
+                for &remote_pin in snarl.out_pin(out_pin_id).remotes.iter() {
+                    let remote_node = snarl.in_pin(remote_pin).id.node;
 
                     if reachable.insert(remote_node) {
                         queue.push_back(remote_node);

@@ -85,8 +85,7 @@ impl DodafAggregator {
             let mut workflow_duration = 0.0;
 
             // Process each node in the workflow
-            for node_id in doc.snarl.node_ids() {
-                let node = &doc.snarl[node_id];
+            for (node_id, node) in doc.snarl.node_ids() {
 
                 // Only process nodes with DoDAF metadata
                 if let Some(ref dodaf_meta) = node.dodaf_metadata {
