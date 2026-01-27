@@ -10,6 +10,8 @@
 //! - Security policy enforcement
 
 use abcdodaf::security::*;
+use abcdodaf::security::audit::EventCategory;
+use abcdodaf::security::secrets::SecretType;
 use std::sync::Arc;
 
 #[tokio::main]
@@ -58,9 +60,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or_else(|| anyhow::anyhow!("Admin role not found"))?;
     let editor_role = role_manager.get_role("editor").await?
         .ok_or_else(|| anyhow::anyhow!("Editor role not found"))?;
-    let admin_ctx = SecurityContext::new(admin_user.clone())
+    let _admin_ctx = SecurityContext::new(admin_user.clone())
         .with_role(admin_role);
-    let editor_ctx = SecurityContext::new(editor_user.clone())
+    let _editor_ctx = SecurityContext::new(editor_user.clone())
         .with_role(editor_role);
 
     // Check permissions
@@ -77,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
     {
         Ok(_) => println!("   ✓ Viewer can edit workflows"),
-        Err(e) => println!("   ✗ Viewer cannot edit workflows (expected)"),
+        Err(_) => println!("   ✗ Viewer cannot edit workflows (expected)"),
     }
     println!();
 
@@ -158,7 +160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compliance_validator = ComplianceValidator::with_standard_rules().await;
 
     // Generate compliance report
-    let mut report = compliance_validator
+    let report = compliance_validator
         .generate_report(vec![
             ComplianceStandard::SOC2TypeII,
             ComplianceStandard::ISO27001,
@@ -195,7 +197,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Audit export
     println!("10. Audit Log Export");
     let events = audit_logger.get_events().await?;
-    let mut export_metadata = AuditExportMetadata::new("admin1");
+    let mut export_metadata = ExportMetadata::new("admin1");
     export_metadata.format = "JSON".to_string();
 
     let mut export = AuditLogExport::new(export_metadata);
@@ -205,7 +207,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         export.add_event(export_event);
     }
 
-    let json_export = AuditExporter::to_json(&export)?;
+    let _json_export = AuditExporter::to_json(&export)?;
     println!("   Generated JSON export with {} events", export.metadata.event_count);
 
     let csv_export = AuditExporter::to_csv(&export)?;
@@ -218,5 +220,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 // Note: This example uses the following types from the security module
 // These are imported at the top using the security module exports
 
-use abcdodaf::security::audit_export::{AuditEventExport, AuditExporter, AuditLogExport, AuditExportMetadata};
+use abcdodaf::security::audit_export::{AuditEventExport, AuditExporter, AuditLogExport, ExportMetadata};
 use abcdodaf::security::compliance::ComplianceStandard;

@@ -1,0 +1,87 @@
+{
+  "bpmn_process": {
+    "id": "test_workflow_process",
+    "name": "Test BPMN JSON Workflow",
+    "version": "1.0.0",
+    "isExecutable": true,
+    "processType": "standard"
+  },
+  "workflow_steps": [
+    {
+      "id": "start_event",
+      "name": "Start Process",
+      "type": "startEvent"
+    },
+    {
+      "id": "task_1",
+      "name": "Process Request",
+      "type": "serviceTask",
+      "taskType": "service",
+      "implementation": "process_request_handler",
+      "inputs": ["request_data"],
+      "outputs": ["processed_data"]
+    },
+    {
+      "id": "gateway_1",
+      "name": "Check Result",
+      "type": "exclusiveGateway"
+    },
+    {
+      "id": "task_success",
+      "name": "Handle Success",
+      "type": "userTask"
+    },
+    {
+      "id": "task_error",
+      "name": "Handle Error",
+      "type": "userTask"
+    },
+    {
+      "id": "end_event",
+      "name": "End Process",
+      "type": "endEvent"
+    }
+  ],
+  "sequence_flows": [
+    {
+      "id": "flow_1",
+      "sourceRef": "start_event",
+      "targetRef": "task_1"
+    },
+    {
+      "id": "flow_2",
+      "sourceRef": "task_1",
+      "targetRef": "gateway_1"
+    },
+    {
+      "id": "flow_3",
+      "sourceRef": "gateway_1",
+      "targetRef": "task_success",
+      "name": "Success",
+      "condition": "result == 'success'"
+    },
+    {
+      "id": "flow_4",
+      "sourceRef": "gateway_1",
+      "targetRef": "task_error",
+      "name": "Error",
+      "condition": "result == 'error'"
+    },
+    {
+      "id": "flow_5",
+      "sourceRef": "task_success",
+      "targetRef": "end_event"
+    },
+    {
+      "id": "flow_6",
+      "sourceRef": "task_error",
+      "targetRef": "end_event"
+    }
+  ],
+  "dodaf_metadata": {
+    "operational_activity": {
+      "id": "OA-TEST-001",
+      "name": "Test Operational Activity"
+    }
+  }
+}

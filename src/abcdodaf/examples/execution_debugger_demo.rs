@@ -13,8 +13,8 @@
 
 use abcdodaf::bpmn::{
     EnhancedRuntime, ExecutionEvent, ExecutionMode, Process, ProcessBuilder, TaskHandler,
-    TaskType,
 };
+use abcdodaf::bpmn::process::Task;
 use abcdodaf::error::Result;
 use abcdodaf::ui::{
     DebuggerPanel, ExecutionVisualizer, InstanceManager,
@@ -23,7 +23,6 @@ use async_trait::async_trait;
 use eframe::egui;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// Demo application state
 struct DebuggerDemoApp {
@@ -83,7 +82,7 @@ impl DebuggerDemoApp {
                         // Load context when process starts
                         let runtime = self.runtime.clone();
                         tokio::spawn(async move {
-                            if let Some(context) = runtime.get_context(instance_id).await {
+                            if let Some(_context) = runtime.get_context(instance_id).await {
                                 // Would update visualizer here
                                 println!("Process started: {}", instance_id);
                             }
@@ -248,10 +247,10 @@ impl eframe::App for DebuggerDemoApp {
                         );
 
                         // Draw nodes
-                        painter.rect_stroke(
+                        painter.rect_filled(
                             node1,
                             5.0,
-                            egui::Stroke::new(2.0, egui::Color32::WHITE),
+                            egui::Color32::from_gray(50),
                         );
                         painter.text(
                             node1.center(),
@@ -261,10 +260,10 @@ impl eframe::App for DebuggerDemoApp {
                             egui::Color32::WHITE,
                         );
 
-                        painter.rect_stroke(
+                        painter.rect_filled(
                             node2,
                             5.0,
-                            egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 200, 255)),
+                            egui::Color32::from_rgb(0, 150, 200),
                         );
                         painter.text(
                             node2.center(),
@@ -274,10 +273,10 @@ impl eframe::App for DebuggerDemoApp {
                             egui::Color32::WHITE,
                         );
 
-                        painter.rect_stroke(
+                        painter.rect_filled(
                             node3,
                             5.0,
-                            egui::Stroke::new(2.0, egui::Color32::WHITE),
+                            egui::Color32::from_gray(50),
                         );
                         painter.text(
                             node3.center(),
@@ -375,7 +374,7 @@ struct DemoUserTaskHandler;
 impl TaskHandler for DemoUserTaskHandler {
     async fn execute(
         &self,
-        task: &abcdodaf::bpmn::Task,
+        task: &Task,
         variables: &HashMap<String, serde_json::Value>,
     ) -> Result<HashMap<String, serde_json::Value>> {
         println!("Executing user task: {}", task.name);
@@ -398,7 +397,7 @@ struct DemoServiceTaskHandler;
 impl TaskHandler for DemoServiceTaskHandler {
     async fn execute(
         &self,
-        task: &abcdodaf::bpmn::Task,
+        task: &Task,
         variables: &HashMap<String, serde_json::Value>,
     ) -> Result<HashMap<String, serde_json::Value>> {
         println!("Executing service task: {}", task.name);
@@ -421,7 +420,7 @@ struct DemoScriptTaskHandler;
 impl TaskHandler for DemoScriptTaskHandler {
     async fn execute(
         &self,
-        task: &abcdodaf::bpmn::Task,
+        task: &Task,
         variables: &HashMap<String, serde_json::Value>,
     ) -> Result<HashMap<String, serde_json::Value>> {
         println!("Executing script task: {}", task.name);
@@ -438,7 +437,7 @@ impl TaskHandler for DemoScriptTaskHandler {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
@@ -469,7 +468,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "ABCDODAF Execution Debugger",
         native_options,
         Box::new(|cc| Ok(Box::new(DebuggerDemoApp::new(cc)))),
-    )?;
+    ).map_err(|e| anyhow::anyhow!("Failed to run native app: {}", e))?;
 
     Ok(())
 }

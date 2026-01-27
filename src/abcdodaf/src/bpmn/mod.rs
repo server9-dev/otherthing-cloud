@@ -9,6 +9,8 @@ pub mod elements;
 pub mod xml_io;
 pub mod file_io;
 pub mod runtime;
+pub mod json_format;
+pub mod json_validation;
 
 pub use process::{Process, ProcessBuilder};
 pub use executor::ProcessExecutor;
@@ -18,6 +20,11 @@ pub use file_io::{BpmnFileIo, FileOptions, FileError, FileResult};
 pub use runtime::{
     EnhancedRuntime, ExecutionContext, ExecutionEvent, ExecutionMode,
     ExecutionToken, TaskHandler, TokenState, Breakpoint, TaskPerformance,
+};
+pub use json_format::{BpmnJsonWorkflow, BpmnProcessInfo, WorkflowStep, SequenceFlow};
+pub use json_validation::{
+    validate_bpmn_json, validate_bpmn_workflow, ValidationError,
+    ErrorSeverity, ErrorCategory, ValidationSummary,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

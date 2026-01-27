@@ -375,7 +375,7 @@ mod tests {
         let needline = Needline::new("nl1", "Command Flow", "node1", "node2", Criticality::Critical)
             .add_information_element("tactical_order");
 
-        let mut desc = OperationalNodeConnectivity::new("ov2_1", "Test")
+        let desc = OperationalNodeConnectivity::new("ov2_1", "Test")
             .add_node(node1)
             .add_node(node2)
             .add_needline(needline);

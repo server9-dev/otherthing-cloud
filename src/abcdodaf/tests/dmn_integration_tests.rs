@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod dmn_tests {
     use abcdodaf::dmn::*;
-    use std::collections::HashMap;
 
     // ============================================================================
     // FEEL Expression Tests

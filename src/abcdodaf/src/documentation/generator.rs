@@ -3,6 +3,8 @@
 use super::{ProcessDocumentation, Parameter, Participant, ErrorScenario};
 use crate::bpmn::ProcessInstance;
 use crate::bpmn::process::Process;
+#[cfg(test)]
+use crate::bpmn::process::ProcessBuilder;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -60,6 +62,7 @@ impl Default for DocumentationConfig {
 
 /// Main documentation generator
 pub struct DocumentationGenerator {
+    #[allow(dead_code)]
     config: DocumentationConfig,
 }
 
@@ -291,8 +294,8 @@ mod tests {
 
     #[test]
     fn test_generate_from_process() {
-        let process = ProcessBuilder::new("test")
-            .with_name("Test Process")
+        let process = ProcessBuilder::new("test", "Test Process")
+            .add_user_task("task1", "Test Task")
             .build()
             .expect("Failed to build process");
 

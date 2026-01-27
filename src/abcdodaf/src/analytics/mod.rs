@@ -62,7 +62,7 @@ impl AnalyticsDashboard {
     }
 
     /// Initialize dashboard with custom SLA policies
-    pub fn with_sla_policies(mut self, policies: Vec<SlaPolicy>) -> Self {
+    pub fn with_sla_policies(self, policies: Vec<SlaPolicy>) -> Self {
         for policy in policies {
             self.alerting.add_sla_policy(policy);
         }

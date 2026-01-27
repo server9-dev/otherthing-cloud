@@ -102,7 +102,7 @@ impl InstanceManager {
 
             // Filter
             ui.label("Filter:");
-            egui::ComboBox::from_id_source("instance_filter")
+            egui::ComboBox::from_id_salt("instance_filter")
                 .selected_text(format!("{:?}", self.filter))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter, InstanceFilter::All, "All");
@@ -114,7 +114,7 @@ impl InstanceManager {
 
             // Sort
             ui.label("Sort:");
-            egui::ComboBox::from_id_source("instance_sort")
+            egui::ComboBox::from_id_salt("instance_sort")
                 .selected_text(format!("{:?}", self.sort_by))
                 .show_ui(ui, |ui| {
                     if ui.selectable_value(&mut self.sort_by, SortBy::StartedNewest, "Newest First").changed() {
@@ -191,7 +191,7 @@ impl InstanceManager {
         let is_selected = self.selected_instance == Some(instance.id);
 
         let response = ui.group(|ui| {
-            let mut frame = egui::Frame::none();
+            let mut frame = egui::Frame::new();
             if is_selected {
                 frame = frame.fill(Color32::from_rgb(40, 60, 80));
             }

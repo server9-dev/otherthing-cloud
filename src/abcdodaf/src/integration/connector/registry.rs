@@ -165,7 +165,7 @@ impl std::fmt::Debug for ConnectorRegistry {
 mod tests {
     use super::*;
     use crate::integration::connector::{
-        ConnectionStatus, ConnectorMetadata, ConnectorResponse, HealthStatus,
+        ConnectionStatus, ConnectorResponse, HealthStatus,
     };
     use async_trait::async_trait;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -203,7 +203,7 @@ mod tests {
             Ok(())
         }
 
-        async fn execute(&self, request: super::ConnectorRequest) -> ConnectorResult<ConnectorResponse> {
+        async fn execute(&self, request: crate::integration::ConnectorRequest) -> ConnectorResult<ConnectorResponse> {
             self.call_count.fetch_add(1, Ordering::SeqCst);
             Ok(ConnectorResponse::new(request.id, 200))
         }

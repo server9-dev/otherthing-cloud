@@ -8,7 +8,7 @@
 //! - Monitor connector health
 
 use abcdodaf::integration::connector::{
-    Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest, AuthConfig,
+    Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest, AuthConfig, ApiKeyConfig,
 };
 use abcdodaf::integration::connectors::{
     RestApiConnector, PostgresConnector, FileSystemConnector, OutgoingWebhookConnector,
@@ -97,7 +97,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("----------------------------");
     let api_config = ConnectorConfig::new("github_api", "rest_api")
         .with_param("url", json!("https://api.github.com"))
-        .with_auth(AuthConfig::api_key("ghp_xxxx", "Authorization").with_prefix("Bearer "))
+        .with_auth(AuthConfig::ApiKey(
+            ApiKeyConfig::new("ghp_xxxx", "Authorization").with_prefix("Bearer ")
+        ))
         .with_timeout(30)
         .with_retries(true, 3);
 
@@ -171,7 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Example 6: Connector Health Status");
     println!("----------------------------------");
     let health_results = registry.health_check_all().await;
-    for (name, status, result) in health_results {
+    for (name, status, _result) in health_results {
         let status_str = match status {
             abcdodaf::integration::connector::HealthStatus::Healthy => "Healthy",
             abcdodaf::integration::connector::HealthStatus::Degraded(msg) => {

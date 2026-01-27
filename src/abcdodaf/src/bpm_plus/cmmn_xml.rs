@@ -137,7 +137,7 @@ impl CmmnXmlExporter {
                 name,
                 process_ref,
                 entry_criteria,
-                exit_criteria,
+                exit_criteria: _,
                 required,
             } => {
                 let mut xml = format!(
@@ -211,8 +211,8 @@ impl CmmnXmlExporter {
                 id,
                 name,
                 decision_ref,
-                entry_criteria,
-                exit_criteria,
+                entry_criteria: _,
+                exit_criteria: _,
             } => {
                 let mut xml = format!(
                     "{}<planItem id=\"{}\" name=\"{}\" definitionRef=\"decisionTask_{}\">",

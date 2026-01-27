@@ -73,14 +73,6 @@ impl OutgoingWebhookConnector {
             .ok_or_else(|| ConnectorError::config("Webhook URL not configured"))
     }
 
-    /// Get retry on failure setting
-    fn should_retry_on_failure(&self) -> bool {
-        self.config
-            .config
-            .get("retry_on_failure")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(true)
-    }
 
     /// Get timeout in seconds
     fn get_timeout_secs(&self) -> u64 {
@@ -236,6 +228,7 @@ impl IncomingWebhookConnector {
     }
 
     /// Get the webhook path
+    #[cfg(test)]
     fn get_path(&self) -> String {
         self.config
             .params

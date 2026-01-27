@@ -47,8 +47,12 @@
       "type": "serviceTask",
       "taskType": "analysis",
       "implementation": "mcp_tool_discovery",
-      "inputs": ["MCP server configuration"],
-      "outputs": ["available_ollama_tools"],
+      "inputs": [
+        "MCP server configuration"
+      ],
+      "outputs": [
+        "available_ollama_tools"
+      ],
       "discovered_tools": [
         "mcp__ollama__serve",
         "mcp__ollama__run",
@@ -63,8 +67,12 @@
       "type": "serviceTask",
       "taskType": "research",
       "implementation": "web_research",
-      "inputs": ["current agent system"],
-      "outputs": ["enhancement_proposals"],
+      "inputs": [
+        "current agent system"
+      ],
+      "outputs": [
+        "enhancement_proposals"
+      ],
       "research_areas": [
         "Multi-agent collaboration frameworks",
         "Agent memory and state management",
@@ -80,8 +88,13 @@
       "type": "serviceTask",
       "taskType": "design",
       "implementation": "architectural_design",
-      "inputs": ["ollama_tools", "agent_system"],
-      "outputs": ["integration_architecture"],
+      "inputs": [
+        "ollama_tools",
+        "agent_system"
+      ],
+      "outputs": [
+        "integration_architecture"
+      ],
       "design_decisions": [
         "Wrapper around MCP Ollama tools",
         "Model selection strategy (local vs API)",
@@ -97,8 +110,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["integration_architecture"],
-      "outputs": ["ollama_client"],
+      "inputs": [
+        "integration_architecture"
+      ],
+      "outputs": [
+        "ollama_client"
+      ],
       "components": [
         "OllamaClient struct",
         "Model management",
@@ -114,8 +131,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "capability_expansion",
-      "inputs": ["current_12_capabilities"],
-      "outputs": ["expanded_capabilities"],
+      "inputs": [
+        "current_12_capabilities"
+      ],
+      "outputs": [
+        "expanded_capabilities"
+      ],
       "new_capabilities": [
         "Vision (image understanding)",
         "Audio (speech processing)",
@@ -133,7 +154,9 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "template_system",
-      "outputs": ["prompt_templates"],
+      "outputs": [
+        "prompt_templates"
+      ],
       "features": [
         "Template variables",
         "Template composition",
@@ -148,7 +171,9 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "memory_system",
-      "outputs": ["agent_memory"],
+      "outputs": [
+        "agent_memory"
+      ],
       "memory_types": [
         "Short-term (conversation)",
         "Working memory (task state)",
@@ -162,7 +187,9 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "collaboration_framework",
-      "outputs": ["collaboration_system"],
+      "outputs": [
+        "collaboration_system"
+      ],
       "patterns": [
         "Sequential (chain of agents)",
         "Parallel (concurrent execution)",
@@ -177,8 +204,13 @@
       "type": "serviceTask",
       "taskType": "integration",
       "implementation": "system_integration",
-      "inputs": ["all_ai_components", "execution_engine"],
-      "outputs": ["integrated_ai_system"],
+      "inputs": [
+        "all_ai_components",
+        "execution_engine"
+      ],
+      "outputs": [
+        "integrated_ai_system"
+      ],
       "actions": [
         "Update AgentTask to use Ollama",
         "Add model selection to task definition",
@@ -224,18 +256,66 @@
     }
   ],
   "sequence_flows": [
-    {"id": "f1", "sourceRef": "start", "targetRef": "analyze_mcp_tools"},
-    {"id": "f2", "sourceRef": "analyze_mcp_tools", "targetRef": "research_agent_patterns"},
-    {"id": "f3", "sourceRef": "research_agent_patterns", "targetRef": "design_ollama_integration"},
-    {"id": "f4", "sourceRef": "design_ollama_integration", "targetRef": "implement_ollama_client"},
-    {"id": "f5", "sourceRef": "implement_ollama_client", "targetRef": "expand_agent_capabilities"},
-    {"id": "f6", "sourceRef": "expand_agent_capabilities", "targetRef": "implement_prompt_templates"},
-    {"id": "f7", "sourceRef": "implement_prompt_templates", "targetRef": "implement_agent_memory"},
-    {"id": "f8", "sourceRef": "implement_agent_memory", "targetRef": "implement_multi_agent"},
-    {"id": "f9", "sourceRef": "implement_multi_agent", "targetRef": "integrate_with_execution"},
-    {"id": "f10", "sourceRef": "integrate_with_execution", "targetRef": "test_ollama"},
-    {"id": "f11", "sourceRef": "test_ollama", "targetRef": "document_ai"},
-    {"id": "f12", "sourceRef": "document_ai", "targetRef": "end"}
+    {
+      "id": "f1",
+      "sourceRef": "start",
+      "targetRef": "analyze_mcp_tools"
+    },
+    {
+      "id": "f2",
+      "sourceRef": "analyze_mcp_tools",
+      "targetRef": "research_agent_patterns"
+    },
+    {
+      "id": "f3",
+      "sourceRef": "research_agent_patterns",
+      "targetRef": "design_ollama_integration"
+    },
+    {
+      "id": "f4",
+      "sourceRef": "design_ollama_integration",
+      "targetRef": "implement_ollama_client"
+    },
+    {
+      "id": "f5",
+      "sourceRef": "implement_ollama_client",
+      "targetRef": "expand_agent_capabilities"
+    },
+    {
+      "id": "f6",
+      "sourceRef": "expand_agent_capabilities",
+      "targetRef": "implement_prompt_templates"
+    },
+    {
+      "id": "f7",
+      "sourceRef": "implement_prompt_templates",
+      "targetRef": "implement_agent_memory"
+    },
+    {
+      "id": "f8",
+      "sourceRef": "implement_agent_memory",
+      "targetRef": "implement_multi_agent"
+    },
+    {
+      "id": "f9",
+      "sourceRef": "implement_multi_agent",
+      "targetRef": "integrate_with_execution"
+    },
+    {
+      "id": "f10",
+      "sourceRef": "integrate_with_execution",
+      "targetRef": "test_ollama"
+    },
+    {
+      "id": "f11",
+      "sourceRef": "test_ollama",
+      "targetRef": "document_ai"
+    },
+    {
+      "id": "f12",
+      "sourceRef": "document_ai",
+      "targetRef": "end"
+    }
   ],
   "expected_deliverables": {
     "modules": [

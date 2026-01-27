@@ -1,0 +1,9 @@
+# rust-analyzer configuration for abcdodaf
+# This ensures the IDE understands all feature-gated code without affecting builds
+
+# Enable the UI feature for rust-analyzer
+check.features = ["ui"]
+cargo.features = ["ui"]
+
+# Use all features for better code intelligence
+cargo.allFeatures = false

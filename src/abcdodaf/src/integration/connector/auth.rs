@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_oauth_token_expiration() {
-        let now = std::time::SystemTime::now()
+        let _now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs() as i64;

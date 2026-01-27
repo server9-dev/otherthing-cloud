@@ -5,7 +5,7 @@
 use super::enhanced_nodes::*;
 use super::bpmn_shapes;
 use crate::bpmn::elements::*;
-use egui::{Color32, Ui, RichText, FontId, Rect};
+use egui::{Color32, Ui, RichText, FontId};
 use egui_snarl::{
     InPin, NodeId, OutPin, Snarl,
     ui::{PinInfo, SnarlStyle, SnarlViewer},
@@ -71,7 +71,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
         pin: &InPin,
         ui: &mut Ui,
         snarl: &mut Snarl<EnhancedBpmnNode>,
-    ) -> PinInfo {
+    ) -> impl egui_snarl::ui::SnarlPin + 'static {
         let node = &snarl[pin.id.node];
 
         // Show input pin label based on node type
@@ -106,7 +106,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
         pin: &OutPin,
         ui: &mut Ui,
         snarl: &mut Snarl<EnhancedBpmnNode>,
-    ) -> PinInfo {
+    ) -> impl egui_snarl::ui::SnarlPin + 'static {
         let node = &snarl[pin.id.node];
 
         // Show output pin label based on node type
@@ -460,7 +460,7 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
                 egui::Frame::new()
                     .fill(Color32::from_rgba_premultiplied(200, 220, 255, 30))
                     .stroke(egui::Stroke::new(2.0, Color32::from_rgb(100, 150, 255)))
-                    .rounding(egui::Rounding::same(5))
+                    .corner_radius(egui::CornerRadius::same(5))
                     .inner_margin(egui::Margin::same(8))
                     .show(ui, |ui| {
                         if let Some(category) = &g.category {

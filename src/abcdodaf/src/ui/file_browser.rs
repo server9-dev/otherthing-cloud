@@ -1,4 +1,4 @@
-use crate::ui::workspace::{Workspace, WorkflowId};
+use crate::ui::workspace::Workspace;
 use std::path::PathBuf;
 use std::fs;
 use std::time::SystemTime;
@@ -192,17 +192,17 @@ impl FileBrowser {
                             response.context_menu(|ui| {
                                 if ui.button("Open").clicked() {
                                     action = Some(FileAction::OpenFile(file.path.clone()));
-                                    ui.close_menu();
+                                    ui.close();
                                 }
 
                                 if ui.button("Delete").clicked() {
                                     action = Some(FileAction::DeleteFile(file.path.clone()));
-                                    ui.close_menu();
+                                    ui.close();
                                 }
 
                                 if ui.button("Rename").clicked() {
                                     action = Some(FileAction::RenameFile(file.path.clone()));
-                                    ui.close_menu();
+                                    ui.close();
                                 }
                             });
                         });

@@ -373,7 +373,7 @@ impl CaseRuntimeEngine {
             AbcdodafError::WorkflowError(format!("Case model '{}' not found", case_model_id))
         })?;
 
-        let mut instance = CaseInstance::new(case_model_id);
+        let instance = CaseInstance::new(case_model_id);
         let instance_id = instance.id.clone();
 
         let mut instances = self.instances.write().await;

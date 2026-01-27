@@ -8,8 +8,8 @@
 //! 5. Generate SVG diagrams
 
 use abcdodaf::documentation::{
-    DocumentationGenerator, DocumentationConfig, DocumentationFormat,
-    TemplateLibrary, create_builtin_library,
+    DocumentationGenerator,
+    create_builtin_library,
     MarkdownExporter, HtmlExporter, PlainTextExporter, Exporter,
     DiagramGenerator, DiagramFormat,
 };
@@ -20,21 +20,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Part 1: Documentation Generation
     println!("1. DOCUMENTATION GENERATION");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
     demonstrate_documentation_generation()?;
 
     println!("\n");
 
     // Part 2: Template Library
     println!("2. TEMPLATE LIBRARY");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
     demonstrate_template_library()?;
 
     println!("\n");
 
     // Part 3: Diagram Generation
     println!("3. DIAGRAM GENERATION");
-    println!("-".repeat(50));
+    println!("{}", "-".repeat(50));
     demonstrate_diagram_generation()?;
 
     println!("\n=== Demo Complete ===");
@@ -43,9 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn demonstrate_documentation_generation() -> Result<(), Box<dyn std::error::Error>> {
     // Create a sample process
-    let process = ProcessBuilder::new("approval_process")
-        .with_name("Purchase Order Approval")
-        .with_description("A workflow for approving purchase orders")
+    let process = ProcessBuilder::new("approval_process", "Purchase Order Approval")
+        .description("A workflow for approving purchase orders")
         .build()?;
 
     // Create documentation generator with default config
@@ -161,8 +160,7 @@ fn demonstrate_template_library() -> Result<(), Box<dyn std::error::Error>> {
 
 fn demonstrate_diagram_generation() -> Result<(), Box<dyn std::error::Error>> {
     // Create a sample process
-    let process = ProcessBuilder::new("simple_process")
-        .with_name("Simple Process")
+    let process = ProcessBuilder::new("simple_process", "Simple Process")
         .build()?;
 
     // Generate ASCII diagram

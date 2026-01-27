@@ -4,7 +4,7 @@
 mod tests {
     use abcdodaf::integration::connector::{
         Connector, ConnectorConfig, ConnectorRegistry, ConnectorRequest, ConnectionStatus,
-        HealthStatus, AuthConfig,
+        AuthConfig,
     };
     use abcdodaf::integration::connectors::{RestApiConnector, PostgresConnector, MySqlConnector};
     use abcdodaf::integration::connector::registry::ConnectorFactory;
@@ -274,22 +274,22 @@ mod tests {
 
     #[test]
     fn test_circuit_breaker() {
-        use abcdodaf::integration::connector::CircuitBreaker;
+        use abcdodaf::integration::connector::{CircuitBreaker, CircuitBreakerState};
         use std::time::Duration;
         use std::thread;
 
         let cb = CircuitBreaker::new(2, Duration::from_millis(100));
 
-        assert_eq!(cb.state(), ConnectionStatus::Closed);
+        assert_eq!(cb.state(), CircuitBreakerState::Closed);
 
         cb.record_failure();
         cb.record_failure();
-        assert_eq!(cb.state(), ConnectionStatus::Open);
+        assert_eq!(cb.state(), CircuitBreakerState::Open);
 
         thread::sleep(Duration::from_millis(150));
-        assert_eq!(cb.state(), ConnectionStatus::HalfOpen);
+        assert_eq!(cb.state(), CircuitBreakerState::HalfOpen);
 
         cb.record_success();
-        assert_eq!(cb.state(), ConnectionStatus::Closed);
+        assert_eq!(cb.state(), CircuitBreakerState::Closed);
     }
 }

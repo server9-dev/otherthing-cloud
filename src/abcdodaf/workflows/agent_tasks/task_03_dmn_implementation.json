@@ -25,7 +25,11 @@
       "security_domain": "Development"
     },
     "capability": "Decision_Automation",
-    "outputs": ["Decision tables", "FEEL engine", "DMN XML support"]
+    "outputs": [
+      "Decision tables",
+      "FEEL engine",
+      "DMN XML support"
+    ]
   },
   "workflow_steps": [
     {
@@ -128,8 +132,14 @@
       "name": "Integrate DMN Components",
       "type": "serviceTask",
       "taskType": "integration",
-      "inputs": ["decision_tables", "feel_engine", "drd"],
-      "outputs": ["dmn_module"],
+      "inputs": [
+        "decision_tables",
+        "feel_engine",
+        "drd"
+      ],
+      "outputs": [
+        "dmn_module"
+      ],
       "integration_points": [
         "FEEL expressions in decision table rules",
         "DRD execution flow",
@@ -211,21 +221,81 @@
     }
   ],
   "sequence_flows": [
-    {"id": "f1", "sourceRef": "start", "targetRef": "research_dmn_spec"},
-    {"id": "f2", "sourceRef": "research_dmn_spec", "targetRef": "parallel_gateway_start"},
-    {"id": "f3", "sourceRef": "parallel_gateway_start", "targetRef": "implement_decision_tables"},
-    {"id": "f4", "sourceRef": "parallel_gateway_start", "targetRef": "implement_feel_engine"},
-    {"id": "f5", "sourceRef": "parallel_gateway_start", "targetRef": "implement_drd"},
-    {"id": "f6", "sourceRef": "implement_decision_tables", "targetRef": "parallel_gateway_join"},
-    {"id": "f7", "sourceRef": "implement_feel_engine", "targetRef": "parallel_gateway_join"},
-    {"id": "f8", "sourceRef": "implement_drd", "targetRef": "parallel_gateway_join"},
-    {"id": "f9", "sourceRef": "parallel_gateway_join", "targetRef": "integrate_components"},
-    {"id": "f10", "sourceRef": "integrate_components", "targetRef": "implement_dmn_xml"},
-    {"id": "f11", "sourceRef": "implement_dmn_xml", "targetRef": "integrate_bpmn"},
-    {"id": "f12", "sourceRef": "integrate_bpmn", "targetRef": "build_ui_editor"},
-    {"id": "f13", "sourceRef": "build_ui_editor", "targetRef": "test_dmn"},
-    {"id": "f14", "sourceRef": "test_dmn", "targetRef": "document_dmn"},
-    {"id": "f15", "sourceRef": "document_dmn", "targetRef": "end"}
+    {
+      "id": "f1",
+      "sourceRef": "start",
+      "targetRef": "research_dmn_spec"
+    },
+    {
+      "id": "f2",
+      "sourceRef": "research_dmn_spec",
+      "targetRef": "parallel_gateway_start"
+    },
+    {
+      "id": "f3",
+      "sourceRef": "parallel_gateway_start",
+      "targetRef": "implement_decision_tables"
+    },
+    {
+      "id": "f4",
+      "sourceRef": "parallel_gateway_start",
+      "targetRef": "implement_feel_engine"
+    },
+    {
+      "id": "f5",
+      "sourceRef": "parallel_gateway_start",
+      "targetRef": "implement_drd"
+    },
+    {
+      "id": "f6",
+      "sourceRef": "implement_decision_tables",
+      "targetRef": "parallel_gateway_join"
+    },
+    {
+      "id": "f7",
+      "sourceRef": "implement_feel_engine",
+      "targetRef": "parallel_gateway_join"
+    },
+    {
+      "id": "f8",
+      "sourceRef": "implement_drd",
+      "targetRef": "parallel_gateway_join"
+    },
+    {
+      "id": "f9",
+      "sourceRef": "parallel_gateway_join",
+      "targetRef": "integrate_components"
+    },
+    {
+      "id": "f10",
+      "sourceRef": "integrate_components",
+      "targetRef": "implement_dmn_xml"
+    },
+    {
+      "id": "f11",
+      "sourceRef": "implement_dmn_xml",
+      "targetRef": "integrate_bpmn"
+    },
+    {
+      "id": "f12",
+      "sourceRef": "integrate_bpmn",
+      "targetRef": "build_ui_editor"
+    },
+    {
+      "id": "f13",
+      "sourceRef": "build_ui_editor",
+      "targetRef": "test_dmn"
+    },
+    {
+      "id": "f14",
+      "sourceRef": "test_dmn",
+      "targetRef": "document_dmn"
+    },
+    {
+      "id": "f15",
+      "sourceRef": "document_dmn",
+      "targetRef": "end"
+    }
   ],
   "expected_deliverables": {
     "modules": [

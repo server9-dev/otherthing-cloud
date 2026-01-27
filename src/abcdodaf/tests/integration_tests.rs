@@ -1,7 +1,11 @@
 //! Integration tests for ABCDODAF library
 
 use abcdodaf::prelude::*;
-use abcdodaf::dodaf::*;
+use abcdodaf::dodaf::{
+    BaseCapability as Capability, BaseCapabilityType as CapabilityType,
+    CapabilityView, Service, ServiceType, ServiceView, OperationalView,
+    DodafArchitecture, MissionArea, OperationalActivity, ActivityType,
+};
 // BPM+ is tested in bpm_plus module tests
 use abcdodaf::workforce::*;
 
@@ -60,11 +64,8 @@ fn test_dodaf_architecture_complete() {
                 ),
         )
         .with_capability_view(
-            CapabilityView::new().add_capability(Capability::new(
-                "c1",
-                "Capability 1",
-                CapabilityType::Cognitive,
-            )),
+            CapabilityView::new()
+                .add_capability(Capability::new("c1", "Capability 1", CapabilityType::Cognitive)),
         )
         .with_services_view(
             ServiceView::new().add_service(Service::new(

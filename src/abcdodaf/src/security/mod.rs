@@ -28,7 +28,7 @@ pub mod error;
 pub use error::{SecurityError, SecurityResult};
 pub use rbac::{Role, RoleManager, Subject, SubjectType};
 pub use permissions::{Permission, PermissionChecker, PermissionModel, ResourceType};
-pub use audit::{AuditLogger, AuditEvent, AuditLevel};
+pub use audit::{AuditLogger, AuditEvent, AuditLevel, EventCategory};
 pub use compliance::{ComplianceValidator, ComplianceRule, ComplianceReport};
 pub use secrets::{SecretManager, SecretValue};
 pub use session::{SessionManager, Session};

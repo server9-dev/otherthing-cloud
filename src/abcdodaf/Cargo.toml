@@ -47,15 +47,20 @@ regex = "1"
 # Async stream utilities
 async-stream = "0.3"
 
+# CLI dependencies
+clap = { version = "4", features = ["derive", "cargo"] }
+colored = "2"
+
 # UI dependencies (optional, feature-gated)
 egui = { version = "0.33", optional = true }
 eframe = { version = "0.33", optional = true, default-features = false, features = ["glow", "wayland", "x11"] }
 egui-snarl = { version = "0.9", optional = true, features = ["serde"] }
 rfd = { version = "0.15", optional = true }
+tracing-subscriber = { version = "0.3", features = ["fmt"], optional = true }
 
 [features]
 default = []
-ui = ["dep:egui", "dep:eframe", "dep:egui-snarl", "dep:rfd"]
+ui = ["dep:egui", "dep:eframe", "dep:egui-snarl", "dep:rfd", "dep:tracing-subscriber"]
 
 [dev-dependencies]
 tokio-test = "0.4"
@@ -65,6 +70,11 @@ tracing-subscriber = { version = "0.3", features = ["fmt"] }
 [lib]
 name = "abcdodaf"
 path = "src/lib.rs"
+
+[[bin]]
+name = "abcdodaf-ui"
+path = "src/bin/abcdodaf-ui.rs"
+required-features = ["ui"]
 
 [[example]]
 name = "simple_workflow"
@@ -107,4 +117,14 @@ path = "examples/integration_example.rs"
 [[example]]
 name = "execution_debugger_demo"
 path = "examples/execution_debugger_demo.rs"
+required-features = ["ui"]
+
+[[example]]
+name = "bpmn_json_converter_example"
+path = "examples/bpmn_json_converter_example.rs"
+required-features = ["ui"]
+
+[[example]]
+name = "bpmn_diagram_converter_example"
+path = "examples/bpmn_diagram_converter_example.rs"
 required-features = ["ui"]

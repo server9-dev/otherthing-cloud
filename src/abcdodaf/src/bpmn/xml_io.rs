@@ -395,7 +395,7 @@ impl BpmnXmlSerializer {
                     Self::escape_xml(condition)
                 )
             }
-            EventDefinition::Link { target, source } => {
+            EventDefinition::Link { target, source: _ } => {
                 let mut xml = format!("{}<linkEventDefinition", ind);
                 if let Some(t) = target {
                     xml.push_str(&format!(" name=\"{}\"", Self::escape_xml(t)));
@@ -548,7 +548,7 @@ impl BpmnXmlSerializer {
         if subprocess.process.is_some() {
             xml.push_str(">\n");
             // Serialize embedded process
-            if let Some(proc) = &subprocess.process {
+            if let Some(_proc) = &subprocess.process {
                 // Add child elements
             }
             xml.push_str(&format!("    </{}>\n", tag));
@@ -824,7 +824,7 @@ impl BpmnXmlSerializer {
     // Parsing/Deserialization
     // ========================================================================
 
-    fn parse_xml(xml: &str) -> XmlResult<BpmnDiagram> {
+    fn parse_xml(_xml: &str) -> XmlResult<BpmnDiagram> {
         // For now, return a basic structure. In production, use xml-rs or minidom crate
         // This is a placeholder that demonstrates the interface
 
@@ -856,6 +856,7 @@ impl BpmnXmlSerializer {
     }
 
     /// Unescape XML special characters
+    #[allow(dead_code)]
     fn unescape_xml(text: &str) -> String {
         text.replace("&quot;", "\"")
             .replace("&apos;", "'")

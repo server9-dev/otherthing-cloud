@@ -10,7 +10,7 @@ fn main() -> Result<(), eframe::Error> {
     use abcdodaf::ui::{
         EnhancedBpmnViewer, enhanced_bpmn_style, PropertyEditor,
         Workspace, FileBrowser, FileAction, TabBar, TabAction,
-        DodafAggregator, Validator,
+        DodafAggregator, Validator, NotificationManager,
     };
     use eframe::App;
 
@@ -27,6 +27,7 @@ fn main() -> Result<(), eframe::Error> {
         show_dodaf_panel: bool,
         dodaf_aggregator: DodafAggregator,
         style: egui_snarl::ui::SnarlStyle,
+        notifications: NotificationManager,
 
         // UI state
         show_file_browser: bool,
@@ -50,6 +51,7 @@ fn main() -> Result<(), eframe::Error> {
                 show_dodaf_panel: false,
                 dodaf_aggregator: DodafAggregator::new(),
                 style: enhanced_bpmn_style(),
+                notifications: NotificationManager::new(),
                 show_file_browser: true,
                 show_properties: true,
                 pending_save_as: None,
@@ -57,12 +59,12 @@ fn main() -> Result<(), eframe::Error> {
         }
 
         fn render_menu_bar(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 // File menu
                 ui.menu_button("File", |ui| {
                     if ui.button("📄 New Workflow").clicked() {
                         self.workspace.create_new_workflow();
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     if ui.button("📂 Open Workflow...").clicked() {
@@ -71,10 +73,12 @@ fn main() -> Result<(), eframe::Error> {
                             .pick_file()
                         {
                             if let Err(e) = self.workspace.open_workflow(path) {
-                                eprintln!("Failed to open workflow: {}", e);
+                                self.notifications.error(format!("Failed to open workflow: {}", e));
+                            } else {
+                                self.notifications.success("Workflow opened");
                             }
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
@@ -83,26 +87,36 @@ fn main() -> Result<(), eframe::Error> {
 
                     if ui.add_enabled(has_active, egui::Button::new("💾 Save")).clicked() {
                         if let Some(id) = self.workspace.active_workflow_id() {
+                            // Sync diagram from snarl before checking file path
+                            if let Some(doc) = self.workspace.get_workflow_mut(id) {
+                                if let Err(e) = doc.sync_from_snarl() {
+                                    self.notifications.error(format!("Failed to sync diagram: {}", e));
+                                    ui.close();
+                                    return;
+                                }
+                            }
+
                             if let Some(doc) = self.workspace.get_workflow(id) {
                                 if doc.file_path.is_some() {
                                     if let Err(e) = self.workspace.save_workflow(id) {
-                                        eprintln!("Failed to save: {}", e);
+                                        self.notifications.error(format!("Failed to save: {}", e));
                                     } else {
                                         self.file_browser.mark_dirty();
+                                        self.notifications.success("Workflow saved successfully");
                                     }
                                 } else {
                                     self.pending_save_as = Some(id);
                                 }
                             }
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     if ui.add_enabled(has_active, egui::Button::new("💾 Save As...")).clicked() {
                         if let Some(id) = self.workspace.active_workflow_id() {
                             self.pending_save_as = Some(id);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
@@ -111,7 +125,7 @@ fn main() -> Result<(), eframe::Error> {
                         if let Some(id) = self.workspace.active_workflow_id() {
                             self.workspace.close_workflow(id);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     if ui.button("✖ Close All").clicked() {
@@ -119,7 +133,7 @@ fn main() -> Result<(), eframe::Error> {
                         for id in ids {
                             self.workspace.close_workflow(id);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     ui.separator();
@@ -139,20 +153,20 @@ fn main() -> Result<(), eframe::Error> {
                 // View menu
                 ui.menu_button("View", |ui| {
                     if ui.checkbox(&mut self.show_file_browser, "File Browser").clicked() {
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.checkbox(&mut self.show_properties, "Properties Panel").clicked() {
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.checkbox(&mut self.show_dodaf_panel, "DoDAF Panel").clicked() {
-                        ui.close_menu();
+                        ui.close();
                     }
                     ui.separator();
                     if ui.button("Reset Layout").clicked() {
                         self.show_file_browser = true;
                         self.show_properties = true;
                         self.show_dodaf_panel = false;
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
 
@@ -161,10 +175,10 @@ fn main() -> Result<(), eframe::Error> {
                     if ui.button("✓ Validate Current Workflow").clicked() {
                         if let Some(doc) = self.workspace.get_active_workflow_mut() {
                             let result = Validator::validate_workflow(&doc.snarl);
-                            doc.validation_errors = result.errors;
                             self.viewer.set_validation_result(result.clone());
+                            doc.validation_errors = result.errors;
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
 
                     if ui.button("✓ Validate All Workflows").clicked() {
@@ -174,7 +188,7 @@ fn main() -> Result<(), eframe::Error> {
                                 doc.validation_errors = result.errors;
                             }
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
 
@@ -269,11 +283,12 @@ fn main() -> Result<(), eframe::Error> {
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
                     if let Some(doc) = self.workspace.get_active_workflow_mut() {
+                        let doc_id = doc.id;
                         if let Some(node_id) = self.viewer.selected_node_for_properties {
                             if let Some(node) = doc.snarl.get_node_mut(node_id) {
                                 let changed = self.property_editor.show_properties(ui, node);
                                 if changed {
-                                    self.workspace.mark_modified(doc.id);
+                                    self.workspace.mark_modified(doc_id);
                                 }
                             } else {
                                 ui.label("Node not found");
@@ -305,12 +320,21 @@ fn main() -> Result<(), eframe::Error> {
             // Ctrl+S: Save
             if ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::S)) {
                 if let Some(id) = self.workspace.active_workflow_id() {
+                    // Sync diagram from snarl before saving
+                    if let Some(doc) = self.workspace.get_workflow_mut(id) {
+                        if let Err(e) = doc.sync_from_snarl() {
+                            self.notifications.error(format!("Failed to sync diagram: {}", e));
+                            return;
+                        }
+                    }
+
                     if let Some(doc) = self.workspace.get_workflow(id) {
                         if doc.file_path.is_some() {
                             if let Err(e) = self.workspace.save_workflow(id) {
-                                eprintln!("Failed to save: {}", e);
+                                self.notifications.error(format!("Failed to save: {}", e));
                             } else {
                                 self.file_browser.mark_dirty();
+                                self.notifications.success("Workflow saved successfully");
                             }
                         } else {
                             self.pending_save_as = Some(id);
@@ -350,9 +374,10 @@ fn main() -> Result<(), eframe::Error> {
                     .save_file()
                 {
                     if let Err(e) = self.workspace.save_workflow_as(workflow_id, path) {
-                        eprintln!("Failed to save: {}", e);
+                        self.notifications.error(format!("Failed to save: {}", e));
                     } else {
                         self.file_browser.mark_dirty();
+                        self.notifications.success("Workflow saved successfully");
                     }
                 }
                 self.pending_save_as = None;
@@ -376,14 +401,17 @@ fn main() -> Result<(), eframe::Error> {
                                 }
                                 FileAction::OpenFile(path) => {
                                     if let Err(e) = self.workspace.open_workflow(path) {
-                                        eprintln!("Failed to open: {}", e);
+                                        self.notifications.error(format!("Failed to open: {}", e));
+                                    } else {
+                                        self.notifications.success("Workflow opened");
                                     }
                                 }
                                 FileAction::DeleteFile(path) => {
                                     if let Err(e) = std::fs::remove_file(&path) {
-                                        eprintln!("Failed to delete: {}", e);
+                                        self.notifications.error(format!("Failed to delete: {}", e));
                                     } else {
                                         self.file_browser.mark_dirty();
+                                        self.notifications.success("File deleted");
                                     }
                                 }
                                 FileAction::RenameFile(_path) => {
@@ -466,6 +494,9 @@ fn main() -> Result<(), eframe::Error> {
                     }
                 });
             });
+
+            // Render notifications at the end (on top of everything)
+            self.notifications.render(ctx);
         }
     }
 

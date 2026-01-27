@@ -399,6 +399,7 @@ fn html_escape(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     fn create_sample_doc() -> ProcessDocumentation {
         ProcessDocumentation {

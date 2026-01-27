@@ -76,7 +76,7 @@ async fn test_execution_events() {
     let runtime = EnhancedRuntime::new().register_handler("user", Arc::new(TestHandler));
 
     let mut event_rx = runtime.subscribe_events();
-    let mut events = Vec::new();
+    let events;
 
     // Spawn event collector
     let collector = tokio::spawn(async move {
@@ -155,9 +155,10 @@ async fn test_performance_tracking() {
     assert!(perf.len() >= 1);
 
     // Check metrics exist
-    for (task_id, metrics) in perf {
+    for (_task_id, metrics) in perf {
         assert!(metrics.execution_count > 0);
-        assert!(metrics.avg_duration_ms >= 0);
+        // Note: avg_duration_ms is u64, so it's always >= 0
+        assert!(metrics.avg_duration_ms < u64::MAX);
     }
 }
 

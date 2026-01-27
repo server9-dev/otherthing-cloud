@@ -68,11 +68,11 @@ async fn demo_ollama_client() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Simple chat completion
-    let request = crate::ai::ollama::ChatRequest::new("llama3.2:3b")
-        .add_message(crate::ai::ollama::ChatMessage::system(
+    let request = abcdodaf::ai::ollama::ChatRequest::new("llama3.2:3b")
+        .add_message(abcdodaf::ai::ollama::ChatMessage::system(
             "You are a helpful assistant specialized in Rust programming."
         ))
-        .add_message(crate::ai::ollama::ChatMessage::user(
+        .add_message(abcdodaf::ai::ollama::ChatMessage::user(
             "What is the difference between String and &str in Rust?"
         ))
         .with_temperature(0.7)
@@ -139,10 +139,10 @@ fn demo_prompt_templates() -> Result<(), Box<dyn std::error::Error>> {
         "Rust Expert Consultation",
         "As a Rust expert with {{years}} years of experience, provide advice on: {{topic}}\n\nFocus on: {{focus_areas}}"
     )
-    .add_variable(crate::ai::PromptVariable::new("years", "Years of experience", crate::ai::prompt::VariableType::Integer))
-    .add_variable(crate::ai::PromptVariable::new("topic", "Topic to discuss", crate::ai::prompt::VariableType::String))
+    .add_variable(abcdodaf::ai::PromptVariable::new("years", "Years of experience", abcdodaf::ai::prompt::VariableType::Integer))
+    .add_variable(abcdodaf::ai::PromptVariable::new("topic", "Topic to discuss", abcdodaf::ai::prompt::VariableType::String))
     .add_variable(
-        crate::ai::PromptVariable::new("focus_areas", "Areas to focus on", crate::ai::prompt::VariableType::String)
+        abcdodaf::ai::PromptVariable::new("focus_areas", "Areas to focus on", abcdodaf::ai::prompt::VariableType::String)
             .optional("best practices and performance")
     )
     .with_category("consulting");
@@ -164,13 +164,13 @@ fn demo_context_management() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a conversation
     let context = manager.get_or_create("conversation_1");
-    context.add_message(crate::ai::ollama::ChatMessage::system(
+    context.add_message(abcdodaf::ai::ollama::ChatMessage::system(
         "You are a helpful AI assistant."
     ))?;
-    context.add_message(crate::ai::ollama::ChatMessage::user(
+    context.add_message(abcdodaf::ai::ollama::ChatMessage::user(
         "Tell me about Rust's ownership system."
     ))?;
-    context.add_message(crate::ai::ollama::ChatMessage::assistant(
+    context.add_message(abcdodaf::ai::ollama::ChatMessage::assistant(
         "Rust's ownership system is a set of rules that the compiler checks at compile time..."
     ))?;
 
@@ -182,7 +182,7 @@ fn demo_context_management() -> Result<(), Box<dyn std::error::Error>> {
     // Test different strategies
     let mut window = ContextWindow::new(1000, ContextStrategy::HeadTail { head_count: 2, tail_count: 2 });
     for i in 0..10 {
-        window.add_message(crate::ai::ollama::ChatMessage::user(format!("Message {}", i)))?;
+        window.add_message(abcdodaf::ai::ollama::ChatMessage::user(format!("Message {}", i)))?;
     }
     println!("✓ Tested HeadTail strategy: {} messages retained", window.message_count());
 
@@ -199,7 +199,7 @@ fn demo_agent_memory() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Created agent memory with capacity for 50 short-term entries");
 
     // Add memories
-    use crate::ai::memory::{MemoryEntry, MemoryType};
+    use abcdodaf::ai::memory::{MemoryEntry, MemoryType};
 
     memory.add_short_term(
         MemoryEntry::new("mem1", MemoryType::Fact, "User prefers concise explanations")
@@ -217,8 +217,8 @@ fn demo_agent_memory() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Add conversation
-    memory.add_message("conv1", crate::ai::ollama::ChatMessage::user("Hello"));
-    memory.add_message("conv1", crate::ai::ollama::ChatMessage::assistant("Hi! How can I help?"));
+    memory.add_message("conv1", abcdodaf::ai::ollama::ChatMessage::user("Hello"));
+    memory.add_message("conv1", abcdodaf::ai::ollama::ChatMessage::assistant("Hi! How can I help?"));
 
     let stats = memory.stats();
     println!("✓ Memory statistics:");
@@ -249,7 +249,7 @@ fn demo_model_selection() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Created model selector with {} models", selector.list_models().len());
 
     // Define selection criteria
-    use crate::ai::selection::SelectionCriteria;
+    use abcdodaf::ai::selection::SelectionCriteria;
 
     let criteria = SelectionCriteria {
         required_capabilities: vec![
@@ -297,11 +297,11 @@ async fn demo_multi_agent_collaboration() -> Result<(), Box<dyn std::error::Erro
             EnhancedCapability::InformationRetrieval,
             EnhancedCapability::KnowledgeSynthesis,
         ],
-        model_config: crate::ai::ModelConfig::default(),
-        prompt_config: crate::ai::PromptConfig::default(),
-        context_config: crate::ai::ContextConfig::default(),
-        memory_config: crate::ai::MemoryConfig::default(),
-        performance_config: crate::ai::PerformanceConfig::default(),
+        model_config: abcdodaf::ai::ModelConfig::default(),
+        prompt_config: abcdodaf::ai::PromptConfig::default(),
+        context_config: abcdodaf::ai::ContextConfig::default(),
+        memory_config: abcdodaf::ai::MemoryConfig::default(),
+        performance_config: abcdodaf::ai::PerformanceConfig::default(),
     };
 
     let coder = AgentConfig {
@@ -311,11 +311,11 @@ async fn demo_multi_agent_collaboration() -> Result<(), Box<dyn std::error::Erro
             EnhancedCapability::CodeGeneration,
             EnhancedCapability::LogicalReasoning,
         ],
-        model_config: crate::ai::ModelConfig::default(),
-        prompt_config: crate::ai::PromptConfig::default(),
-        context_config: crate::ai::ContextConfig::default(),
-        memory_config: crate::ai::MemoryConfig::default(),
-        performance_config: crate::ai::PerformanceConfig::default(),
+        model_config: abcdodaf::ai::ModelConfig::default(),
+        prompt_config: abcdodaf::ai::PromptConfig::default(),
+        context_config: abcdodaf::ai::ContextConfig::default(),
+        memory_config: abcdodaf::ai::MemoryConfig::default(),
+        performance_config: abcdodaf::ai::PerformanceConfig::default(),
     };
 
     coordinator.register_agent(researcher);
@@ -385,7 +385,7 @@ fn demo_performance_metrics() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Created performance tracker");
 
     // Record some requests
-    use crate::ai::metrics::RequestMetrics;
+    use abcdodaf::ai::metrics::RequestMetrics;
 
     for i in 0..5 {
         tracker.record_request(RequestMetrics {
@@ -434,7 +434,7 @@ fn demo_response_caching() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ Created response cache (LRU, max 100 entries)");
 
     // Create cache keys and store responses
-    use crate::ai::cache::{CacheKey, CacheMetadata};
+    use abcdodaf::ai::cache::{CacheKey, CacheMetadata};
 
     let key1 = CacheKey::new("llama3.2:3b", "What is Rust?", 0.7, "");
     let key2 = CacheKey::new("llama3.2:3b", "Explain ownership", 0.7, "");

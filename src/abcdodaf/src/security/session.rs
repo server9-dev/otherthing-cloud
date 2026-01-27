@@ -4,7 +4,7 @@
 //! configurable timeout and security features.
 
 use crate::security::error::{SecurityError, SecurityResult};
-use crate::security::rbac::{Subject, SubjectType};
+use crate::security::rbac::Subject;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -398,6 +398,7 @@ impl Default for SessionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::security::rbac::SubjectType;
 
     #[test]
     fn test_session_creation() {
@@ -415,7 +416,7 @@ mod tests {
         let mut session = Session::new(subject, chrono::Duration::hours(1));
 
         let original_expires = session.expires_at;
-        tokio::time::runtime::Runtime::new()
+        tokio::runtime::Runtime::new()
             .unwrap()
             .block_on(async { tokio::time::sleep(std::time::Duration::from_millis(10)).await });
 
@@ -459,8 +460,8 @@ mod tests {
         let manager = SessionManager::with_defaults();
         let subject = Subject::new("user1", SubjectType::User);
 
-        let session1 = manager.create_session(subject.clone()).await.unwrap();
-        let session2 = manager.create_session(subject.clone()).await.unwrap();
+        let _session1 = manager.create_session(subject.clone()).await.unwrap();
+        let _session2 = manager.create_session(subject.clone()).await.unwrap();
 
         let sessions = manager.get_subject_sessions("user1").await.unwrap();
         assert_eq!(sessions.len(), 2);

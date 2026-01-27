@@ -10,19 +10,17 @@
 
 #[cfg(feature = "ui")]
 use abcdodaf::ui::*;
-#[cfg(feature = "ui")]
-use egui::Context;
 
 #[cfg(feature = "ui")]
 fn main() {
     // Create editor state
     let mut workspace = Workspace::new();
-    let mut viewer = EnhancedBpmnViewer::new();
+    let mut _viewer = EnhancedBpmnViewer::new();
     let mut history = CommandHistory::new();
-    let shortcuts = ShortcutManager::new();
+    let _shortcuts = ShortcutManager::new();
 
     // Create initial workflow
-    let workflow_id = workspace.create_new_workflow();
+    let _workflow_id = workspace.create_new_workflow();
 
     println!("=== ABCDODAF UI/UX Demo ===\n");
     println!("Implemented Features:");

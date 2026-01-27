@@ -17,9 +17,13 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct AnalyticsEngine {
     bottleneck_analyzer: BottleneckAnalyzer,
+    #[allow(dead_code)]
     trend_analyzer: TrendAnalyzer,
+    #[allow(dead_code)]
     heatmap_analyzer: HeatmapAnalyzer,
+    #[allow(dead_code)]
     performance_analyzer: PerformanceAnalyzer,
+    #[allow(dead_code)]
     cost_analyzer: CostAnalyzer,
 }
 

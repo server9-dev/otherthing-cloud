@@ -3,7 +3,7 @@
 //! Provides export of audit logs in various formats for compliance reporting
 //! and long-term archival.
 
-use crate::security::audit::{AuditEvent, AuditLevel, EventCategory};
+use crate::security::audit::AuditEvent;
 use crate::security::error::SecurityResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -343,6 +343,7 @@ fn escape_xml(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::security::audit::EventCategory;
 
     #[test]
     fn test_export_metadata_creation() {

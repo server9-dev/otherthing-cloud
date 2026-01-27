@@ -4,8 +4,8 @@
 
 use abcdodaf::prelude::*;
 use abcdodaf::dodaf::{
-    Capability, CapabilityType, CapabilityView, Service, ServiceType, ServiceView,
-    OperationalView, MissionArea,
+    BaseCapability as Capability, BaseCapabilityType as CapabilityType, CapabilityView,
+    Service, ServiceType, ServiceView, OperationalView, MissionArea,
 };
 // BPM+ triple threat is demonstrated in examples/bpm_plus_triple_threat.rs
 

@@ -12,10 +12,12 @@ use std::collections::HashMap;
 #[derive(Default)]
 pub struct PropertyEditor {
     /// Edit buffers for string fields
+    #[allow(dead_code)]
     edit_buffers: HashMap<String, String>,
     /// Edit buffers for numeric fields
     numeric_buffers: HashMap<String, String>,
     /// Checkbox states
+    #[allow(dead_code)]
     checkbox_states: HashMap<String, bool>,
 }
 
@@ -847,6 +849,7 @@ impl PropertyEditor {
         changed
     }
 
+    #[allow(dead_code)]
     fn edit_optional_numeric_field(&mut self, ui: &mut Ui, label: &str, value: &mut Option<u64>) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {

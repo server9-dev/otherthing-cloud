@@ -408,6 +408,7 @@ impl StateAssertions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_assertion_result_creation() {
@@ -446,7 +447,7 @@ mod tests {
             task_id: "t1".to_string(),
             success: true,
             error: None,
-            output,
+            output: serde_json::Value::Object(output.into_iter().collect()),
             duration_ms: 100,
         };
 

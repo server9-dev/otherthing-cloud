@@ -2,7 +2,7 @@
 //!
 //! Custom shape rendering for BPMN 2.0 symbols using egui painting primitives.
 
-use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Vec2};
+use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke};
 use egui::epaint::{RectShape, CornerRadius, StrokeKind};
 use std::f32::consts::PI;
 

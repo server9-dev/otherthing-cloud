@@ -244,6 +244,7 @@ pub struct ConnectorStats {
     /// Average response time (ms)
     pub avg_response_time_ms: f64,
     /// Last error message
+    #[allow(dead_code)]
     pub last_error: Option<String>,
     /// Total bytes sent
     pub bytes_sent: u64,

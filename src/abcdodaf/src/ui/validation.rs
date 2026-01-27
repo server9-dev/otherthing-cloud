@@ -201,6 +201,7 @@ impl Validator {
     }
 
     /// Find all nodes of a specific type
+    #[allow(dead_code)]
     fn find_nodes_by_type(
         snarl: &Snarl<EnhancedBpmnNode>,
         node_type: BpmnNodeType,
@@ -337,6 +338,8 @@ impl Validator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ui::enhanced_nodes::TaskNode;
+    use crate::bpmn::elements::BpmnTaskType;
 
     #[test]
     fn test_empty_workflow() {
@@ -351,7 +354,13 @@ mod tests {
         let mut snarl = Snarl::<EnhancedBpmnNode>::new();
         snarl.insert_node(
             egui::Pos2::ZERO,
-            EnhancedBpmnNode::new(BpmnNodeType::Task, "Task 1".to_string()),
+            EnhancedBpmnNode::new("task1".to_string(), BpmnNodeType::Task(TaskNode {
+                name: "Task 1".to_string(),
+                documentation: None,
+                task_type: BpmnTaskType::User { implementation: None, rendering: None },
+                loop_characteristics: None,
+                is_for_compensation: false,
+            })),
         );
 
         let result = Validator::validate_workflow(&snarl);

@@ -129,7 +129,7 @@ impl EncryptionProvider for Aes256GcmProvider {
         // In production, use the `aes-gcm` crate or `ring` for actual AES-256-GCM
 
         // Generate IV (12 bytes for GCM)
-        let mut iv = Self::generate_random_bytes(12)?;
+        let iv = Self::generate_random_bytes(12)?;
 
         // Create ciphertext by XORing with key (simplified - NOT SECURE for production)
         let mut ciphertext = Vec::with_capacity(plaintext.len());

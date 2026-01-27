@@ -2,7 +2,6 @@
   "_template": "BPMN 2.0 Agent Workflow Template for ABCDODAF Tasks",
   "_description": "Use this template to document agent task execution workflows",
   "_usage": "Copy this template and fill in the details for each agent task",
-
   "bpmn_process": {
     "id": "task_XX_descriptive_name",
     "name": "Task Name Here",
@@ -10,7 +9,6 @@
     "isExecutable": true,
     "processType": "agent_workflow"
   },
-
   "task_metadata": {
     "task_id": "XX",
     "agent_id": "agent_id_here",
@@ -22,7 +20,6 @@
     "priority": "high | medium_high | medium | low",
     "category": "core_functionality | developer_experience | advanced_features"
   },
-
   "dodaf_metadata": {
     "operational_activity": {
       "id": "OA-XXX",
@@ -38,10 +35,15 @@
       "duration_minutes": 0
     },
     "capability": "Capability_Name",
-    "inputs": ["input1", "input2"],
-    "outputs": ["output1", "output2"]
+    "inputs": [
+      "input1",
+      "input2"
+    ],
+    "outputs": [
+      "output1",
+      "output2"
+    ]
   },
-
   "workflow_steps": [
     {
       "id": "start_event",
@@ -55,8 +57,12 @@
       "type": "serviceTask",
       "taskType": "research",
       "implementation": "research_method",
-      "inputs": ["requirements"],
-      "outputs": ["findings"],
+      "inputs": [
+        "requirements"
+      ],
+      "outputs": [
+        "findings"
+      ],
       "duration_minutes": 0
     },
     {
@@ -65,8 +71,13 @@
       "type": "serviceTask",
       "taskType": "design",
       "implementation": "architectural_design",
-      "inputs": ["findings", "constraints"],
-      "outputs": ["architecture"],
+      "inputs": [
+        "findings",
+        "constraints"
+      ],
+      "outputs": [
+        "architecture"
+      ],
       "duration_minutes": 0
     },
     {
@@ -75,8 +86,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture"],
-      "outputs": ["code_modules"],
+      "inputs": [
+        "architecture"
+      ],
+      "outputs": [
+        "code_modules"
+      ],
       "duration_minutes": 0,
       "files_created": []
     },
@@ -86,8 +101,12 @@
       "type": "serviceTask",
       "taskType": "testing",
       "implementation": "test_generation_and_execution",
-      "inputs": ["code_modules"],
-      "outputs": ["test_results"],
+      "inputs": [
+        "code_modules"
+      ],
+      "outputs": [
+        "test_results"
+      ],
       "duration_minutes": 0
     },
     {
@@ -96,8 +115,13 @@
       "type": "serviceTask",
       "taskType": "documentation",
       "implementation": "doc_generation",
-      "inputs": ["code_modules", "architecture"],
-      "outputs": ["documentation"],
+      "inputs": [
+        "code_modules",
+        "architecture"
+      ],
+      "outputs": [
+        "documentation"
+      ],
       "duration_minutes": 0
     },
     {
@@ -107,16 +131,38 @@
       "eventType": "none"
     }
   ],
-
   "sequence_flows": [
-    {"id": "flow1", "sourceRef": "start_event", "targetRef": "research_step"},
-    {"id": "flow2", "sourceRef": "research_step", "targetRef": "design_step"},
-    {"id": "flow3", "sourceRef": "design_step", "targetRef": "implementation_step"},
-    {"id": "flow4", "sourceRef": "implementation_step", "targetRef": "testing_step"},
-    {"id": "flow5", "sourceRef": "testing_step", "targetRef": "documentation_step"},
-    {"id": "flow6", "sourceRef": "documentation_step", "targetRef": "end_event"}
+    {
+      "id": "flow1",
+      "sourceRef": "start_event",
+      "targetRef": "research_step"
+    },
+    {
+      "id": "flow2",
+      "sourceRef": "research_step",
+      "targetRef": "design_step"
+    },
+    {
+      "id": "flow3",
+      "sourceRef": "design_step",
+      "targetRef": "implementation_step"
+    },
+    {
+      "id": "flow4",
+      "sourceRef": "implementation_step",
+      "targetRef": "testing_step"
+    },
+    {
+      "id": "flow5",
+      "sourceRef": "testing_step",
+      "targetRef": "documentation_step"
+    },
+    {
+      "id": "flow6",
+      "sourceRef": "documentation_step",
+      "targetRef": "end_event"
+    }
   ],
-
   "expected_deliverables": {
     "modules": [
       "src/module_name/mod.rs",
@@ -133,7 +179,6 @@
       "examples/module_example.rs"
     ]
   },
-
   "dependencies": {
     "external_crates": [
       "crate1",
@@ -144,7 +189,6 @@
       "existing_module2"
     ]
   },
-
   "success_criteria": {
     "functional": [
       "Feature X works correctly",
@@ -163,15 +207,20 @@
       "Reduces Z"
     ]
   },
-
   "_gateway_patterns": {
     "exclusive_gateway": {
       "id": "decision_point",
       "name": "Decision Point",
       "type": "exclusiveGateway",
       "outgoing_flows": [
-        {"condition": "condition1", "targetRef": "path1"},
-        {"condition": "condition2", "targetRef": "path2"}
+        {
+          "condition": "condition1",
+          "targetRef": "path1"
+        },
+        {
+          "condition": "condition2",
+          "targetRef": "path2"
+        }
       ]
     },
     "parallel_gateway": {
@@ -187,7 +236,6 @@
       }
     }
   },
-
   "_common_task_types": {
     "research": "Research specifications, best practices, existing patterns",
     "design": "Architectural design, data structure design",

@@ -1,9 +1,8 @@
 //! Execution visualizer - overlays execution state on BPMN diagram
 
 use crate::bpmn::runtime::{ExecutionContext, ExecutionToken, TokenState};
-use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, Vec2};
+use egui::{Color32, Painter, Rect, Stroke, Vec2};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 /// Execution visualization overlay
 #[derive(Debug, Clone)]

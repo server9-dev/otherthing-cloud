@@ -117,7 +117,7 @@ impl BpmnCmmnIntegration {
     pub async fn check_case_call_status(
         &mut self,
         call_id: &str,
-        call_activity: &CaseCallActivity,
+        _call_activity: &CaseCallActivity,
     ) -> Result<CaseCallInstance> {
         let call = self.case_calls.get(call_id)
             .ok_or_else(|| AbcdodafError::WorkflowError(format!("Call {} not found", call_id)))?

@@ -14,7 +14,6 @@ pub struct RestApiConnector {
     config: ConnectorConfig,
     status: ConnectionStatus,
     client: Option<reqwest::Client>,
-    last_error: Option<String>,
 }
 
 impl RestApiConnector {
@@ -24,7 +23,6 @@ impl RestApiConnector {
             config,
             status: ConnectionStatus::Disconnected,
             client: None,
-            last_error: None,
         }
     }
 

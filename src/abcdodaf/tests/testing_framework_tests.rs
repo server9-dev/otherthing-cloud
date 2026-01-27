@@ -2,6 +2,7 @@
 
 use abcdodaf::testing::*;
 use abcdodaf::bpmn::ProcessExecutor;
+use abcdodaf::prelude::TaskHandler;
 use std::collections::HashMap;
 
 #[tokio::test]
@@ -161,8 +162,9 @@ fn test_workflow_assertions() {
 
 #[test]
 fn test_task_assertions() {
-    let mut output = HashMap::new();
-    output.insert("result".to_string(), serde_json::json!("success"));
+    let output = serde_json::json!({
+        "result": "success"
+    });
 
     let result = abcdodaf::workforce::TaskResult {
         task_id: "t1".to_string(),

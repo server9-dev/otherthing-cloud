@@ -3,7 +3,7 @@
 use crate::bpmn::runtime::{
     Breakpoint, ExecutionContext, ExecutionEvent, ExecutionMode, TaskPerformance,
 };
-use egui::{Color32, RichText, ScrollArea, Stroke, Ui};
+use egui::{Color32, RichText, ScrollArea, Ui};
 use std::collections::HashMap;
 use uuid::Uuid;
 

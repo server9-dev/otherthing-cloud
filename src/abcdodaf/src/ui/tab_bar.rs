@@ -95,7 +95,7 @@ impl TabBar {
     }
 
     /// Navigate to next tab
-    pub fn next_tab(&mut self, workspace: &Workspace) -> Option<WorkflowId> {
+    pub fn next_tab(&mut self, _workspace: &Workspace) -> Option<WorkflowId> {
         if self.tabs.is_empty() {
             return None;
         }
@@ -111,7 +111,7 @@ impl TabBar {
     }
 
     /// Navigate to previous tab
-    pub fn prev_tab(&mut self, workspace: &Workspace) -> Option<WorkflowId> {
+    pub fn prev_tab(&mut self, _workspace: &Workspace) -> Option<WorkflowId> {
         if self.tabs.is_empty() {
             return None;
         }

@@ -118,7 +118,7 @@ impl DiagramGenerator {
 
         // Draw end event
         let end_x = start_x + step_spacing * 2 + if !process.tasks.is_empty() {
-            (process.tasks.len() as i32 * 200)
+            process.tasks.len() as i32 * 200
         } else {
             0
         };
@@ -294,8 +294,7 @@ mod tests {
 
     #[test]
     fn test_generate_ascii_diagram() {
-        let process = ProcessBuilder::new("test")
-            .with_name("Test Process")
+        let process = ProcessBuilder::new("test", "Test Process")
             .build()
             .expect("Failed to build process");
 

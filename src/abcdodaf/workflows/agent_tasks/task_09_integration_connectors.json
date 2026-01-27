@@ -67,7 +67,9 @@
         "Database connection pooling",
         "Webhook security"
       ],
-      "outputs": ["integration_patterns"]
+      "outputs": [
+        "integration_patterns"
+      ]
     },
     {
       "id": "design_framework",
@@ -76,8 +78,13 @@
       "taskType": "design",
       "implementation": "architectural_design",
       "duration_minutes": 3,
-      "inputs": ["integration_patterns", "requirements"],
-      "outputs": ["framework_architecture"],
+      "inputs": [
+        "integration_patterns",
+        "requirements"
+      ],
+      "outputs": [
+        "framework_architecture"
+      ],
       "design_decisions": [
         "Trait-based extensible architecture",
         "Factory pattern for connector creation",
@@ -162,7 +169,11 @@
         {
           "path": "src/integration/connector/circuit_breaker.rs",
           "lines": 305,
-          "states": ["Closed", "Open", "HalfOpen"],
+          "states": [
+            "Closed",
+            "Open",
+            "HalfOpen"
+          ],
           "features": [
             "Failure counting",
             "Automatic state transitions",
@@ -212,7 +223,13 @@
         {
           "path": "src/integration/connectors/rest_api.rs",
           "lines": 325,
-          "http_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
+          "http_methods": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH"
+          ],
           "features": [
             "Request/response mapping",
             "Authentication integration",
@@ -232,8 +249,17 @@
         {
           "path": "src/integration/connectors/database.rs",
           "lines": 494,
-          "databases": ["PostgreSQL", "MySQL", "SQLite"],
-          "operations": ["QUERY", "INSERT", "UPDATE", "DELETE"],
+          "databases": [
+            "PostgreSQL",
+            "MySQL",
+            "SQLite"
+          ],
+          "operations": [
+            "QUERY",
+            "INSERT",
+            "UPDATE",
+            "DELETE"
+          ],
           "features": [
             "Connection pooling",
             "Parameter binding",
@@ -253,7 +279,10 @@
         {
           "path": "src/integration/connectors/webhook.rs",
           "lines": 348,
-          "types": ["Outgoing", "Incoming"],
+          "types": [
+            "Outgoing",
+            "Incoming"
+          ],
           "features": [
             "Event serialization",
             "HTTP POST delivery",
@@ -273,7 +302,12 @@
         {
           "path": "src/integration/connectors/filesystem.rs",
           "lines": 372,
-          "operations": ["READ", "WRITE", "DELETE", "LIST"],
+          "operations": [
+            "READ",
+            "WRITE",
+            "DELETE",
+            "LIST"
+          ],
           "security": [
             "Path traversal prevention",
             "Permission checking",
@@ -383,23 +417,91 @@
     }
   ],
   "sequence_flows": [
-    {"id": "f1", "sourceRef": "start", "targetRef": "research_patterns"},
-    {"id": "f2", "sourceRef": "research_patterns", "targetRef": "design_framework"},
-    {"id": "f3", "sourceRef": "design_framework", "targetRef": "parallel_split"},
-    {"id": "f4", "sourceRef": "parallel_split", "targetRef": "implement_core_framework"},
-    {"id": "f5", "sourceRef": "parallel_split", "targetRef": "implement_resilience"},
-    {"id": "f6", "sourceRef": "parallel_split", "targetRef": "implement_auth"},
-    {"id": "f7", "sourceRef": "implement_core_framework", "targetRef": "parallel_join"},
-    {"id": "f8", "sourceRef": "implement_resilience", "targetRef": "parallel_join"},
-    {"id": "f9", "sourceRef": "implement_auth", "targetRef": "parallel_join"},
-    {"id": "f10", "sourceRef": "parallel_join", "targetRef": "implement_rest_connector"},
-    {"id": "f11", "sourceRef": "implement_rest_connector", "targetRef": "implement_database_connector"},
-    {"id": "f12", "sourceRef": "implement_database_connector", "targetRef": "implement_webhook_connector"},
-    {"id": "f13", "sourceRef": "implement_webhook_connector", "targetRef": "implement_filesystem_connector"},
-    {"id": "f14", "sourceRef": "implement_filesystem_connector", "targetRef": "write_tests"},
-    {"id": "f15", "sourceRef": "write_tests", "targetRef": "write_documentation"},
-    {"id": "f16", "sourceRef": "write_documentation", "targetRef": "create_example"},
-    {"id": "f17", "sourceRef": "create_example", "targetRef": "end"}
+    {
+      "id": "f1",
+      "sourceRef": "start",
+      "targetRef": "research_patterns"
+    },
+    {
+      "id": "f2",
+      "sourceRef": "research_patterns",
+      "targetRef": "design_framework"
+    },
+    {
+      "id": "f3",
+      "sourceRef": "design_framework",
+      "targetRef": "parallel_split"
+    },
+    {
+      "id": "f4",
+      "sourceRef": "parallel_split",
+      "targetRef": "implement_core_framework"
+    },
+    {
+      "id": "f5",
+      "sourceRef": "parallel_split",
+      "targetRef": "implement_resilience"
+    },
+    {
+      "id": "f6",
+      "sourceRef": "parallel_split",
+      "targetRef": "implement_auth"
+    },
+    {
+      "id": "f7",
+      "sourceRef": "implement_core_framework",
+      "targetRef": "parallel_join"
+    },
+    {
+      "id": "f8",
+      "sourceRef": "implement_resilience",
+      "targetRef": "parallel_join"
+    },
+    {
+      "id": "f9",
+      "sourceRef": "implement_auth",
+      "targetRef": "parallel_join"
+    },
+    {
+      "id": "f10",
+      "sourceRef": "parallel_join",
+      "targetRef": "implement_rest_connector"
+    },
+    {
+      "id": "f11",
+      "sourceRef": "implement_rest_connector",
+      "targetRef": "implement_database_connector"
+    },
+    {
+      "id": "f12",
+      "sourceRef": "implement_database_connector",
+      "targetRef": "implement_webhook_connector"
+    },
+    {
+      "id": "f13",
+      "sourceRef": "implement_webhook_connector",
+      "targetRef": "implement_filesystem_connector"
+    },
+    {
+      "id": "f14",
+      "sourceRef": "implement_filesystem_connector",
+      "targetRef": "write_tests"
+    },
+    {
+      "id": "f15",
+      "sourceRef": "write_tests",
+      "targetRef": "write_documentation"
+    },
+    {
+      "id": "f16",
+      "sourceRef": "write_documentation",
+      "targetRef": "create_example"
+    },
+    {
+      "id": "f17",
+      "sourceRef": "create_example",
+      "targetRef": "end"
+    }
   ],
   "deliverables": {
     "connector_framework": [

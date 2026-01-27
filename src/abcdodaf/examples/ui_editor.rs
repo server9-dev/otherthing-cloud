@@ -13,7 +13,6 @@ fn main() -> Result<(), eframe::Error> {
     use abcdodaf::ui::{BpmnNode, BpmnViewer, Snarl, bpmn_style};
     use abcdodaf::bpmn::process::TaskType;
     use eframe::App;
-    use egui_snarl::ui::SnarlViewer;
 
     // Initialize tracing for debugging
     tracing_subscriber::fmt::init();
@@ -70,18 +69,18 @@ fn main() -> Result<(), eframe::Error> {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
             // Top menu bar
             egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-                egui::menu::bar(ui, |ui| {
+                egui::MenuBar::new().ui(ui, |ui| {
                     ui.menu_button("File", |ui| {
                         if ui.button("New").clicked() {
                             self.snarl = Snarl::new();
-                            ui.close_menu();
+                            ui.close();
                         }
                         if ui.button("Save...").clicked() {
                             // Serialize the snarl
                             if let Ok(json) = serde_json::to_string_pretty(&self.snarl) {
                                 println!("BPMN Process:\n{}", json);
                             }
-                            ui.close_menu();
+                            ui.close();
                         }
                         ui.separator();
                         if ui.button("Quit").clicked() {
@@ -92,14 +91,14 @@ fn main() -> Result<(), eframe::Error> {
                     ui.menu_button("Edit", |ui| {
                         if ui.button("Clear All").clicked() {
                             self.snarl = Snarl::new();
-                            ui.close_menu();
+                            ui.close();
                         }
                     });
 
                     ui.menu_button("View", |ui| {
                         if ui.button("Reset Zoom").clicked() {
                             // Zoom reset would be handled by snarl
-                            ui.close_menu();
+                            ui.close();
                         }
                     });
 
@@ -117,7 +116,7 @@ fn main() -> Result<(), eframe::Error> {
             // Bottom status bar
             egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(format!("Nodes: {}", self.snarl.node_count()));
+                    ui.label(format!("Nodes: {}", self.snarl.nodes().count()));
                     ui.separator();
                     // Count wires manually
                     let wire_count = self.snarl.wires().count();

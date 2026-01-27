@@ -9,7 +9,7 @@
 use crate::bpmn::process::{TaskType, GatewayType};
 use egui::{Color32, Ui};
 use egui_snarl::{
-    InPin, InPinId, NodeId, OutPin, OutPinId, Snarl,
+    InPin, NodeId, OutPin, Snarl,
     ui::{PinInfo, SnarlStyle, SnarlViewer},
 };
 
@@ -186,7 +186,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
         pin: &InPin,
         ui: &mut Ui,
         snarl: &mut Snarl<BpmnNode>,
-    ) -> PinInfo {
+    ) -> impl egui_snarl::ui::SnarlPin + 'static {
         let node = &snarl[pin.id.node];
 
         // Show input pin label
@@ -214,7 +214,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
         pin: &OutPin,
         ui: &mut Ui,
         snarl: &mut Snarl<BpmnNode>,
-    ) -> PinInfo {
+    ) -> impl egui_snarl::ui::SnarlPin + 'static {
         let node = &snarl[pin.id.node];
 
         // Show output pin label
@@ -333,7 +333,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 name: "Start".to_string(),
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("⏹ End Event").clicked() {
@@ -341,7 +341,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 name: "End".to_string(),
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         ui.separator();
@@ -354,7 +354,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("⚙ Service Task").clicked() {
@@ -364,7 +364,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("📜 Script Task").clicked() {
@@ -374,7 +374,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("✋ Manual Task").clicked() {
@@ -384,7 +384,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("📤 Send Task").clicked() {
@@ -394,7 +394,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("📥 Receive Task").clicked() {
@@ -404,7 +404,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 description: None,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         ui.separator();
@@ -416,7 +416,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 gateway_type: GatewayType::Exclusive,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("+ Parallel (AND)").clicked() {
@@ -425,7 +425,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 gateway_type: GatewayType::Parallel,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("○ Inclusive (OR)").clicked() {
@@ -434,7 +434,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 gateway_type: GatewayType::Inclusive,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("⬡ Event-Based").clicked() {
@@ -443,7 +443,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                 gateway_type: GatewayType::EventBased,
             };
             snarl.insert_node(pos, node);
-            ui.close_menu();
+            ui.close();
         }
     }
 
@@ -466,12 +466,12 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
 
         if ui.button("✏ Rename").clicked() {
             // This would open a rename dialog
-            ui.close_menu();
+            ui.close();
         }
 
         // Show type-specific options
         match bpmn_node {
-            BpmnNode::Task { task_type, .. } => {
+            BpmnNode::Task { task_type: _, .. } => {
                 ui.menu_button("Change Type", |ui| {
                     if ui.button("User Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
@@ -481,7 +481,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                                 description,
                             };
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.button("Service Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
@@ -491,7 +491,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                                 description,
                             };
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.button("Script Task").clicked() {
                         if let BpmnNode::Task { name, description, .. } = snarl[node].clone() {
@@ -501,7 +501,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                                 description,
                             };
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
             }
@@ -514,7 +514,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                                 gateway_type: GatewayType::Exclusive,
                             };
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui.button("Parallel (AND)").clicked() {
                         if let BpmnNode::Gateway { name, .. } = snarl[node].clone() {
@@ -523,7 +523,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
                                 gateway_type: GatewayType::Parallel,
                             };
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
             }
@@ -534,7 +534,7 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
 
         if ui.button("📋 Properties").clicked() {
             // This would open properties panel
-            ui.close_menu();
+            ui.close();
         }
 
         if ui.button("📄 Duplicate").clicked() {
@@ -542,14 +542,14 @@ impl SnarlViewer<BpmnNode> for BpmnViewer {
             let current_pos = snarl.get_node_info(node).expect("Node exists").pos;
             let new_pos = current_pos + egui::vec2(50.0, 50.0);
             snarl.insert_node(new_pos, new_node);
-            ui.close_menu();
+            ui.close();
         }
 
         ui.separator();
 
         if ui.button("🗑 Delete").clicked() {
             snarl.remove_node(node);
-            ui.close_menu();
+            ui.close();
         }
     }
 }

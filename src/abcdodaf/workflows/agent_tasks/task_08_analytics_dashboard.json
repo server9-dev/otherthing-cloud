@@ -47,10 +47,19 @@
       "type": "serviceTask",
       "taskType": "research",
       "implementation": "web_search",
-      "inputs": ["analytics patterns", "monitoring systems", "SLA tracking"],
-      "outputs": ["research_findings"],
+      "inputs": [
+        "analytics patterns",
+        "monitoring systems",
+        "SLA tracking"
+      ],
+      "outputs": [
+        "research_findings"
+      ],
       "duration_minutes": 3,
-      "tools_used": ["WebSearch", "Read"],
+      "tools_used": [
+        "WebSearch",
+        "Read"
+      ],
       "findings": [
         "Process metrics patterns",
         "Bottleneck detection algorithms",
@@ -64,8 +73,13 @@
       "type": "serviceTask",
       "taskType": "design",
       "implementation": "architectural_design",
-      "inputs": ["research_findings", "existing_codebase"],
-      "outputs": ["architecture_design"],
+      "inputs": [
+        "research_findings",
+        "existing_codebase"
+      ],
+      "outputs": [
+        "architecture_design"
+      ],
       "duration_minutes": 4,
       "decisions": [
         "Modular architecture with 6 sub-modules",
@@ -88,8 +102,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture_design"],
-      "outputs": ["metrics.rs"],
+      "inputs": [
+        "architecture_design"
+      ],
+      "outputs": [
+        "metrics.rs"
+      ],
       "duration_minutes": 3,
       "files_created": [
         {
@@ -117,8 +135,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture_design"],
-      "outputs": ["analyzer.rs"],
+      "inputs": [
+        "architecture_design"
+      ],
+      "outputs": [
+        "analyzer.rs"
+      ],
       "duration_minutes": 4,
       "files_created": [
         {
@@ -147,8 +169,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture_design"],
-      "outputs": ["alerts.rs"],
+      "inputs": [
+        "architecture_design"
+      ],
+      "outputs": [
+        "alerts.rs"
+      ],
       "duration_minutes": 3,
       "files_created": [
         {
@@ -175,8 +201,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture_design"],
-      "outputs": ["export.rs"],
+      "inputs": [
+        "architecture_design"
+      ],
+      "outputs": [
+        "export.rs"
+      ],
       "duration_minutes": 2,
       "files_created": [
         {
@@ -188,7 +218,11 @@
             "ReportGenerator",
             "ExportManager"
           ],
-          "formats": ["CSV", "JSON", "YAML"]
+          "formats": [
+            "CSV",
+            "JSON",
+            "YAML"
+          ]
         }
       ]
     },
@@ -198,8 +232,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["architecture_design"],
-      "outputs": ["visualization.rs"],
+      "inputs": [
+        "architecture_design"
+      ],
+      "outputs": [
+        "visualization.rs"
+      ],
       "duration_minutes": 2,
       "files_created": [
         {
@@ -212,7 +250,13 @@
             "GaugeData",
             "CustomMetricDefinition"
           ],
-          "chart_types": ["line", "bar", "pie", "heatmap", "gauge"]
+          "chart_types": [
+            "line",
+            "bar",
+            "pie",
+            "heatmap",
+            "gauge"
+          ]
         }
       ]
     },
@@ -222,8 +266,12 @@
       "type": "serviceTask",
       "taskType": "integration",
       "implementation": "module_integration",
-      "inputs": ["all_components"],
-      "outputs": ["integrated_module"],
+      "inputs": [
+        "all_components"
+      ],
+      "outputs": [
+        "integrated_module"
+      ],
       "duration_minutes": 2,
       "files_modified": [
         "src/analytics/mod.rs",
@@ -243,8 +291,12 @@
       "type": "serviceTask",
       "taskType": "testing",
       "implementation": "test_generation",
-      "inputs": ["integrated_module"],
-      "outputs": ["test_suite"],
+      "inputs": [
+        "integrated_module"
+      ],
+      "outputs": [
+        "test_suite"
+      ],
       "duration_minutes": 1,
       "tests_created": 63,
       "test_coverage": "85%",
@@ -262,8 +314,12 @@
       "type": "serviceTask",
       "taskType": "documentation",
       "implementation": "doc_generation",
-      "inputs": ["integrated_module"],
-      "outputs": ["documentation"],
+      "inputs": [
+        "integrated_module"
+      ],
+      "outputs": [
+        "documentation"
+      ],
       "duration_minutes": 2,
       "files_created": [
         {
@@ -297,8 +353,13 @@
       "type": "serviceTask",
       "taskType": "example_creation",
       "implementation": "example_code_generation",
-      "inputs": ["integrated_module", "documentation"],
-      "outputs": ["example_app"],
+      "inputs": [
+        "integrated_module",
+        "documentation"
+      ],
+      "outputs": [
+        "example_app"
+      ],
       "duration_minutes": 2,
       "files_created": [
         {
@@ -331,18 +392,66 @@
     }
   ],
   "sequence_flows": [
-    {"id": "flow1", "sourceRef": "start_event", "targetRef": "research_task"},
-    {"id": "flow2", "sourceRef": "research_task", "targetRef": "design_task"},
-    {"id": "flow3", "sourceRef": "design_task", "targetRef": "implement_metrics"},
-    {"id": "flow4", "sourceRef": "implement_metrics", "targetRef": "implement_analyzer"},
-    {"id": "flow5", "sourceRef": "implement_analyzer", "targetRef": "implement_alerts"},
-    {"id": "flow6", "sourceRef": "implement_alerts", "targetRef": "implement_export"},
-    {"id": "flow7", "sourceRef": "implement_export", "targetRef": "implement_visualization"},
-    {"id": "flow8", "sourceRef": "implement_visualization", "targetRef": "integrate_module"},
-    {"id": "flow9", "sourceRef": "integrate_module", "targetRef": "write_tests"},
-    {"id": "flow10", "sourceRef": "write_tests", "targetRef": "write_documentation"},
-    {"id": "flow11", "sourceRef": "write_documentation", "targetRef": "create_example"},
-    {"id": "flow12", "sourceRef": "create_example", "targetRef": "end_event"}
+    {
+      "id": "flow1",
+      "sourceRef": "start_event",
+      "targetRef": "research_task"
+    },
+    {
+      "id": "flow2",
+      "sourceRef": "research_task",
+      "targetRef": "design_task"
+    },
+    {
+      "id": "flow3",
+      "sourceRef": "design_task",
+      "targetRef": "implement_metrics"
+    },
+    {
+      "id": "flow4",
+      "sourceRef": "implement_metrics",
+      "targetRef": "implement_analyzer"
+    },
+    {
+      "id": "flow5",
+      "sourceRef": "implement_analyzer",
+      "targetRef": "implement_alerts"
+    },
+    {
+      "id": "flow6",
+      "sourceRef": "implement_alerts",
+      "targetRef": "implement_export"
+    },
+    {
+      "id": "flow7",
+      "sourceRef": "implement_export",
+      "targetRef": "implement_visualization"
+    },
+    {
+      "id": "flow8",
+      "sourceRef": "implement_visualization",
+      "targetRef": "integrate_module"
+    },
+    {
+      "id": "flow9",
+      "sourceRef": "integrate_module",
+      "targetRef": "write_tests"
+    },
+    {
+      "id": "flow10",
+      "sourceRef": "write_tests",
+      "targetRef": "write_documentation"
+    },
+    {
+      "id": "flow11",
+      "sourceRef": "write_documentation",
+      "targetRef": "create_example"
+    },
+    {
+      "id": "flow12",
+      "sourceRef": "create_example",
+      "targetRef": "end_event"
+    }
   ],
   "deliverables": {
     "modules": [

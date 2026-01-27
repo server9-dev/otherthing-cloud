@@ -46,6 +46,8 @@
 
 ### Installation
 
+#### Library Installation
+
 Add to your `Cargo.toml`:
 
 ```toml
@@ -53,6 +55,31 @@ Add to your `Cargo.toml`:
 abcdodaf = "0.1.0"
 tokio = { version = "1", features = ["full"] }
 ```
+
+#### UI Tool Installation
+
+Install the visual BPMN editor as a standalone binary:
+
+```bash
+# Install the UI tool
+cargo install --path . --features ui --bin abcdodaf-ui
+
+# Or from a git repository
+cargo install --git https://github.com/server9-dev/otherthing-cloud --features ui --bin abcdodaf-ui
+
+# Run the UI
+abcdodaf-ui
+```
+
+The **ABCDODAF BPMN IDE** provides:
+- Multi-workflow visual editor with tabs
+- Full BPMN 2.0 node palette (tasks, gateways, events)
+- DoDAF 2.02 metadata editing
+- Real-time validation with error highlighting
+- File browser with project management
+- Properties panel for detailed node configuration
+- Keyboard shortcuts (Ctrl+N, Ctrl+S, Ctrl+W, F5)
+- Export/import JSON workflow files
 
 ### Basic Usage
 

@@ -20,14 +20,14 @@ pub mod performance;
 pub mod reporting;
 pub mod coverage;
 
-pub use harness::{TestHarness, TaskTestCase, TaskTestResult};
-pub use mock_handlers::{MockTaskHandler, MockHandlerBuilder, RecordingMockHandler};
+pub use harness::{TestHarness, TaskTestCase, TaskTestResult, TestSummary};
+pub use mock_handlers::{MockTaskHandler, MockHandlerBuilder, RecordingMockHandler, MockBehavior};
 pub use assertions::{WorkflowAssertions, TaskAssertions, AssertionResult};
-pub use fixtures::{TestFixture, FixtureBuilder, SampleDataGenerator};
-pub use dsl::{TestScenario, ScenarioBuilder, ScenarioDsl};
-pub use performance::{PerformanceMetrics, BenchmarkSuite, BenchmarkResult};
-pub use reporting::{TestReport, ReportGenerator, CoverageReport};
-pub use coverage::{CoverageTracker, PathCoverage};
+pub use fixtures::{TestFixture, FixtureBuilder, SampleDataGenerator, FixturePool};
+pub use dsl::{TestScenario, ScenarioBuilder, ScenarioDsl, StepBuilder, ValidationBuilder};
+pub use performance::{PerformanceMetrics, BenchmarkSuite, BenchmarkResult, PerfTimer};
+pub use reporting::{TestReport, ReportGenerator, CoverageReport, TestResultDetail, TestStatus, CoverageStatus};
+pub use coverage::{CoverageTracker, PathCoverage, CoverageAnalyzer, BranchCoverage};
 
 #[cfg(test)]
 mod tests {

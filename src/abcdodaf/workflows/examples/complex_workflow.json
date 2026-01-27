@@ -1,0 +1,470 @@
+{
+  "version": "1.0",
+  "name": "Complex Order Processing",
+  "snarl": {
+    "nodes": [
+      {
+        "id": "start_1",
+        "pos": [
+          100.0,
+          300.0
+        ],
+        "open": true,
+        "value": {
+          "id": "start_1",
+          "node_type": {
+            "StartEvent": {
+              "name": "Order Received",
+              "documentation": "Customer order received",
+              "event_definition": {
+                "Message": {
+                  "message_ref": "order_message"
+                }
+              },
+              "is_interrupting": true
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_validate",
+        "pos": [
+          280.0,
+          300.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_validate",
+          "node_type": {
+            "Task": {
+              "name": "Validate Order",
+              "documentation": "Check order completeness and validity",
+              "task_type": {
+                "BusinessRule": {
+                  "implementation": "validation_rules",
+                  "rule_ref": "order_validation"
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "gateway_valid",
+        "pos": [
+          460.0,
+          300.0
+        ],
+        "open": true,
+        "value": {
+          "id": "gateway_valid",
+          "node_type": {
+            "Gateway": {
+              "name": "Valid?",
+              "documentation": "Is order valid?",
+              "gateway_type": "Exclusive",
+              "gateway_direction": "Diverging"
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_reject",
+        "pos": [
+          640.0,
+          400.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_reject",
+          "node_type": {
+            "Task": {
+              "name": "Reject Order",
+              "documentation": "Send rejection notification",
+              "task_type": {
+                "Send": {
+                  "message_ref": "rejection_message",
+                  "operation_ref": null
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "end_reject",
+        "pos": [
+          820.0,
+          400.0
+        ],
+        "open": true,
+        "value": {
+          "id": "end_reject",
+          "node_type": {
+            "EndEvent": {
+              "name": "Order Rejected",
+              "documentation": "Order processing terminated",
+              "event_definition": null
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "gateway_parallel",
+        "pos": [
+          640.0,
+          200.0
+        ],
+        "open": true,
+        "value": {
+          "id": "gateway_parallel",
+          "node_type": {
+            "Gateway": {
+              "name": "Process Order",
+              "documentation": "Parallel processing",
+              "gateway_type": "Parallel",
+              "gateway_direction": "Diverging"
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_inventory",
+        "pos": [
+          820.0,
+          100.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_inventory",
+          "node_type": {
+            "Task": {
+              "name": "Reserve Inventory",
+              "documentation": "Reserve items from inventory",
+              "task_type": {
+                "Service": {
+                  "implementation": "inventory_service",
+                  "operation_ref": "reserve"
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_payment",
+        "pos": [
+          820.0,
+          200.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_payment",
+          "node_type": {
+            "Task": {
+              "name": "Process Payment",
+              "documentation": "Charge customer payment method",
+              "task_type": {
+                "Service": {
+                  "implementation": "payment_service",
+                  "operation_ref": "charge"
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_shipping",
+        "pos": [
+          820.0,
+          300.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_shipping",
+          "node_type": {
+            "Task": {
+              "name": "Arrange Shipping",
+              "documentation": "Schedule shipment with carrier",
+              "task_type": {
+                "Service": {
+                  "implementation": "shipping_service",
+                  "operation_ref": "schedule"
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "gateway_join",
+        "pos": [
+          1000.0,
+          200.0
+        ],
+        "open": true,
+        "value": {
+          "id": "gateway_join",
+          "node_type": {
+            "Gateway": {
+              "name": "Sync",
+              "documentation": "Wait for all tasks",
+              "gateway_type": "Parallel",
+              "gateway_direction": "Converging"
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "task_confirm",
+        "pos": [
+          1180.0,
+          200.0
+        ],
+        "open": true,
+        "value": {
+          "id": "task_confirm",
+          "node_type": {
+            "Task": {
+              "name": "Send Confirmation",
+              "documentation": "Send order confirmation to customer",
+              "task_type": {
+                "Send": {
+                  "message_ref": "confirmation_message",
+                  "operation_ref": null
+                }
+              },
+              "loop_characteristics": null,
+              "is_for_compensation": false
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "data_order",
+        "pos": [
+          100.0,
+          450.0
+        ],
+        "open": true,
+        "value": {
+          "id": "data_order",
+          "node_type": {
+            "DataObject": {
+              "name": "Order Data",
+              "is_collection": false,
+              "data_state": "Received"
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      },
+      {
+        "id": "end_success",
+        "pos": [
+          1360.0,
+          200.0
+        ],
+        "open": true,
+        "value": {
+          "id": "end_success",
+          "node_type": {
+            "EndEvent": {
+              "name": "Order Complete",
+              "documentation": "Order successfully processed",
+              "event_definition": null
+            }
+          },
+          "visual": {
+            "color": null,
+            "highlighted": false,
+            "selected": false,
+            "markers": []
+          },
+          "dodaf_metadata": null,
+          "properties": {}
+        }
+      }
+    ],
+    "wires": [
+      {
+        "out_node": 0,
+        "out_pin": 0,
+        "in_node": 1,
+        "in_pin": 0
+      },
+      {
+        "out_node": 1,
+        "out_pin": 0,
+        "in_node": 2,
+        "in_pin": 0
+      },
+      {
+        "out_node": 2,
+        "out_pin": 0,
+        "in_node": 5,
+        "in_pin": 0
+      },
+      {
+        "out_node": 2,
+        "out_pin": 1,
+        "in_node": 3,
+        "in_pin": 0
+      },
+      {
+        "out_node": 3,
+        "out_pin": 0,
+        "in_node": 4,
+        "in_pin": 0
+      },
+      {
+        "out_node": 5,
+        "out_pin": 0,
+        "in_node": 6,
+        "in_pin": 0
+      },
+      {
+        "out_node": 5,
+        "out_pin": 1,
+        "in_node": 7,
+        "in_pin": 0
+      },
+      {
+        "out_node": 6,
+        "out_pin": 0,
+        "in_node": 9,
+        "in_pin": 0
+      },
+      {
+        "out_node": 7,
+        "out_pin": 0,
+        "in_node": 9,
+        "in_pin": 0
+      },
+      {
+        "out_node": 8,
+        "out_pin": 0,
+        "in_node": 9,
+        "in_pin": 0
+      },
+      {
+        "out_node": 9,
+        "out_pin": 0,
+        "in_node": 10,
+        "in_pin": 0
+      },
+      {
+        "out_node": 10,
+        "out_pin": 0,
+        "in_node": 12,
+        "in_pin": 0
+      }
+    ]
+  }
+}

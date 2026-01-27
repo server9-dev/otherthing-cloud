@@ -203,7 +203,7 @@ impl DiscretionaryItemManager {
     /// Check if an item matches the case context
     fn matches_context(
         &self,
-        item: &DiscretionaryItem,
+        _item: &DiscretionaryItem,
         _context: &HashMap<String, serde_json::Value>,
     ) -> bool {
         // In production, would evaluate contextual conditions

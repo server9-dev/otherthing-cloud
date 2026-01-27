@@ -49,8 +49,12 @@
       "type": "serviceTask",
       "taskType": "research",
       "implementation": "specification_research",
-      "inputs": ["BPMN 2.0 standard"],
-      "outputs": ["spec_understanding"],
+      "inputs": [
+        "BPMN 2.0 standard"
+      ],
+      "outputs": [
+        "spec_understanding"
+      ],
       "sub_tasks": [
         "Review BPMN 2.0 XML schema (XSD)",
         "Study Diagram Interchange (DI) specification",
@@ -65,8 +69,13 @@
       "type": "serviceTask",
       "taskType": "design",
       "implementation": "architectural_design",
-      "inputs": ["spec_understanding", "existing_rust_structures"],
-      "outputs": ["xml_architecture"],
+      "inputs": [
+        "spec_understanding",
+        "existing_rust_structures"
+      ],
+      "outputs": [
+        "xml_architecture"
+      ],
       "decisions": [
         "Use xml-rs or quick-xml for parsing",
         "Implement serialize/deserialize traits",
@@ -81,8 +90,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["xml_architecture"],
-      "outputs": ["serializer_module"],
+      "inputs": [
+        "xml_architecture"
+      ],
+      "outputs": [
+        "serializer_module"
+      ],
       "components": [
         "Element serializers (events, tasks, gateways)",
         "Attribute serializers",
@@ -97,8 +110,12 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["xml_architecture"],
-      "outputs": ["deserializer_module"],
+      "inputs": [
+        "xml_architecture"
+      ],
+      "outputs": [
+        "deserializer_module"
+      ],
       "components": [
         "XML parser integration",
         "Element builders",
@@ -113,8 +130,13 @@
       "type": "serviceTask",
       "taskType": "code_generation",
       "implementation": "rust_code_generation",
-      "inputs": ["xml_architecture", "UI layout data"],
-      "outputs": ["di_module"],
+      "inputs": [
+        "xml_architecture",
+        "UI layout data"
+      ],
+      "outputs": [
+        "di_module"
+      ],
       "components": [
         "BPMNDiagram elements",
         "BPMNPlane layout",
@@ -129,8 +151,13 @@
       "type": "serviceTask",
       "taskType": "integration",
       "implementation": "system_integration",
-      "inputs": ["xml_modules", "workspace_system"],
-      "outputs": ["integrated_save_load"],
+      "inputs": [
+        "xml_modules",
+        "workspace_system"
+      ],
+      "outputs": [
+        "integrated_save_load"
+      ],
       "actions": [
         "Add .bpmn file extension support",
         "Update workspace save/load methods",
@@ -145,8 +172,12 @@
       "type": "serviceTask",
       "taskType": "testing",
       "implementation": "integration_testing",
-      "inputs": ["integrated_system"],
-      "outputs": ["validation_results"],
+      "inputs": [
+        "integrated_system"
+      ],
+      "outputs": [
+        "validation_results"
+      ],
       "test_cases": [
         "Simple process (start -> task -> end)",
         "Complex process with gateways",
@@ -158,9 +189,8 @@
     },
     {
       "id": "gateway_check",
-      "name": "Quality Gate: Round-Trip Success?",
-      "type": "exclusiveGateway",
-      "name": "Round-trip tests pass?"
+      "name": "Round-trip tests pass?",
+      "type": "exclusiveGateway"
     },
     {
       "id": "fix_issues",
@@ -190,18 +220,68 @@
     }
   ],
   "sequence_flows": [
-    {"id": "f1", "sourceRef": "start", "targetRef": "research_bpmn_spec"},
-    {"id": "f2", "sourceRef": "research_bpmn_spec", "targetRef": "design_xml_structure"},
-    {"id": "f3", "sourceRef": "design_xml_structure", "targetRef": "implement_serializer"},
-    {"id": "f4", "sourceRef": "implement_serializer", "targetRef": "implement_deserializer"},
-    {"id": "f5", "sourceRef": "implement_deserializer", "targetRef": "implement_di"},
-    {"id": "f6", "sourceRef": "implement_di", "targetRef": "integrate_workspace"},
-    {"id": "f7", "sourceRef": "integrate_workspace", "targetRef": "test_roundtrip"},
-    {"id": "f8", "sourceRef": "test_roundtrip", "targetRef": "gateway_check"},
-    {"id": "f9", "sourceRef": "gateway_check", "targetRef": "fix_issues", "conditionExpression": "tests_failed"},
-    {"id": "f10", "sourceRef": "fix_issues", "targetRef": "test_roundtrip"},
-    {"id": "f11", "sourceRef": "gateway_check", "targetRef": "document", "conditionExpression": "tests_passed"},
-    {"id": "f12", "sourceRef": "document", "targetRef": "end"}
+    {
+      "id": "f1",
+      "sourceRef": "start",
+      "targetRef": "research_bpmn_spec"
+    },
+    {
+      "id": "f2",
+      "sourceRef": "research_bpmn_spec",
+      "targetRef": "design_xml_structure"
+    },
+    {
+      "id": "f3",
+      "sourceRef": "design_xml_structure",
+      "targetRef": "implement_serializer"
+    },
+    {
+      "id": "f4",
+      "sourceRef": "implement_serializer",
+      "targetRef": "implement_deserializer"
+    },
+    {
+      "id": "f5",
+      "sourceRef": "implement_deserializer",
+      "targetRef": "implement_di"
+    },
+    {
+      "id": "f6",
+      "sourceRef": "implement_di",
+      "targetRef": "integrate_workspace"
+    },
+    {
+      "id": "f7",
+      "sourceRef": "integrate_workspace",
+      "targetRef": "test_roundtrip"
+    },
+    {
+      "id": "f8",
+      "sourceRef": "test_roundtrip",
+      "targetRef": "gateway_check"
+    },
+    {
+      "id": "f9",
+      "sourceRef": "gateway_check",
+      "targetRef": "fix_issues",
+      "conditionExpression": "tests_failed"
+    },
+    {
+      "id": "f10",
+      "sourceRef": "fix_issues",
+      "targetRef": "test_roundtrip"
+    },
+    {
+      "id": "f11",
+      "sourceRef": "gateway_check",
+      "targetRef": "document",
+      "conditionExpression": "tests_passed"
+    },
+    {
+      "id": "f12",
+      "sourceRef": "document",
+      "targetRef": "end"
+    }
   ],
   "expected_deliverables": {
     "modules": [

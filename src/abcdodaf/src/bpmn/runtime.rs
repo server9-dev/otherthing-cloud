@@ -666,7 +666,7 @@ impl Default for EnhancedRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bpmn::{ProcessBuilder, TaskType};
+    use crate::bpmn::ProcessBuilder;
     use crate::bpmn::process::Task;
 
     struct MockHandler;

@@ -34,10 +34,10 @@ async fn test_ollama_list_models() {
 #[test]
 fn test_prompt_template_creation() {
     let template = PromptTemplate::new("test", "Test Template", "Hello {{name}}!")
-        .add_variable(crate::ai::PromptVariable::new(
+        .add_variable(abcdodaf::ai::PromptVariable::new(
             "name",
             "User name",
-            crate::ai::prompt::VariableType::String,
+            abcdodaf::ai::prompt::VariableType::String,
         ));
 
     assert_eq!(template.id, "test");
@@ -47,15 +47,15 @@ fn test_prompt_template_creation() {
 #[test]
 fn test_prompt_template_rendering() {
     let template = PromptTemplate::new("greeting", "Greeting", "Hello {{name}}, you are {{age}} years old!")
-        .add_variable(crate::ai::PromptVariable::new(
+        .add_variable(abcdodaf::ai::PromptVariable::new(
             "name",
             "Name",
-            crate::ai::prompt::VariableType::String,
+            abcdodaf::ai::prompt::VariableType::String,
         ))
-        .add_variable(crate::ai::PromptVariable::new(
+        .add_variable(abcdodaf::ai::PromptVariable::new(
             "age",
             "Age",
-            crate::ai::prompt::VariableType::Integer,
+            abcdodaf::ai::prompt::VariableType::Integer,
         ));
 
     let mut values = HashMap::new();
@@ -83,7 +83,7 @@ fn test_prompt_manager() {
 
 #[test]
 fn test_context_window() {
-    use crate::ai::ollama::ChatMessage;
+    use abcdodaf::ai::ollama::ChatMessage;
 
     let mut window = ContextWindow::new(4096, ContextStrategy::SlidingWindow);
 
@@ -101,17 +101,17 @@ fn test_context_manager() {
     let mut manager = ContextManager::new(4096, ContextStrategy::SlidingWindow);
 
     let ctx1 = manager.get_or_create("user1");
-    ctx1.add_message(crate::ai::ollama::ChatMessage::user("Test")).unwrap();
+    ctx1.add_message(abcdodaf::ai::ollama::ChatMessage::user("Test")).unwrap();
 
     let ctx2 = manager.get_or_create("user2");
-    ctx2.add_message(crate::ai::ollama::ChatMessage::user("Test 2")).unwrap();
+    ctx2.add_message(abcdodaf::ai::ollama::ChatMessage::user("Test 2")).unwrap();
 
     assert_eq!(manager.conversation_count(), 2);
 }
 
 #[test]
 fn test_agent_memory() {
-    use crate::ai::memory::{AgentMemory, MemoryEntry, MemoryType};
+    use abcdodaf::ai::memory::{AgentMemory, MemoryEntry, MemoryType};
 
     let mut memory = AgentMemory::new(50);
 
@@ -143,7 +143,7 @@ fn test_model_selector() {
 
 #[test]
 fn test_model_selection() {
-    use crate::ai::selection::SelectionCriteria;
+    use abcdodaf::ai::selection::SelectionCriteria;
 
     let selector = ModelSelector::with_ollama_defaults();
 
@@ -163,15 +163,15 @@ fn test_model_selection() {
 async fn test_multi_agent_coordinator() {
     let mut coordinator = MultiAgentCoordinator::new();
 
-    let agent = crate::ai::AgentConfig {
+    let agent = abcdodaf::ai::AgentConfig {
         agent_id: "test_agent".to_string(),
         agent_type: EnhancedAgentType::LanguageModel,
         capabilities: vec![EnhancedCapability::NaturalLanguageProcessing],
-        model_config: crate::ai::ModelConfig::default(),
-        prompt_config: crate::ai::PromptConfig::default(),
-        context_config: crate::ai::ContextConfig::default(),
-        memory_config: crate::ai::MemoryConfig::default(),
-        performance_config: crate::ai::PerformanceConfig::default(),
+        model_config: abcdodaf::ai::ModelConfig::default(),
+        prompt_config: abcdodaf::ai::PromptConfig::default(),
+        context_config: abcdodaf::ai::ContextConfig::default(),
+        memory_config: abcdodaf::ai::MemoryConfig::default(),
+        performance_config: abcdodaf::ai::PerformanceConfig::default(),
     };
 
     coordinator.register_agent(agent);
@@ -186,7 +186,7 @@ async fn test_tool_registry() {
     assert!(registry.get_definition("calculator").is_some());
 
     // Test tool execution
-    let call = crate::ai::ToolCall {
+    let call = abcdodaf::ai::ToolCall {
         id: "test".to_string(),
         tool_name: "calculator".to_string(),
         arguments: {
@@ -202,7 +202,7 @@ async fn test_tool_registry() {
 
 #[test]
 fn test_performance_tracker() {
-    use crate::ai::metrics::{PerformanceTracker, RequestMetrics};
+    use abcdodaf::ai::metrics::{PerformanceTracker, RequestMetrics};
 
     let mut tracker = PerformanceTracker::new();
 
@@ -223,7 +223,7 @@ fn test_performance_tracker() {
 
 #[test]
 fn test_response_cache() {
-    use crate::ai::cache::{ResponseCache, CacheKey, CacheMetadata};
+    use abcdodaf::ai::cache::{ResponseCache, CacheKey, CacheMetadata};
 
     let mut cache = ResponseCache::new(CacheStrategy::LRU, 100);
 

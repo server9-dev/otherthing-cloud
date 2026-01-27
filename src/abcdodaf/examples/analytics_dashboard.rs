@@ -3,7 +3,7 @@
 //! Demonstrates comprehensive metrics collection, analysis, alerting, and reporting.
 
 use abcdodaf::prelude::*;
-use chrono::{Duration, Utc};
+use chrono::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dashboard.alerting.add_sla_policy(sla_critical);
 
     // Add alert rules
-    let high_latency_rule = AlertRule::new(
+    let high_latency_rule = abcdodaf::analytics::AlertRule::new(
         "High Latency Alert",
         "response_time",
         "greater_than",
@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         AlertLevel::Warning,
     );
 
-    let critical_error_rule = AlertRule::new(
+    let critical_error_rule = abcdodaf::analytics::AlertRule::new(
         "Critical Error Rate",
         "error_rate",
         "greater_than",
@@ -93,7 +93,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Analyze metrics
     println!("--- Analysis Results ---\n");
 
-    let bottlenecks = dashboard.analyzer.bottleneck_analyzer.detect_bottlenecks(&snapshot);
+    let bottleneck_analyzer = abcdodaf::analytics::BottleneckAnalyzer::new();
+    let bottlenecks = bottleneck_analyzer.detect_bottlenecks(&snapshot);
     if !bottlenecks.is_empty() {
         println!("Detected Bottlenecks:");
         for bottleneck in bottlenecks {
@@ -110,7 +111,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Trend analysis
-    let trends = dashboard.analyzer.trend_analyzer.analyze_trends(
+    let trend_analyzer = abcdodaf::analytics::TrendAnalyzer::new();
+    let trends = trend_analyzer.analyze_trends(
         &snapshot.recent_metrics,
         Duration::days(7),
     );
@@ -149,7 +151,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for violation in violations_order {
             println!(
                 "  {}: Expected {}, Got {} ({})",
-                violation.metric, violation.expected, violation.actual, violation.severity == AlertLevel::Critical ? "CRITICAL" : "WARNING"
+                violation.metric, violation.expected, violation.actual, if violation.severity == AlertLevel::Critical { "CRITICAL" } else { "WARNING" }
             );
         }
     } else {
@@ -186,7 +188,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Performance analysis
     println!("--- Performance Analysis ---\n");
 
-    let perf_analysis = dashboard.analyzer.performance_analyzer.analyze(&snapshot);
+    let performance_analyzer = abcdodaf::analytics::PerformanceAnalyzer::new();
+    let perf_analysis = performance_analyzer.analyze(&snapshot);
     println!("Response Time Percentiles:");
     println!(
         "  P50: {:.0}ms, P95: {:.0}ms, P99: {:.0}ms",
@@ -203,7 +206,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Cost analysis
     println!("--- Cost Analysis ---\n");
 
-    let cost_analysis = dashboard.analyzer.cost_analyzer.analyze(&snapshot);
+    let cost_analyzer = abcdodaf::analytics::CostAnalyzer::new();
+    let cost_analysis = cost_analyzer.analyze(&snapshot);
     println!("Costs by Resource:");
     for (resource, cost) in &cost_analysis.costs_by_resource {
         println!("  {}: ${:.2}", resource, cost);
@@ -217,7 +221,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Heatmap generation
     println!("--- Activity Heatmap ---\n");
 
-    let heatmap = dashboard.analyzer.heatmap_analyzer.generate_heatmap(&snapshot.recent_metrics);
+    let heatmap_analyzer = abcdodaf::analytics::HeatmapAnalyzer::new();
+    let heatmap = heatmap_analyzer.generate_heatmap(&snapshot.recent_metrics);
     println!("Activity Heatmap:");
     println!("  Total activities: {}", heatmap.cells.len());
     println!("  Max activity count: {}", heatmap.max_count);
