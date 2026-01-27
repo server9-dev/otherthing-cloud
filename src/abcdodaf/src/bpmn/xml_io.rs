@@ -13,6 +13,7 @@
 //! - Comprehensive error handling with detailed diagnostics
 
 use super::elements::*;
+use regex;
 use std::io::{Read, Write};
 
 /// BPMN 2.0 XML namespace constants
@@ -824,13 +825,28 @@ impl BpmnXmlSerializer {
     // Parsing/Deserialization
     // ========================================================================
 
-    fn parse_xml(_xml: &str) -> XmlResult<BpmnDiagram> {
+    /// Extract an attribute value from an XML element (simple regex-based approach)
+    fn extract_attribute(xml: &str, element: &str, attribute: &str) -> Option<String> {
+        // Look for pattern like: <element ... attribute="value" ...>
+        let pattern = format!(r#"<{}[^>]*\s{}="([^"]*)""#, element, attribute);
+        let re = regex::Regex::new(&pattern).ok()?;
+        re.captures(xml)
+            .and_then(|caps| caps.get(1))
+            .map(|m| m.as_str().to_string())
+    }
+
+    fn parse_xml(xml: &str) -> XmlResult<BpmnDiagram> {
         // For now, return a basic structure. In production, use xml-rs or minidom crate
         // This is a placeholder that demonstrates the interface
 
+        // Try to extract basic attributes from definitions tag
+        let id = Self::extract_attribute(xml, "definitions", "id")
+            .unwrap_or_else(|| "diagram1".to_string());
+        let name = Self::extract_attribute(xml, "definitions", "name");
+
         let diagram = BpmnDiagram {
-            id: "diagram1".to_string(),
-            name: Some("Imported Process".to_string()),
+            id,
+            name,
             documentation: None,
             processes: vec![],
             collaborations: vec![],

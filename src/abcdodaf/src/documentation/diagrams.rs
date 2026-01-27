@@ -295,6 +295,7 @@ mod tests {
     #[test]
     fn test_generate_ascii_diagram() {
         let process = ProcessBuilder::new("test", "Test Process")
+            .add_user_task("task1", "Sample Task")
             .build()
             .expect("Failed to build process");
 

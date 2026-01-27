@@ -435,7 +435,7 @@ mod tests {
             .assert_task_counts(&metrics, Some(1), Some(1), Some(1));
 
         assert!(assertions.all_passed());
-        assert_eq!(assertions.passed_count(), 4);
+        assert_eq!(assertions.passed_count(), 5);
     }
 
     #[test]

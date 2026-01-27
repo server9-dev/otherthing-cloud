@@ -130,10 +130,17 @@ impl DevLogger {
         }
     }
 
-    /// Initialize the log file if it doesn't exist
+    /// Initialize the log file if it doesn't exist or is empty
     pub fn init(&self) -> Result<()> {
         let path = Path::new(&self.log_path);
-        if !path.exists() {
+        let needs_init = !path.exists() || {
+            // Check if file is empty
+            std::fs::metadata(path)
+                .map(|m| m.len() == 0)
+                .unwrap_or(true)
+        };
+
+        if needs_init {
             let log = DevelopmentLog {
                 log_metadata: LogMetadata {
                     version: "1.0.0".to_string(),
