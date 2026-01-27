@@ -16,6 +16,9 @@ pub struct BpmnDiagram {
     pub data_stores: Vec<DataStore>,
     pub messages: Vec<Message>,
     pub signals: Vec<Signal>,
+    /// Diagram Interchange (visual layout information)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diagram_info: Option<BpmnDI>,
 }
 
 /// BPMN Process definition

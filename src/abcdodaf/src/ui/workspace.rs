@@ -35,6 +35,7 @@ impl WorkflowDocument {
             data_stores: Vec::new(),
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         };
 
         Self {

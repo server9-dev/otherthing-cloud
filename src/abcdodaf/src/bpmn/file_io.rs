@@ -368,6 +368,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         // Save
@@ -396,6 +397,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         // First save
@@ -433,6 +435,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         // Create test files

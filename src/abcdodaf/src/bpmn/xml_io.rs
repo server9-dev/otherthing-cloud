@@ -853,6 +853,7 @@ impl BpmnXmlSerializer {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         Ok(diagram)
@@ -935,6 +936,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         let result = BpmnXmlSerializer::to_string(&diagram);

@@ -130,8 +130,9 @@ impl BpmnDiagramConverter {
         let mut ctx = ConversionContext::new();
 
         // Extract visual layout information if available
-        // TODO: Add diagram_info parameter when BpmnDiagram includes it
-        // Self::extract_layout(&diagram.diagram_info, &mut ctx);
+        if let Some(di) = &diagram.diagram_info {
+            Self::extract_layout(di, &mut ctx);
+        }
 
         // Convert all flow elements to nodes
         Self::convert_start_events(&process.start_events, &mut snarl, &mut ctx)?;
@@ -488,6 +489,7 @@ impl BpmnDiagramConverter {
             data_stores,
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         };
 
         Ok(diagram)
@@ -696,6 +698,23 @@ impl BpmnDiagramConverter {
         }
     }
 
+    /// Extract layout information from Diagram Interchange
+    fn extract_layout(di: &BpmnDI, ctx: &mut ConversionContext) {
+        // Process all diagrams (usually just one)
+        for diagram_info in &di.diagrams {
+            // Extract shape positions
+            for shape in &diagram_info.plane.shapes {
+                if let Some(bounds) = &shape.bounds {
+                    ctx.set_position(
+                        shape.bpmn_element.clone(),
+                        bounds.x,
+                        bounds.y,
+                    );
+                }
+            }
+        }
+    }
+
     /// Generate BpmnDiagramInfo from Snarl
     pub fn generate_diagram_info(
         snarl: &Snarl<EnhancedBpmnNode>,
@@ -809,6 +828,7 @@ mod tests {
             data_stores: Vec::new(),
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         };
 
         let result = BpmnDiagramConverter::to_snarl(&diagram);
@@ -885,6 +905,7 @@ mod tests {
             data_stores: Vec::new(),
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         };
 
         let snarl_result = BpmnDiagramConverter::to_snarl(&diagram);
@@ -945,6 +966,7 @@ mod tests {
             data_stores: Vec::new(),
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         };
 
         // Convert to Snarl

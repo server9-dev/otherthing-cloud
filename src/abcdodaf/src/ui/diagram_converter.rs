@@ -187,6 +187,7 @@ impl BpmnDiagramConverter {
             data_stores: Vec::new(),
             messages: Vec::new(),
             signals: Vec::new(),
+            diagram_info: None,
         })
     }
 
@@ -362,6 +363,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         let snarl = BpmnDiagramConverter::to_snarl(&diagram).unwrap();
@@ -418,6 +420,7 @@ mod tests {
             data_stores: vec![],
             messages: vec![],
             signals: vec![],
+            diagram_info: None,
         };
 
         let snarl = BpmnDiagramConverter::to_snarl(&diagram).unwrap();
