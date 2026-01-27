@@ -10,9 +10,8 @@
 //! - Security markings
 //! - Cost/duration estimates
 
-use crate::dodaf::*;
-use crate::dodaf::ov5::ResourceFlow;
-use crate::executor::database::{DatabaseManager};
+use crate::dodaf::{OperationalActivity, CapabilityView, ServiceView};
+use crate::executor::database::DatabaseManager;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
@@ -283,27 +282,13 @@ pub struct DodafView {
     pub cost_duration: Option<CostDurationEstimate>,
 }
 
-// Re-export resource flow types from dodaf module
-pub use crate::dodaf::ov5::ResourceType;
+// Re-export types from dodaf modules
+pub use crate::dodaf::resource_flows::{ResourceFlow, ResourceFlowType};
+pub use crate::dodaf::performers::{Performer, PerformerType, PerformerAssignment};
+pub use crate::dodaf::security::{SecurityMarking};
+pub use crate::dodaf::traceability::{TraceabilityLink};
 
-/// Performer assignment to activity
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PerformerAssignment {
-    pub activity_id: String,
-    pub performer_id: String,
-    pub performer_type: PerformerType,
-    pub role: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum PerformerType {
-    Person { role: String, organization: String },
-    Organization { name: String, org_type: String },
-    Service { name: String, interface: String },
-    System { name: String, version: String },
-}
-
-/// Capability mapping
+// Simplified types for tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapabilityMapping {
     pub workflow_id: String,
@@ -311,7 +296,6 @@ pub struct CapabilityMapping {
     pub capability_gaps: Vec<String>,
 }
 
-/// System-to-activity mapping
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemMapping {
     pub activity_id: String,
@@ -325,26 +309,6 @@ pub struct SystemReference {
     pub interfaces: Vec<String>,
 }
 
-/// Security marking for classified workflows
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SecurityMarking {
-    pub element_id: String,
-    pub classification: String,  // "Unclassified", "Confidential", "Secret", "Top Secret"
-    pub caveats: Vec<String>,    // "NOFORN", "FOUO", etc.
-    pub handling: String,
-}
-
-/// Traceability link between elements
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TraceabilityLink {
-    pub source_id: String,
-    pub source_type: String,  // "activity", "capability", "system", "requirement"
-    pub target_id: String,
-    pub target_type: String,
-    pub link_type: String,    // "implements", "supports", "derives_from"
-}
-
-/// Cost and duration estimate
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostDurationEstimate {
     pub activity_id: String,
@@ -370,18 +334,26 @@ mod tests {
 
     #[test]
     fn test_resource_flow_serialization() {
+        use crate::dodaf::resource_flows::*;
+
         let flow = ResourceFlow {
             id: "flow_1".to_string(),
             name: "Test Flow".to_string(),
             description: Some("Data transfer".to_string()),
             source_activity: "task_a".to_string(),
             target_activity: "task_b".to_string(),
-            resource_ref: "resource_1".to_string(),
-            attributes: crate::dodaf::ov5::ResourceFlowAttributes {
+            resource_type: ResourceFlowType::Information {
+                data_type: InformationType::Operational,
+                format: Some("JSON".to_string()),
+                schema: None,
+            },
+            attributes: ResourceFlowAttributes {
                 timeliness: None,
-                availability: None,
+                availability: Some(0.99),
                 security_classification: None,
                 performance_requirements: None,
+                qos: None,
+                frequency: Some(FlowFrequency::OnDemand),
             },
             is_needline: false,
             metadata: std::collections::HashMap::new(),

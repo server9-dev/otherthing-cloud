@@ -48,6 +48,12 @@ pub mod cv2;
 pub mod capability;
 pub mod services;
 
+// Enhanced modules for executor
+pub mod performers;
+pub mod resource_flows;
+pub mod security;
+pub mod traceability;
+
 pub use operational::{
     OperationalActivity, OperationalContext, OperationalView,
     ActivityType, MissionArea, InformationExchange,
