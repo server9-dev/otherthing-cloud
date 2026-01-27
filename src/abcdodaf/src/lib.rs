@@ -81,6 +81,7 @@ pub mod documentation;
 pub mod testing;
 pub mod security;
 pub mod ai;
+pub mod validation;
 
 #[cfg(feature = "ui")]
 pub mod ui;
