@@ -82,6 +82,7 @@ pub mod testing;
 pub mod security;
 pub mod ai;
 pub mod validation;
+pub mod executor;
 
 #[cfg(feature = "ui")]
 pub mod ui;
@@ -176,8 +177,18 @@ pub mod error {
         #[error("IO error: {0}")]
         IoError(#[from] std::io::Error),
 
+        #[error("Database error: {0}")]
+        DatabaseError(String),
+
         #[error(transparent)]
         Other(#[from] anyhow::Error),
+    }
+
+    // Custom From implementations
+    impl From<sqlx::Error> for AbcdodafError {
+        fn from(e: sqlx::Error) -> Self {
+            AbcdodafError::DatabaseError(e.to_string())
+        }
     }
 
     pub type Result<T> = std::result::Result<T, AbcdodafError>;
