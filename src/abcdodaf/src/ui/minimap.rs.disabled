@@ -1,0 +1,203 @@
+//! Minimap Component
+//!
+//! Provides a miniature overview of the entire workflow for navigation.
+
+use crate::ui::enhanced_nodes::EnhancedBpmnNode;
+use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
+use egui_snarl::{NodeId, Snarl};
+
+/// Minimap settings
+#[derive(Debug, Clone)]
+pub struct MinimapSettings {
+    /// Size of the minimap
+    pub size: Vec2,
+
+    /// Background color
+    pub bg_color: Color32,
+
+    /// Node color
+    pub node_color: Color32,
+
+    /// Connection color
+    pub connection_color: Color32,
+
+    /// Viewport color
+    pub viewport_color: Color32,
+
+    /// Whether to show connections
+    pub show_connections: bool,
+
+    /// Padding around content
+    pub padding: f32,
+}
+
+impl Default for MinimapSettings {
+    fn default() -> Self {
+        Self {
+            size: Vec2::new(200.0, 150.0),
+            bg_color: Color32::from_rgb(40, 40, 40),
+            node_color: Color32::from_rgb(100, 150, 200),
+            connection_color: Color32::from_rgb(80, 80, 80),
+            viewport_color: Color32::from_rgba_premultiplied(255, 255, 255, 100),
+            show_connections: true,
+            padding: 10.0,
+        }
+    }
+}
+
+/// Minimap component
+pub struct Minimap {
+    settings: MinimapSettings,
+}
+
+impl Minimap {
+    pub fn new() -> Self {
+        Self {
+            settings: MinimapSettings::default(),
+        }
+    }
+
+    pub fn with_settings(mut self, settings: MinimapSettings) -> Self {
+        self.settings = settings;
+        self
+    }
+
+    /// Show the minimap and return new viewport center if clicked
+    pub fn show(
+        &mut self,
+        ui: &mut Ui,
+        snarl: &Snarl<EnhancedBpmnNode>,
+        viewport_rect: Rect,
+    ) -> Option<Pos2> {
+        let (rect, response) = ui.allocate_exact_size(self.settings.size, Sense::click_and_drag());
+
+        // Calculate bounds of all nodes
+        let content_bounds = self.calculate_content_bounds(snarl);
+
+        if content_bounds.is_negative() {
+            // No content to show
+            let painter = ui.painter();
+            painter.rect_filled(rect, 4.0, self.settings.bg_color);
+            painter.text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "Empty Workflow",
+                egui::FontId::proportional(12.0),
+                Color32::GRAY,
+            );
+            return None;
+        }
+
+        // Add padding to content bounds
+        let padded_bounds = content_bounds.expand(self.settings.padding);
+
+        // Calculate scale to fit content in minimap
+        let scale_x = rect.width() / padded_bounds.width();
+        let scale_y = rect.height() / padded_bounds.height();
+        let scale = scale_x.min(scale_y);
+
+        // Calculate offset to center content in minimap
+        let content_size = padded_bounds.size() * scale;
+        let offset = rect.min.to_vec2() + (rect.size() - content_size) / 2.0 - padded_bounds.min.to_vec2() * scale;
+
+        let painter = ui.painter();
+
+        // Draw background
+        painter.rect_filled(rect, 4.0, self.settings.bg_color);
+        painter.rect_stroke(rect, 4.0, Stroke::new(1.0, Color32::GRAY));
+
+        // Transform function
+        let transform = |pos: Pos2| -> Pos2 {
+            Pos2::new(
+                pos.x * scale + offset.x,
+                pos.y * scale + offset.y,
+            )
+        };
+
+        // Draw connections
+        if self.settings.show_connections {
+            for node_id in snarl.node_ids() {
+                let from_pos = snarl.get_node_pos(node_id);
+                let from_screen = transform(from_pos);
+
+                for out_pin_id in snarl.out_pin_ids(node_id) {
+                    for &remote_in_pin in &snarl.out_pin(out_pin_id).remotes {
+                        let to_node = snarl.in_pin(remote_in_pin).id.node;
+                        let to_pos = snarl.get_node_pos(to_node);
+                        let to_screen = transform(to_pos);
+
+                        painter.line_segment(
+                            [from_screen, to_screen],
+                            Stroke::new(1.0, self.settings.connection_color),
+                        );
+                    }
+                }
+            }
+        }
+
+        // Draw nodes
+        for node_id in snarl.node_ids() {
+            let pos = snarl.get_node_pos(node_id);
+            let screen_pos = transform(pos);
+
+            // Draw as small rectangle
+            let node_size = Vec2::new(8.0, 6.0);
+            let node_rect = Rect::from_center_size(screen_pos, node_size);
+
+            painter.rect_filled(node_rect, 2.0, self.settings.node_color);
+        }
+
+        // Draw viewport indicator
+        let viewport_min = transform(viewport_rect.min);
+        let viewport_max = transform(viewport_rect.max);
+        let viewport_screen = Rect::from_min_max(viewport_min, viewport_max);
+
+        painter.rect_stroke(
+            viewport_screen,
+            2.0,
+            Stroke::new(2.0, self.settings.viewport_color),
+        );
+
+        // Handle click to navigate
+        let mut new_center = None;
+        if response.clicked() || response.dragged() {
+            if let Some(hover_pos) = response.hover_pos() {
+                // Convert click position back to world coordinates
+                let world_x = (hover_pos.x - offset.x) / scale;
+                let world_y = (hover_pos.y - offset.y) / scale;
+                new_center = Some(Pos2::new(world_x, world_y));
+            }
+        }
+
+        new_center
+    }
+
+    /// Calculate the bounding box of all content
+    fn calculate_content_bounds(&self, snarl: &Snarl<EnhancedBpmnNode>) -> Rect {
+        let mut min_x = f32::INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+
+        for node_id in snarl.node_ids() {
+            let pos = snarl.get_node_pos(node_id);
+            min_x = min_x.min(pos.x);
+            min_y = min_y.min(pos.y);
+            max_x = max_x.max(pos.x);
+            max_y = max_y.max(pos.y);
+        }
+
+        // Add some margin for node size
+        let margin = 50.0;
+        Rect::from_min_max(
+            Pos2::new(min_x - margin, min_y - margin),
+            Pos2::new(max_x + margin, max_y + margin),
+        )
+    }
+}
+
+impl Default for Minimap {
+    fn default() -> Self {
+        Self::new()
+    }
+}

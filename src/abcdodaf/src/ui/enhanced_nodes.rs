@@ -12,7 +12,7 @@ use std::collections::HashMap;
 /// Enhanced BPMN Node for visual editor
 ///
 /// Wraps BPMN 2.0 elements and adds DoDAF operational metadata
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnhancedBpmnNode {
     /// Unique node ID
     pub id: String,
@@ -31,7 +31,7 @@ pub struct EnhancedBpmnNode {
 }
 
 /// BPMN Node Type wrapping all BPMN 2.0 elements
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum BpmnNodeType {
     // Events
     StartEvent(StartEventNode),
@@ -58,7 +58,7 @@ pub enum BpmnNodeType {
 // Event Nodes
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct StartEventNode {
     pub name: String,
     pub documentation: Option<String>,
@@ -66,14 +66,14 @@ pub struct StartEventNode {
     pub is_interrupting: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EndEventNode {
     pub name: String,
     pub documentation: Option<String>,
     pub event_definition: Option<EventDefinition>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IntermediateEventNode {
     pub name: String,
     pub documentation: Option<String>,
@@ -87,7 +87,7 @@ pub struct IntermediateEventNode {
 // Activity Nodes
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TaskNode {
     pub name: String,
     pub documentation: Option<String>,
@@ -96,7 +96,7 @@ pub struct TaskNode {
     pub is_for_compensation: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SubprocessNode {
     pub name: String,
     pub documentation: Option<String>,
@@ -109,7 +109,7 @@ pub struct SubprocessNode {
 // Gateway Node
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GatewayNode {
     pub name: String,
     pub documentation: Option<String>,
@@ -121,14 +121,14 @@ pub struct GatewayNode {
 // Data Element Nodes
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DataObjectNode {
     pub name: String,
     pub is_collection: bool,
     pub data_state: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DataStoreNode {
     pub name: String,
     pub is_unlimited: bool,
@@ -139,13 +139,13 @@ pub struct DataStoreNode {
 // Artifact Nodes
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextAnnotationNode {
     pub text: String,
     pub text_format: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GroupNode {
     pub category: Option<String>,
 }
@@ -154,7 +154,7 @@ pub struct GroupNode {
 // Visual Properties
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct VisualProperties {
     /// Node color
     pub color: Option<[u8; 3]>,
@@ -169,7 +169,7 @@ pub struct VisualProperties {
     pub markers: Vec<VisualMarker>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VisualMarker {
     Loop,
     MultiInstance,
@@ -182,7 +182,7 @@ pub enum VisualMarker {
 // DoDAF Metadata
 // ============================================================================
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DodafNodeMetadata {
     /// Reference to operational activity
     pub activity_ref: Option<String>,

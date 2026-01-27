@@ -1,0 +1,286 @@
+{
+  "bpmn_process": {
+    "id": "task_03_dmn_decision_tables",
+    "name": "Implement DMN 1.3 Decision Tables and FEEL Engine",
+    "version": "1.0.0",
+    "isExecutable": true,
+    "processType": "agent_workflow"
+  },
+  "task_metadata": {
+    "task_id": "3",
+    "agent_id": "afcf484",
+    "model": "claude-haiku-3-5",
+    "status": "in_progress",
+    "started": "2026-01-27T06:00:00Z",
+    "priority": "high",
+    "category": "core_functionality",
+    "bpm_plus_component": "DMN"
+  },
+  "dodaf_metadata": {
+    "operational_activity": {
+      "id": "OA-003",
+      "name": "DMN_Implementation",
+      "type": "Automated",
+      "performer": "AI_Agent_Haiku",
+      "security_domain": "Development"
+    },
+    "capability": "Decision_Automation",
+    "outputs": ["Decision tables", "FEEL engine", "DMN XML support"]
+  },
+  "workflow_steps": [
+    {
+      "id": "start",
+      "name": "Start DMN Implementation",
+      "type": "startEvent",
+      "eventType": "none"
+    },
+    {
+      "id": "research_dmn_spec",
+      "name": "Research DMN 1.3 Specification",
+      "type": "serviceTask",
+      "taskType": "research",
+      "implementation": "specification_research",
+      "research_areas": [
+        "DMN 1.3 standard overview",
+        "Decision tables structure and hit policies",
+        "FEEL expression language syntax",
+        "Decision requirements diagram (DRD)",
+        "Business knowledge models",
+        "Decision services"
+      ]
+    },
+    {
+      "id": "parallel_gateway_start",
+      "name": "Split: Parallel Development",
+      "type": "parallelGateway",
+      "diverging": true
+    },
+    {
+      "id": "implement_decision_tables",
+      "name": "Implement Decision Table Engine",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "parallel_branch": "1",
+      "components": [
+        "DecisionTable struct",
+        "InputClause and OutputClause",
+        "DecisionRule with conditions",
+        "Hit policy implementations (UNIQUE, FIRST, PRIORITY, ANY, COLLECT)",
+        "Rule evaluation engine",
+        "Result aggregation"
+      ],
+      "hit_policies": {
+        "UNIQUE": "Single rule matches",
+        "FIRST": "First matching rule wins",
+        "PRIORITY": "Highest priority rule wins",
+        "ANY": "All matching rules return same output",
+        "COLLECT": "Aggregate results from all matching rules"
+      }
+    },
+    {
+      "id": "implement_feel_engine",
+      "name": "Implement FEEL Expression Engine",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "parallel_branch": "2",
+      "components": [
+        "FEEL lexer (tokenization)",
+        "FEEL parser (AST generation)",
+        "Expression evaluator",
+        "Built-in functions",
+        "Context and variable scope",
+        "Type system (number, string, boolean, date, list)"
+      ],
+      "feel_features": [
+        "Arithmetic operations (+, -, *, /)",
+        "Comparison operations (<, >, <=, >=, =, !=)",
+        "Logical operations (and, or, not)",
+        "List operations (in, contains)",
+        "String operations (concatenation, substring)",
+        "Date operations",
+        "Functions (sum, mean, count, etc.)"
+      ]
+    },
+    {
+      "id": "implement_drd",
+      "name": "Implement Decision Requirements Diagram",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "parallel_branch": "3",
+      "components": [
+        "Decision nodes",
+        "Input data nodes",
+        "Business knowledge models",
+        "Knowledge sources",
+        "Information requirements (edges)",
+        "Knowledge requirements",
+        "Authority requirements"
+      ]
+    },
+    {
+      "id": "parallel_gateway_join",
+      "name": "Join: Integration Point",
+      "type": "parallelGateway",
+      "converging": true
+    },
+    {
+      "id": "integrate_components",
+      "name": "Integrate DMN Components",
+      "type": "serviceTask",
+      "taskType": "integration",
+      "inputs": ["decision_tables", "feel_engine", "drd"],
+      "outputs": ["dmn_module"],
+      "integration_points": [
+        "FEEL expressions in decision table rules",
+        "DRD execution flow",
+        "Decision service composition",
+        "Input/output data binding"
+      ]
+    },
+    {
+      "id": "implement_dmn_xml",
+      "name": "Implement DMN XML Support",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "components": [
+        "DMN 1.3 XML serialization",
+        "DMN 1.3 XML deserialization",
+        "Schema validation",
+        "Namespace handling"
+      ]
+    },
+    {
+      "id": "integrate_bpmn",
+      "name": "Integrate with BPMN Business Rule Tasks",
+      "type": "serviceTask",
+      "taskType": "integration",
+      "description": "Connect DMN decision services to BPMN business rule tasks",
+      "actions": [
+        "Add DMN decision reference to BusinessRuleTask",
+        "Map BPMN process variables to DMN inputs",
+        "Map DMN outputs to BPMN process variables",
+        "Handle decision evaluation during process execution"
+      ]
+    },
+    {
+      "id": "build_ui_editor",
+      "name": "Build DMN UI Editor",
+      "type": "serviceTask",
+      "taskType": "ui_development",
+      "features": [
+        "Decision table grid editor",
+        "Input/output clause editor",
+        "Rule condition editor with FEEL support",
+        "Hit policy selector",
+        "DRD visual editor",
+        "Test decision with sample data"
+      ]
+    },
+    {
+      "id": "test_dmn",
+      "name": "Test DMN Implementation",
+      "type": "serviceTask",
+      "taskType": "testing",
+      "test_categories": [
+        "Decision table evaluation",
+        "FEEL expression parsing and evaluation",
+        "Hit policy behavior",
+        "DMN XML round-trip",
+        "Integration with BPMN",
+        "Edge cases and error handling"
+      ]
+    },
+    {
+      "id": "document_dmn",
+      "name": "Write DMN Documentation",
+      "type": "serviceTask",
+      "taskType": "documentation",
+      "outputs": [
+        "DMN user guide",
+        "FEEL language reference",
+        "Decision table patterns",
+        "Integration guide",
+        "API documentation"
+      ]
+    },
+    {
+      "id": "end",
+      "name": "DMN Implementation Complete",
+      "type": "endEvent",
+      "eventType": "none"
+    }
+  ],
+  "sequence_flows": [
+    {"id": "f1", "sourceRef": "start", "targetRef": "research_dmn_spec"},
+    {"id": "f2", "sourceRef": "research_dmn_spec", "targetRef": "parallel_gateway_start"},
+    {"id": "f3", "sourceRef": "parallel_gateway_start", "targetRef": "implement_decision_tables"},
+    {"id": "f4", "sourceRef": "parallel_gateway_start", "targetRef": "implement_feel_engine"},
+    {"id": "f5", "sourceRef": "parallel_gateway_start", "targetRef": "implement_drd"},
+    {"id": "f6", "sourceRef": "implement_decision_tables", "targetRef": "parallel_gateway_join"},
+    {"id": "f7", "sourceRef": "implement_feel_engine", "targetRef": "parallel_gateway_join"},
+    {"id": "f8", "sourceRef": "implement_drd", "targetRef": "parallel_gateway_join"},
+    {"id": "f9", "sourceRef": "parallel_gateway_join", "targetRef": "integrate_components"},
+    {"id": "f10", "sourceRef": "integrate_components", "targetRef": "implement_dmn_xml"},
+    {"id": "f11", "sourceRef": "implement_dmn_xml", "targetRef": "integrate_bpmn"},
+    {"id": "f12", "sourceRef": "integrate_bpmn", "targetRef": "build_ui_editor"},
+    {"id": "f13", "sourceRef": "build_ui_editor", "targetRef": "test_dmn"},
+    {"id": "f14", "sourceRef": "test_dmn", "targetRef": "document_dmn"},
+    {"id": "f15", "sourceRef": "document_dmn", "targetRef": "end"}
+  ],
+  "expected_deliverables": {
+    "modules": [
+      "src/dmn/mod.rs",
+      "src/dmn/decision_table.rs",
+      "src/dmn/feel_engine.rs",
+      "src/dmn/feel_parser.rs",
+      "src/dmn/decision_graph.rs",
+      "src/dmn/xml.rs",
+      "src/dmn/error.rs"
+    ],
+    "ui_modules": [
+      "src/ui/dmn_editor.rs",
+      "src/ui/decision_table_widget.rs"
+    ],
+    "tests": [
+      "tests/dmn_decision_table_test.rs",
+      "tests/feel_engine_test.rs",
+      "tests/dmn_xml_test.rs"
+    ],
+    "documentation": [
+      "docs/DMN_USER_GUIDE.md",
+      "docs/FEEL_REFERENCE.md",
+      "docs/DMN_PATTERNS.md"
+    ],
+    "examples": [
+      "examples/dmn_decision_table.rs",
+      "examples/dmn_bpmn_integration.rs"
+    ]
+  },
+  "dependencies": {
+    "external_crates": [
+      "pest or nom (for FEEL parser)",
+      "chrono (for date operations)",
+      "regex (for string matching)"
+    ]
+  },
+  "success_criteria": {
+    "functional": [
+      "All hit policies working correctly",
+      "FEEL expressions evaluate properly",
+      "DMN XML import/export functional",
+      "Integration with BPMN working",
+      "UI editor allows table creation/editing"
+    ],
+    "quality": [
+      "Test coverage > 80%",
+      "DMN 1.3 specification compliant",
+      "Performance acceptable for complex decisions",
+      "Error messages clear and helpful"
+    ],
+    "business_value": [
+      "Enables business rule externalization",
+      "Non-technical users can modify decisions",
+      "Complete BPM+ Triple Threat"
+    ]
+  }
+}

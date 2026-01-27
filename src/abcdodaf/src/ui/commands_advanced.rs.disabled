@@ -1,0 +1,603 @@
+//! Command Pattern for Undo/Redo System
+//!
+//! Implements a comprehensive command pattern for all editor operations,
+//! enabling full undo/redo functionality with proper state management.
+
+use crate::ui::enhanced_nodes::EnhancedBpmnNode;
+use egui::Pos2;
+use egui_snarl::{InPinId, NodeId, OutPinId, Snarl};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+/// Maximum number of undo history entries to keep
+const MAX_UNDO_HISTORY: usize = 100;
+
+/// Trait for all commands that can be executed and undone
+pub trait Command: std::fmt::Debug {
+    /// Execute the command
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>);
+
+    /// Undo the command
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>);
+
+    /// Redo the command (default implementation calls execute again)
+    fn redo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        self.execute(snarl);
+    }
+
+    /// Get a description of the command for UI display
+    fn description(&self) -> String;
+
+    /// Check if this command can be merged with another (for continuous operations)
+    fn can_merge_with(&self, _other: &dyn Command) -> bool {
+        false
+    }
+
+    /// Merge this command with another (for continuous operations like dragging)
+    fn merge_with(&mut self, _other: Box<dyn Command>) {}
+}
+
+/// Command history manager
+#[derive(Debug)]
+pub struct CommandHistory {
+    /// Stack of executed commands (for undo)
+    undo_stack: Vec<Box<dyn Command>>,
+
+    /// Stack of undone commands (for redo)
+    redo_stack: Vec<Box<dyn Command>>,
+
+    /// Current transaction group (for grouping multiple commands)
+    current_transaction: Option<Vec<Box<dyn Command>>>,
+}
+
+impl CommandHistory {
+    pub fn new() -> Self {
+        Self {
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
+            current_transaction: None,
+        }
+    }
+
+    /// Execute a command and add it to history
+    pub fn execute(&mut self, mut command: Box<dyn Command>, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        command.execute(snarl);
+
+        // If we're in a transaction, add to it instead of directly to undo stack
+        if let Some(ref mut transaction) = self.current_transaction {
+            transaction.push(command);
+        } else {
+            // Clear redo stack when new command is executed
+            self.redo_stack.clear();
+
+            // Try to merge with last command if possible
+            if let Some(last_cmd) = self.undo_stack.last_mut() {
+                if last_cmd.can_merge_with(command.as_ref()) {
+                    last_cmd.merge_with(command);
+                    return;
+                }
+            }
+
+            self.undo_stack.push(command);
+
+            // Limit history size
+            if self.undo_stack.len() > MAX_UNDO_HISTORY {
+                self.undo_stack.remove(0);
+            }
+        }
+    }
+
+    /// Undo the last command
+    pub fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) -> bool {
+        if let Some(mut command) = self.undo_stack.pop() {
+            command.undo(snarl);
+            self.redo_stack.push(command);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Redo the last undone command
+    pub fn redo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) -> bool {
+        if let Some(mut command) = self.redo_stack.pop() {
+            command.redo(snarl);
+            self.undo_stack.push(command);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check if undo is available
+    pub fn can_undo(&self) -> bool {
+        !self.undo_stack.is_empty()
+    }
+
+    /// Check if redo is available
+    pub fn can_redo(&self) -> bool {
+        !self.redo_stack.is_empty()
+    }
+
+    /// Get description of next undo command
+    pub fn undo_description(&self) -> Option<String> {
+        self.undo_stack.last().map(|cmd| cmd.description())
+    }
+
+    /// Get description of next redo command
+    pub fn redo_description(&self) -> Option<String> {
+        self.redo_stack.last().map(|cmd| cmd.description())
+    }
+
+    /// Start a transaction (group of commands that undo/redo together)
+    pub fn begin_transaction(&mut self) {
+        self.current_transaction = Some(Vec::new());
+    }
+
+    /// Commit the current transaction
+    pub fn commit_transaction(&mut self) {
+        if let Some(commands) = self.current_transaction.take() {
+            if !commands.is_empty() {
+                self.redo_stack.clear();
+                let transaction = Box::new(TransactionCommand { commands });
+                self.undo_stack.push(transaction);
+
+                if self.undo_stack.len() > MAX_UNDO_HISTORY {
+                    self.undo_stack.remove(0);
+                }
+            }
+        }
+    }
+
+    /// Rollback the current transaction
+    pub fn rollback_transaction(&mut self) {
+        self.current_transaction = None;
+    }
+
+    /// Clear all history
+    pub fn clear(&mut self) {
+        self.undo_stack.clear();
+        self.redo_stack.clear();
+        self.current_transaction = None;
+    }
+}
+
+impl Default for CommandHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ============================================================================
+// Command Implementations
+// ============================================================================
+
+/// Command to add a node
+#[derive(Debug)]
+pub struct AddNodeCommand {
+    node_id: Option<NodeId>,
+    pos: Pos2,
+    node: EnhancedBpmnNode,
+}
+
+impl AddNodeCommand {
+    pub fn new(pos: Pos2, node: EnhancedBpmnNode) -> Self {
+        Self {
+            node_id: None,
+            pos,
+            node,
+        }
+    }
+}
+
+impl Command for AddNodeCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        let id = snarl.insert_node(self.pos, self.node.clone());
+        self.node_id = Some(id);
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if let Some(id) = self.node_id {
+            snarl.remove_node(id);
+            self.node_id = None;
+        }
+    }
+
+    fn description(&self) -> String {
+        format!("Add {}", self.node.type_name())
+    }
+}
+
+/// Command to delete a node
+#[derive(Debug)]
+pub struct DeleteNodeCommand {
+    node_id: NodeId,
+    node: Option<EnhancedBpmnNode>,
+    pos: Option<Pos2>,
+    connections: Vec<(OutPinId, InPinId)>,
+}
+
+impl DeleteNodeCommand {
+    pub fn new(node_id: NodeId) -> Self {
+        Self {
+            node_id,
+            node: None,
+            pos: None,
+            connections: Vec::new(),
+        }
+    }
+}
+
+impl Command for DeleteNodeCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Save node data and connections before deleting
+        self.node = Some(snarl[self.node_id].clone());
+        self.pos = Some(snarl.get_node_pos(self.node_id));
+
+        // Save all connections
+        self.connections.clear();
+        for out_pin_id in snarl.out_pin_ids(self.node_id) {
+            for &remote_in_pin in &snarl.out_pin(out_pin_id).remotes {
+                self.connections.push((out_pin_id, remote_in_pin));
+            }
+        }
+        for in_pin_id in snarl.in_pin_ids(self.node_id) {
+            for &remote_out_pin in &snarl.in_pin(in_pin_id).remotes {
+                self.connections.push((remote_out_pin, in_pin_id));
+            }
+        }
+
+        snarl.remove_node(self.node_id);
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if let (Some(node), Some(pos)) = (self.node.clone(), self.pos) {
+            // Re-insert the node at the same ID
+            snarl.insert_node_with_id(self.node_id, pos, node);
+
+            // Restore connections
+            for (out_pin, in_pin) in &self.connections {
+                snarl.connect(*out_pin, *in_pin);
+            }
+        }
+    }
+
+    fn description(&self) -> String {
+        if let Some(node) = &self.node {
+            format!("Delete {}", node.name())
+        } else {
+            "Delete Node".to_string()
+        }
+    }
+}
+
+/// Command to delete multiple nodes
+#[derive(Debug)]
+pub struct DeleteNodesCommand {
+    commands: Vec<DeleteNodeCommand>,
+}
+
+impl DeleteNodesCommand {
+    pub fn new(node_ids: Vec<NodeId>) -> Self {
+        Self {
+            commands: node_ids.into_iter().map(DeleteNodeCommand::new).collect(),
+        }
+    }
+}
+
+impl Command for DeleteNodesCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        for cmd in &mut self.commands {
+            cmd.execute(snarl);
+        }
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Undo in reverse order
+        for cmd in self.commands.iter_mut().rev() {
+            cmd.undo(snarl);
+        }
+    }
+
+    fn description(&self) -> String {
+        format!("Delete {} nodes", self.commands.len())
+    }
+}
+
+/// Command to move a node
+#[derive(Debug)]
+pub struct MoveNodeCommand {
+    node_id: NodeId,
+    old_pos: Option<Pos2>,
+    new_pos: Pos2,
+}
+
+impl MoveNodeCommand {
+    pub fn new(node_id: NodeId, new_pos: Pos2) -> Self {
+        Self {
+            node_id,
+            old_pos: None,
+            new_pos,
+        }
+    }
+}
+
+impl Command for MoveNodeCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if self.old_pos.is_none() {
+            self.old_pos = Some(snarl.get_node_pos(self.node_id));
+        }
+        snarl.set_node_pos(self.node_id, self.new_pos);
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if let Some(old_pos) = self.old_pos {
+            snarl.set_node_pos(self.node_id, old_pos);
+        }
+    }
+
+    fn description(&self) -> String {
+        "Move Node".to_string()
+    }
+
+    fn can_merge_with(&self, other: &dyn Command) -> bool {
+        // Try to downcast to MoveNodeCommand
+        if let Some(other_move) = (other as &dyn std::any::Any).downcast_ref::<MoveNodeCommand>() {
+            self.node_id == other_move.node_id
+        } else {
+            false
+        }
+    }
+
+    fn merge_with(&mut self, other: Box<dyn Command>) {
+        if let Ok(other_move) = other.into_any().downcast::<MoveNodeCommand>() {
+            self.new_pos = other_move.new_pos;
+        }
+    }
+}
+
+/// Command to connect two nodes
+#[derive(Debug)]
+pub struct ConnectCommand {
+    from: OutPinId,
+    to: InPinId,
+    previous_connections: Vec<OutPinId>,
+}
+
+impl ConnectCommand {
+    pub fn new(from: OutPinId, to: InPinId) -> Self {
+        Self {
+            from,
+            to,
+            previous_connections: Vec::new(),
+        }
+    }
+}
+
+impl Command for ConnectCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Save previous connections to the input pin
+        self.previous_connections = snarl.in_pin(self.to).remotes.clone();
+
+        // Disconnect previous connections
+        for &prev_out in &self.previous_connections {
+            snarl.disconnect(prev_out, self.to);
+        }
+
+        // Create new connection
+        snarl.connect(self.from, self.to);
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Remove the connection we created
+        snarl.disconnect(self.from, self.to);
+
+        // Restore previous connections
+        for &prev_out in &self.previous_connections {
+            snarl.connect(prev_out, self.to);
+        }
+    }
+
+    fn description(&self) -> String {
+        "Connect Nodes".to_string()
+    }
+}
+
+/// Command to disconnect nodes
+#[derive(Debug)]
+pub struct DisconnectCommand {
+    from: OutPinId,
+    to: InPinId,
+}
+
+impl DisconnectCommand {
+    pub fn new(from: OutPinId, to: InPinId) -> Self {
+        Self { from, to }
+    }
+}
+
+impl Command for DisconnectCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        snarl.disconnect(self.from, self.to);
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        snarl.connect(self.from, self.to);
+    }
+
+    fn description(&self) -> String {
+        "Disconnect Nodes".to_string()
+    }
+}
+
+/// Command to modify a node's properties
+#[derive(Debug)]
+pub struct ModifyNodeCommand {
+    node_id: NodeId,
+    old_node: Option<EnhancedBpmnNode>,
+    new_node: EnhancedBpmnNode,
+}
+
+impl ModifyNodeCommand {
+    pub fn new(node_id: NodeId, new_node: EnhancedBpmnNode) -> Self {
+        Self {
+            node_id,
+            old_node: None,
+            new_node,
+        }
+    }
+}
+
+impl Command for ModifyNodeCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if self.old_node.is_none() {
+            self.old_node = Some(snarl[self.node_id].clone());
+        }
+        *snarl.get_node_mut(self.node_id).unwrap() = self.new_node.clone();
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        if let Some(old_node) = &self.old_node {
+            *snarl.get_node_mut(self.node_id).unwrap() = old_node.clone();
+        }
+    }
+
+    fn description(&self) -> String {
+        format!("Modify {}", self.new_node.name())
+    }
+}
+
+/// Transaction command that groups multiple commands
+#[derive(Debug)]
+struct TransactionCommand {
+    commands: Vec<Box<dyn Command>>,
+}
+
+impl Command for TransactionCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        for cmd in &mut self.commands {
+            cmd.execute(snarl);
+        }
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Undo in reverse order
+        for cmd in self.commands.iter_mut().rev() {
+            cmd.undo(snarl);
+        }
+    }
+
+    fn redo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        for cmd in &mut self.commands {
+            cmd.redo(snarl);
+        }
+    }
+
+    fn description(&self) -> String {
+        if self.commands.is_empty() {
+            "Transaction".to_string()
+        } else if self.commands.len() == 1 {
+            self.commands[0].description()
+        } else {
+            format!("Transaction ({} operations)", self.commands.len())
+        }
+    }
+}
+
+// Helper trait to convert Box<dyn Command> to Box<dyn Any>
+trait CommandAny: Command {
+    fn into_any(self: Box<Self>) -> Box<dyn std::any::Any>;
+}
+
+impl<T: Command + 'static> CommandAny for T {
+    fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+        self
+    }
+}
+
+// ============================================================================
+// Clipboard Support
+// ============================================================================
+
+/// Clipboard data for copy/paste operations
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClipboardData {
+    pub nodes: Vec<(Pos2, EnhancedBpmnNode)>,
+    pub connections: Vec<(usize, usize, usize, usize)>, // from_node_idx, from_pin, to_node_idx, to_pin
+}
+
+impl ClipboardData {
+    pub fn new() -> Self {
+        Self {
+            nodes: Vec::new(),
+            connections: Vec::new(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+}
+
+impl Default for ClipboardData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Command to paste nodes from clipboard
+#[derive(Debug)]
+pub struct PasteCommand {
+    clipboard_data: ClipboardData,
+    offset: Pos2,
+    inserted_nodes: Vec<NodeId>,
+}
+
+impl PasteCommand {
+    pub fn new(clipboard_data: ClipboardData, offset: Pos2) -> Self {
+        Self {
+            clipboard_data,
+            offset,
+            inserted_nodes: Vec::new(),
+        }
+    }
+}
+
+impl Command for PasteCommand {
+    fn execute(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        self.inserted_nodes.clear();
+
+        // Insert all nodes with offset
+        let node_id_map: HashMap<usize, NodeId> = self.clipboard_data.nodes.iter()
+            .enumerate()
+            .map(|(idx, (pos, node))| {
+                let new_pos = Pos2::new(pos.x + self.offset.x, pos.y + self.offset.y);
+                let id = snarl.insert_node(new_pos, node.clone());
+                self.inserted_nodes.push(id);
+                (idx, id)
+            })
+            .collect();
+
+        // Restore connections
+        for (from_idx, from_pin, to_idx, to_pin) in &self.clipboard_data.connections {
+            if let (Some(&from_node), Some(&to_node)) = (
+                node_id_map.get(from_idx),
+                node_id_map.get(to_idx),
+            ) {
+                snarl.connect(from_node, *from_pin, to_node, *to_pin);
+            }
+        }
+    }
+
+    fn undo(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) {
+        // Remove all inserted nodes
+        for &node_id in &self.inserted_nodes {
+            snarl.remove_node(node_id);
+        }
+        self.inserted_nodes.clear();
+    }
+
+    fn description(&self) -> String {
+        format!("Paste {} nodes", self.clipboard_data.nodes.len())
+    }
+}

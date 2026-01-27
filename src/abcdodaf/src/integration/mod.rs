@@ -1,10 +1,22 @@
 //! Integration with external systems
 //!
-//! Provides integration capabilities with RhizOS MCP protocol and other systems
+//! Provides integration capabilities with RhizOS MCP protocol, REST APIs, databases,
+//! message queues, webhooks, and file systems
 
+pub mod connector;
+pub mod connectors;
 pub mod mcp;
 pub mod bpmn_dodaf_mapping;
 
+pub use connector::{
+    Connector, ConnectorRequest, ConnectorResponse, ConnectorConfig, ConnectorRegistry,
+    ConnectionStatus, HealthStatus, AuthConfig,
+};
+pub use connectors::{
+    RestApiConnector, PostgresConnector, MySqlConnector, SqliteConnector,
+    OutgoingWebhookConnector, IncomingWebhookConnector, WebhookEvent,
+    FileSystemConnector,
+};
 pub use mcp::McpIntegration;
 pub use bpmn_dodaf_mapping::*;
 

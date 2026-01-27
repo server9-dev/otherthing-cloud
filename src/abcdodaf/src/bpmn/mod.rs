@@ -6,10 +6,19 @@
 pub mod process;
 pub mod executor;
 pub mod elements;
+pub mod xml_io;
+pub mod file_io;
+pub mod runtime;
 
 pub use process::{Process, ProcessBuilder};
 pub use executor::ProcessExecutor;
 pub use elements::*;
+pub use xml_io::{BpmnXmlSerializer, XmlError, XmlResult, namespace};
+pub use file_io::{BpmnFileIo, FileOptions, FileError, FileResult};
+pub use runtime::{
+    EnhancedRuntime, ExecutionContext, ExecutionEvent, ExecutionMode,
+    ExecutionToken, TaskHandler, TokenState, Breakpoint, TaskPerformance,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;

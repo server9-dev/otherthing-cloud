@@ -1,28 +1,69 @@
 //! DoDAF 2.02 (Department of Defense Architecture Framework) integration
 //!
 //! This module implements the DoDAF 2.02 framework for architectural modeling,
-//! focusing on operational activities, capabilities, and services viewpoints.
+//! including operational, systems, and capability viewpoints.
 //!
 //! ## DoDAF 2.02 Viewpoints
 //!
-//! - **Operational Viewpoint (OV)**: Operational scenarios, activities, and information flows
-//! - **Capability Viewpoint (CV)**: Required capabilities and their relationships
-//! - **Services Viewpoint (SvcV)**: Service-oriented architecture and service specifications
-//! - **Systems Viewpoint (SV)**: Systems and their interactions (future implementation)
-//! - **Data and Information Viewpoint (DIV)**: Data models and relationships (future implementation)
+//! ### Operational Viewpoint (OV)
+//! - **OV-1**: High-Level Operational Concept Graphic
+//! - **OV-2**: Operational Node Connectivity & Resource Flow
+//! - **OV-3**: Operational Information Exchange Matrix
+//! - **OV-5**: Operational Activity Model
+//! - **OV-6a**: Operational Rules Model
+//! - **OV-6b**: Operational State Transition Description
+//! - **OV-6c**: Operational Event-Trace Description
+//!
+//! ### Systems Viewpoint (SV)
+//! - **SV-1**: Systems Interface Description
+//! - **SV-2**: Systems Resource Flow Description
+//! - **SV-4**: Systems Functionality Description
+//!
+//! ### Capability Viewpoint (CV)
+//! - **CV-1**: Capability Vision
+//! - **CV-2**: Capability Taxonomy
+//!
+//! ### Legacy Viewpoints
+//! - **Capability**: Basic capability structures
+//! - **Services**: Service-oriented architecture
 
+// Operational Views
 pub mod operational;
+pub mod ov1;
+pub mod ov2;
+pub mod ov3;
+pub mod ov5;
+pub mod ov6;
+
+// Systems Views
+pub mod sv1;
+pub mod sv2;
+pub mod sv4;
+
+// Capability Views
+pub mod cv1;
+pub mod cv2;
+
+// Legacy modules
 pub mod capability;
 pub mod services;
-pub mod ov5;
 
 pub use operational::{
     OperationalActivity, OperationalContext, OperationalView,
     ActivityType, MissionArea, InformationExchange,
 };
-pub use capability::{Capability, CapabilityView, CapabilityMapping, CapabilityType};
-pub use services::{Service, ServiceView, ServiceSpecification, ServiceType};
+pub use ov1::{OperationalConceptGraphic, OperationalOrganization, OrganizationType};
+pub use ov2::{OperationalNodeConnectivity, OperationalNode, Needline, Criticality};
+pub use ov3::{InformationExchangeMatrix, InformationElement, ExchangePair};
 pub use ov5::*;
+pub use ov6::{OperationalRulesModel, StateTransitionDescription, OperationalRule, RuleType};
+pub use sv1::{SystemsInterfaceDescription, System, SystemInterface, SystemPort};
+pub use sv2::{SystemsResourceFlowDescription, CommunicationSystem, CommunicationLink};
+pub use sv4::{SystemsFunctionalityDescription, SystemFunction, FunctionDataFlow};
+pub use cv1::{CapabilityVision, StrategicObjective, CapabilityIncrement};
+pub use cv2::{CapabilityTaxonomy, Capability, CapabilityMeasure};
+pub use capability::{Capability as BaseCapability, CapabilityView, CapabilityMapping, CapabilityType as BaseCapabilityType};
+pub use services::{Service, ServiceView, ServiceSpecification, ServiceType};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

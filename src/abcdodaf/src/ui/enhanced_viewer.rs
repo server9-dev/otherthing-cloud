@@ -21,6 +21,9 @@ pub struct EnhancedBpmnViewer {
     /// Property panel state
     pub show_properties: bool,
     pub selected_node_for_properties: Option<NodeId>,
+
+    /// Validation result for displaying errors/warnings
+    pub validation_result: Option<crate::ui::validation::ValidationResult>,
 }
 
 impl EnhancedBpmnViewer {
@@ -29,7 +32,18 @@ impl EnhancedBpmnViewer {
             selected_nodes: Vec::new(),
             show_properties: false,
             selected_node_for_properties: None,
+            validation_result: None,
         }
+    }
+
+    /// Set validation result for error highlighting
+    pub fn set_validation_result(&mut self, result: crate::ui::validation::ValidationResult) {
+        self.validation_result = Some(result);
+    }
+
+    /// Clear validation result
+    pub fn clear_validation_result(&mut self) {
+        self.validation_result = None;
     }
 }
 
@@ -201,7 +215,73 @@ impl SnarlViewer<EnhancedBpmnNode> for EnhancedBpmnViewer {
             egui::Sense::hover(),
         );
 
+        // Show validation error tooltips
+        if let Some(ref validation) = self.validation_result {
+            if response.hovered() {
+                let errors = crate::ui::validation::Validator::node_errors(validation, node);
+                let warnings = crate::ui::validation::Validator::node_warnings(validation, node);
+
+                if !errors.is_empty() || !warnings.is_empty() {
+                    response.on_hover_ui(|ui| {
+                        if !errors.is_empty() {
+                            ui.heading("❌ Errors:");
+                            for error in errors {
+                                ui.label(
+                                    RichText::new(crate::ui::validation::Validator::error_message(error))
+                                        .color(Color32::from_rgb(255, 0, 0))
+                                );
+                            }
+                        }
+                        if !warnings.is_empty() {
+                            if !errors.is_empty() {
+                                ui.separator();
+                            }
+                            ui.heading("⚠ Warnings:");
+                            for warning in warnings {
+                                ui.label(
+                                    RichText::new(crate::ui::validation::Validator::warning_message(warning))
+                                        .color(Color32::from_rgb(255, 200, 0))
+                                );
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
         let painter = ui.painter();
+
+        // Check for validation errors/warnings
+        let has_error = if let Some(ref validation) = self.validation_result {
+            crate::ui::validation::Validator::node_has_error(validation, node)
+        } else {
+            false
+        };
+
+        let has_warning = if let Some(ref validation) = self.validation_result {
+            crate::ui::validation::Validator::node_has_warning(validation, node)
+        } else {
+            false
+        };
+
+        // Draw error border if node has validation errors
+        if has_error {
+            // Red border for errors
+            painter.rect_stroke(
+                rect.expand(3.0),
+                4.0,
+                egui::Stroke::new(2.5, Color32::from_rgb(255, 0, 0)),
+                egui::epaint::StrokeKind::Outside,
+            );
+        } else if has_warning {
+            // Yellow border for warnings
+            painter.rect_stroke(
+                rect.expand(3.0),
+                4.0,
+                egui::Stroke::new(2.0, Color32::from_rgb(255, 200, 0)),
+                egui::epaint::StrokeKind::Outside,
+            );
+        }
 
         // Draw custom BPMN shape based on node type
         match &enhanced_node.node_type {

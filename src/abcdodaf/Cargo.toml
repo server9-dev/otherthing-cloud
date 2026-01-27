@@ -37,6 +37,16 @@ tracing = "0.1"
 futures = "0.3"
 async-trait = "0.1"
 
+# HTTP client for Ollama integration
+reqwest = { version = "0.11", features = ["json", "stream"] }
+tokio-util = { version = "0.7", features = ["io"] }
+
+# Regex for template parsing
+regex = "1"
+
+# Async stream utilities
+async-stream = "0.3"
+
 # UI dependencies (optional, feature-gated)
 egui = { version = "0.33", optional = true }
 eframe = { version = "0.33", optional = true, default-features = false, features = ["glow", "wayland", "x11"] }
@@ -76,4 +86,25 @@ required-features = ["ui"]
 [[example]]
 name = "enhanced_ui_editor"
 path = "examples/enhanced_ui_editor.rs"
+required-features = ["ui"]
+
+[[example]]
+name = "analytics_dashboard"
+path = "examples/analytics_dashboard.rs"
+
+[[example]]
+name = "testing_framework_example"
+path = "examples/testing_framework_example.rs"
+
+[[example]]
+name = "ai_ollama_integration"
+path = "examples/ai_ollama_integration.rs"
+
+[[example]]
+name = "integration_example"
+path = "examples/integration_example.rs"
+
+[[example]]
+name = "execution_debugger_demo"
+path = "examples/execution_debugger_demo.rs"
 required-features = ["ui"]

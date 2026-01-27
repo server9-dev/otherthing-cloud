@@ -1,0 +1,317 @@
+//! Alignment and Distribution Tools
+//!
+//! Provides tools for aligning and distributing nodes in the workflow editor.
+
+use crate::ui::enhanced_nodes::EnhancedBpmnNode;
+use egui::{Pos2, Rect};
+use egui_snarl::{NodeId, Snarl};
+
+/// Grid snapping settings
+#[derive(Debug, Clone, Copy)]
+pub struct GridSettings {
+    /// Grid cell size
+    pub cell_size: f32,
+
+    /// Whether grid snapping is enabled
+    pub snap_enabled: bool,
+
+    /// Whether grid is visible
+    pub show_grid: bool,
+
+    /// Grid color
+    pub grid_color: egui::Color32,
+
+    /// Major grid line interval (every N cells)
+    pub major_grid_interval: usize,
+
+    /// Major grid line color
+    pub major_grid_color: egui::Color32,
+}
+
+impl Default for GridSettings {
+    fn default() -> Self {
+        Self {
+            cell_size: 20.0,
+            snap_enabled: false,
+            show_grid: true,
+            grid_color: egui::Color32::from_rgba_premultiplied(100, 100, 100, 50),
+            major_grid_interval: 5,
+            major_grid_color: egui::Color32::from_rgba_premultiplied(150, 150, 150, 80),
+        }
+    }
+}
+
+impl GridSettings {
+    /// Snap a position to the grid
+    pub fn snap(&self, pos: Pos2) -> Pos2 {
+        if !self.snap_enabled {
+            return pos;
+        }
+
+        Pos2::new(
+            (pos.x / self.cell_size).round() * self.cell_size,
+            (pos.y / self.cell_size).round() * self.cell_size,
+        )
+    }
+
+    /// Draw the grid
+    pub fn draw_grid(&self, ui: &mut egui::Ui, viewport: Rect) {
+        if !self.show_grid {
+            return;
+        }
+
+        let painter = ui.painter();
+
+        // Calculate grid line positions
+        let start_x = (viewport.min.x / self.cell_size).floor() * self.cell_size;
+        let start_y = (viewport.min.y / self.cell_size).floor() * self.cell_size;
+        let end_x = (viewport.max.x / self.cell_size).ceil() * self.cell_size;
+        let end_y = (viewport.max.y / self.cell_size).ceil() * self.cell_size;
+
+        // Draw vertical lines
+        let mut x = start_x;
+        let mut idx = 0;
+        while x <= end_x {
+            let is_major = idx % self.major_grid_interval == 0;
+            let color = if is_major {
+                self.major_grid_color
+            } else {
+                self.grid_color
+            };
+            let width = if is_major { 1.0 } else { 0.5 };
+
+            painter.line_segment(
+                [Pos2::new(x, viewport.min.y), Pos2::new(x, viewport.max.y)],
+                egui::Stroke::new(width, color),
+            );
+
+            x += self.cell_size;
+            idx += 1;
+        }
+
+        // Draw horizontal lines
+        let mut y = start_y;
+        let mut idx = 0;
+        while y <= end_y {
+            let is_major = idx % self.major_grid_interval == 0;
+            let color = if is_major {
+                self.major_grid_color
+            } else {
+                self.grid_color
+            };
+            let width = if is_major { 1.0 } else { 0.5 };
+
+            painter.line_segment(
+                [Pos2::new(viewport.min.x, y), Pos2::new(viewport.max.x, y)],
+                egui::Stroke::new(width, color),
+            );
+
+            y += self.cell_size;
+            idx += 1;
+        }
+    }
+}
+
+/// Alignment direction
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AlignDirection {
+    Left,
+    Right,
+    Top,
+    Bottom,
+    CenterHorizontal,
+    CenterVertical,
+}
+
+/// Distribution direction
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DistributeDirection {
+    Horizontal,
+    Vertical,
+}
+
+/// Alignment and distribution operations
+pub struct AlignmentTools;
+
+impl AlignmentTools {
+    /// Align selected nodes
+    pub fn align_nodes(
+        snarl: &mut Snarl<EnhancedBpmnNode>,
+        node_ids: &[NodeId],
+        direction: AlignDirection,
+    ) {
+        if node_ids.is_empty() {
+            return;
+        }
+
+        // Calculate alignment position
+        let positions: Vec<Pos2> = node_ids
+            .iter()
+            .map(|&id| snarl.get_node_pos(id))
+            .collect();
+
+        let align_pos = match direction {
+            AlignDirection::Left => {
+                positions.iter().map(|p| p.x).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+            }
+            AlignDirection::Right => {
+                positions.iter().map(|p| p.x).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+            }
+            AlignDirection::Top => {
+                positions.iter().map(|p| p.y).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+            }
+            AlignDirection::Bottom => {
+                positions.iter().map(|p| p.y).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+            }
+            AlignDirection::CenterHorizontal => {
+                let sum: f32 = positions.iter().map(|p| p.x).sum();
+                sum / positions.len() as f32
+            }
+            AlignDirection::CenterVertical => {
+                let sum: f32 = positions.iter().map(|p| p.y).sum();
+                sum / positions.len() as f32
+            }
+        };
+
+        // Apply alignment
+        for &node_id in node_ids {
+            let mut pos = snarl.get_node_pos(node_id);
+
+            match direction {
+                AlignDirection::Left
+                | AlignDirection::Right
+                | AlignDirection::CenterHorizontal => {
+                    pos.x = align_pos;
+                }
+                AlignDirection::Top
+                | AlignDirection::Bottom
+                | AlignDirection::CenterVertical => {
+                    pos.y = align_pos;
+                }
+            }
+
+            snarl.set_node_pos(node_id, pos);
+        }
+    }
+
+    /// Distribute selected nodes evenly
+    pub fn distribute_nodes(
+        snarl: &mut Snarl<EnhancedBpmnNode>,
+        node_ids: &[NodeId],
+        direction: DistributeDirection,
+    ) {
+        if node_ids.len() < 3 {
+            return; // Need at least 3 nodes to distribute
+        }
+
+        // Get positions and sort by the distribution axis
+        let mut sorted_ids: Vec<NodeId> = node_ids.to_vec();
+        sorted_ids.sort_by(|&a, &b| {
+            let pos_a = snarl.get_node_pos(a);
+            let pos_b = snarl.get_node_pos(b);
+
+            match direction {
+                DistributeDirection::Horizontal => pos_a.x.partial_cmp(&pos_b.x).unwrap(),
+                DistributeDirection::Vertical => pos_a.y.partial_cmp(&pos_b.y).unwrap(),
+            }
+        });
+
+        // Calculate total spacing
+        let first_pos = snarl.get_node_pos(sorted_ids[0]);
+        let last_pos = snarl.get_node_pos(*sorted_ids.last().unwrap());
+
+        let total_distance = match direction {
+            DistributeDirection::Horizontal => last_pos.x - first_pos.x,
+            DistributeDirection::Vertical => last_pos.y - first_pos.y,
+        };
+
+        let spacing = total_distance / (sorted_ids.len() - 1) as f32;
+
+        // Distribute nodes
+        for (i, &node_id) in sorted_ids.iter().enumerate().skip(1).take(sorted_ids.len() - 2) {
+            let mut pos = snarl.get_node_pos(node_id);
+
+            match direction {
+                DistributeDirection::Horizontal => {
+                    pos.x = first_pos.x + spacing * i as f32;
+                }
+                DistributeDirection::Vertical => {
+                    pos.y = first_pos.y + spacing * i as f32;
+                }
+            }
+
+            snarl.set_node_pos(node_id, pos);
+        }
+    }
+
+    /// Get the bounding box of selected nodes
+    pub fn get_selection_bounds(snarl: &Snarl<EnhancedBpmnNode>, node_ids: &[NodeId]) -> Option<Rect> {
+        if node_ids.is_empty() {
+            return None;
+        }
+
+        let positions: Vec<Pos2> = node_ids
+            .iter()
+            .map(|&id| snarl.get_node_pos(id))
+            .collect();
+
+        let min_x = positions.iter().map(|p| p.x).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+        let max_x = positions.iter().map(|p| p.x).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+        let min_y = positions.iter().map(|p| p.y).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+        let max_y = positions.iter().map(|p| p.y).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+
+        Some(Rect::from_min_max(
+            Pos2::new(min_x, min_y),
+            Pos2::new(max_x, max_y),
+        ))
+    }
+
+    /// Calculate zoom level to fit all nodes in viewport
+    pub fn calculate_fit_zoom(
+        snarl: &Snarl<EnhancedBpmnNode>,
+        viewport_size: egui::Vec2,
+    ) -> (f32, Pos2) {
+        let mut min_x = f32::INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+
+        let mut has_nodes = false;
+        for node_id in snarl.node_ids() {
+            has_nodes = true;
+            let pos = snarl.get_node_pos(node_id);
+            min_x = min_x.min(pos.x);
+            min_y = min_y.min(pos.y);
+            max_x = max_x.max(pos.x);
+            max_y = max_y.max(pos.y);
+        }
+
+        if !has_nodes {
+            return (1.0, Pos2::ZERO);
+        }
+
+        // Add padding
+        let padding = 50.0;
+        min_x -= padding;
+        min_y -= padding;
+        max_x += padding;
+        max_y += padding;
+
+        // Calculate content size
+        let content_width = max_x - min_x;
+        let content_height = max_y - min_y;
+
+        // Calculate zoom to fit
+        let zoom_x = viewport_size.x / content_width;
+        let zoom_y = viewport_size.y / content_height;
+        let zoom = zoom_x.min(zoom_y).min(1.0); // Don't zoom in beyond 100%
+
+        // Calculate center position
+        let center = Pos2::new(
+            (min_x + max_x) / 2.0,
+            (min_y + max_y) / 2.0,
+        );
+
+        (zoom, center)
+    }
+}

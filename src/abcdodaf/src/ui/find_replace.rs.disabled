@@ -1,0 +1,428 @@
+//! Find and Replace Functionality
+//!
+//! Provides search and replace capabilities for workflow nodes.
+
+use crate::ui::enhanced_nodes::EnhancedBpmnNode;
+use egui_snarl::{NodeId, Snarl};
+use regex::Regex;
+
+/// Search options
+#[derive(Debug, Clone)]
+pub struct SearchOptions {
+    /// Search in node names
+    pub search_names: bool,
+
+    /// Search in node documentation
+    pub search_documentation: bool,
+
+    /// Search in node IDs
+    pub search_ids: bool,
+
+    /// Case sensitive search
+    pub case_sensitive: bool,
+
+    /// Use regular expressions
+    pub use_regex: bool,
+
+    /// Whole word matching
+    pub whole_word: bool,
+}
+
+impl Default for SearchOptions {
+    fn default() -> Self {
+        Self {
+            search_names: true,
+            search_documentation: true,
+            search_ids: false,
+            case_sensitive: false,
+            use_regex: false,
+            whole_word: false,
+        }
+    }
+}
+
+/// Search result
+#[derive(Debug, Clone)]
+pub struct SearchResult {
+    /// Node ID
+    pub node_id: NodeId,
+
+    /// Field where match was found
+    pub field: SearchField,
+
+    /// Match position (start, end) in the field
+    pub match_pos: (usize, usize),
+
+    /// Matched text
+    pub matched_text: String,
+}
+
+/// Field where a match was found
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchField {
+    Name,
+    Documentation,
+    Id,
+    Property(usize), // Index in properties
+}
+
+/// Find and replace manager
+#[derive(Debug)]
+pub struct FindReplace {
+    /// Current search query
+    pub query: String,
+
+    /// Replacement text
+    pub replacement: String,
+
+    /// Search options
+    pub options: SearchOptions,
+
+    /// Current search results
+    pub results: Vec<SearchResult>,
+
+    /// Currently selected result index
+    pub current_result: usize,
+}
+
+impl FindReplace {
+    pub fn new() -> Self {
+        Self {
+            query: String::new(),
+            replacement: String::new(),
+            options: SearchOptions::default(),
+            results: Vec::new(),
+            current_result: 0,
+        }
+    }
+
+    /// Execute search on the snarl
+    pub fn search(&mut self, snarl: &Snarl<EnhancedBpmnNode>) {
+        self.results.clear();
+        self.current_result = 0;
+
+        if self.query.is_empty() {
+            return;
+        }
+
+        // Compile regex if needed
+        let regex = if self.options.use_regex {
+            match Regex::new(&self.query) {
+                Ok(r) => Some(r),
+                Err(_) => return, // Invalid regex
+            }
+        } else {
+            None
+        };
+
+        // Search all nodes
+        for node_id in snarl.node_ids() {
+            let node = &snarl[node_id];
+
+            // Search in name
+            if self.options.search_names {
+                let name = node.name();
+                if let Some(matches) = self.find_matches(name, &regex) {
+                    for (start, end, text) in matches {
+                        self.results.push(SearchResult {
+                            node_id,
+                            field: SearchField::Name,
+                            match_pos: (start, end),
+                            matched_text: text,
+                        });
+                    }
+                }
+            }
+
+            // Search in documentation
+            if self.options.search_documentation {
+                if let Some(doc) = self.get_documentation(node) {
+                    if let Some(matches) = self.find_matches(&doc, &regex) {
+                        for (start, end, text) in matches {
+                            self.results.push(SearchResult {
+                                node_id,
+                                field: SearchField::Documentation,
+                                match_pos: (start, end),
+                                matched_text: text,
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Search in ID
+            if self.options.search_ids {
+                if let Some(matches) = self.find_matches(&node.id, &regex) {
+                    for (start, end, text) in matches {
+                        self.results.push(SearchResult {
+                            node_id,
+                            field: SearchField::Id,
+                            match_pos: (start, end),
+                            matched_text: text,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /// Find matches in a string
+    fn find_matches(&self, text: &str, regex: &Option<Regex>) -> Option<Vec<(usize, usize, String)>> {
+        let search_text = if self.options.case_sensitive {
+            text.to_string()
+        } else {
+            text.to_lowercase()
+        };
+
+        let query = if self.options.case_sensitive {
+            self.query.clone()
+        } else {
+            self.query.to_lowercase()
+        };
+
+        let mut matches = Vec::new();
+
+        if let Some(regex) = regex {
+            // Regex search
+            for mat in regex.find_iter(&search_text) {
+                matches.push((mat.start(), mat.end(), mat.as_str().to_string()));
+            }
+        } else if self.options.whole_word {
+            // Whole word search
+            let words: Vec<&str> = search_text.split_whitespace().collect();
+            let mut pos = 0;
+
+            for word in words {
+                if word == query {
+                    matches.push((pos, pos + word.len(), word.to_string()));
+                }
+                pos += word.len() + 1; // +1 for whitespace
+            }
+        } else {
+            // Simple substring search
+            let mut start = 0;
+            while let Some(pos) = search_text[start..].find(&query) {
+                let absolute_pos = start + pos;
+                matches.push((
+                    absolute_pos,
+                    absolute_pos + query.len(),
+                    text[absolute_pos..absolute_pos + query.len()].to_string(),
+                ));
+                start = absolute_pos + 1;
+            }
+        }
+
+        if matches.is_empty() {
+            None
+        } else {
+            Some(matches)
+        }
+    }
+
+    /// Get documentation from a node
+    fn get_documentation(&self, node: &EnhancedBpmnNode) -> Option<String> {
+        use crate::ui::enhanced_nodes::BpmnNodeType;
+
+        match &node.node_type {
+            BpmnNodeType::Task(t) => t.documentation.clone(),
+            BpmnNodeType::Subprocess(s) => s.documentation.clone(),
+            BpmnNodeType::Gateway(g) => g.documentation.clone(),
+            BpmnNodeType::StartEvent(e) => e.documentation.clone(),
+            BpmnNodeType::EndEvent(e) => e.documentation.clone(),
+            BpmnNodeType::IntermediateEvent(e) => e.documentation.clone(),
+            _ => None,
+        }
+    }
+
+    /// Navigate to next result
+    pub fn next_result(&mut self) {
+        if !self.results.is_empty() {
+            self.current_result = (self.current_result + 1) % self.results.len();
+        }
+    }
+
+    /// Navigate to previous result
+    pub fn previous_result(&mut self) {
+        if !self.results.is_empty() {
+            if self.current_result == 0 {
+                self.current_result = self.results.len() - 1;
+            } else {
+                self.current_result -= 1;
+            }
+        }
+    }
+
+    /// Get current search result
+    pub fn current(&self) -> Option<&SearchResult> {
+        self.results.get(self.current_result)
+    }
+
+    /// Replace current match
+    pub fn replace_current(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) -> bool {
+        if let Some(result) = self.current() {
+            let node_id = result.node_id;
+            let field = result.field;
+            let (start, end) = result.match_pos;
+
+            if let Some(node) = snarl.get_node_mut(node_id) {
+                match field {
+                    SearchField::Name => {
+                        let name = node.name().to_string();
+                        let new_name = format!(
+                            "{}{}{}",
+                            &name[..start],
+                            &self.replacement,
+                            &name[end..]
+                        );
+                        node.set_name(new_name);
+                        return true;
+                    }
+                    SearchField::Id => {
+                        // Can't replace ID (would break references)
+                        return false;
+                    }
+                    SearchField::Documentation => {
+                        // Would need to modify the documentation field
+                        // This is more complex as it's inside the node_type enum
+                        return false;
+                    }
+                    SearchField::Property(_) => {
+                        // Property replacement not yet implemented
+                        return false;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Replace all matches
+    pub fn replace_all(&mut self, snarl: &mut Snarl<EnhancedBpmnNode>) -> usize {
+        let mut count = 0;
+
+        // We need to re-search after each replacement as positions change
+        loop {
+            self.search(snarl);
+            if self.results.is_empty() {
+                break;
+            }
+
+            if self.replace_current(snarl) {
+                count += 1;
+            } else {
+                // If we can't replace the current one, move to next to avoid infinite loop
+                self.next_result();
+                if self.current_result == 0 {
+                    // We've gone through all results
+                    break;
+                }
+            }
+        }
+
+        count
+    }
+
+    /// Show the find/replace UI
+    pub fn show_ui(&mut self, ui: &mut egui::Ui, snarl: &mut Snarl<EnhancedBpmnNode>) -> Option<NodeId> {
+        let mut focus_node = None;
+
+        ui.heading("Find and Replace");
+        ui.separator();
+
+        // Search query
+        ui.horizontal(|ui| {
+            ui.label("Find:");
+            let response = ui.text_edit_singleline(&mut self.query);
+            if response.changed() {
+                self.search(snarl);
+            }
+            if ui.button("🔍").clicked() {
+                self.search(snarl);
+            }
+        });
+
+        // Replacement text
+        ui.horizontal(|ui| {
+            ui.label("Replace:");
+            ui.text_edit_singleline(&mut self.replacement);
+        });
+
+        ui.separator();
+
+        // Search options
+        ui.collapsing("Options", |ui| {
+            ui.checkbox(&mut self.options.case_sensitive, "Case sensitive");
+            ui.checkbox(&mut self.options.whole_word, "Whole word");
+            ui.checkbox(&mut self.options.use_regex, "Regular expression");
+            ui.separator();
+            ui.label("Search in:");
+            ui.checkbox(&mut self.options.search_names, "Node names");
+            ui.checkbox(&mut self.options.search_documentation, "Documentation");
+            ui.checkbox(&mut self.options.search_ids, "Node IDs");
+        });
+
+        ui.separator();
+
+        // Results
+        ui.label(format!(
+            "Found {} matches",
+            self.results.len()
+        ));
+
+        if !self.results.is_empty() {
+            ui.horizontal(|ui| {
+                if ui.button("⬆ Previous").clicked() {
+                    self.previous_result();
+                    if let Some(result) = self.current() {
+                        focus_node = Some(result.node_id);
+                    }
+                }
+                if ui.button("⬇ Next").clicked() {
+                    self.next_result();
+                    if let Some(result) = self.current() {
+                        focus_node = Some(result.node_id);
+                    }
+                }
+
+                ui.label(format!(
+                    "{} / {}",
+                    self.current_result + 1,
+                    self.results.len()
+                ));
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                if ui.button("Replace").clicked() {
+                    self.replace_current(snarl);
+                    self.search(snarl); // Re-search to update results
+                }
+                if ui.button("Replace All").clicked() {
+                    let count = self.replace_all(snarl);
+                    ui.label(format!("Replaced {} occurrences", count));
+                }
+            });
+
+            // Show current result details
+            if let Some(result) = self.current() {
+                ui.separator();
+                ui.label(format!(
+                    "Node: {} ({})",
+                    snarl[result.node_id].name(),
+                    result.node_id
+                ));
+                ui.label(format!("Field: {:?}", result.field));
+                ui.label(format!("Match: '{}'", result.matched_text));
+            }
+        }
+
+        focus_node
+    }
+}
+
+impl Default for FindReplace {
+    fn default() -> Self {
+        Self::new()
+    }
+}

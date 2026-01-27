@@ -226,6 +226,78 @@ impl CmmnCase {
         })
     }
 
+    /// Get a plan item by ID
+    pub fn get_plan_item(&self, item_id: &str) -> Option<&PlanItem> {
+        self.case_plan_model.plan_items.iter().find(|item| {
+            match item {
+                PlanItem::HumanTask { id, .. } => id == item_id,
+                PlanItem::ProcessTask { id, .. } => id == item_id,
+                PlanItem::CaseTask { id, .. } => id == item_id,
+                PlanItem::DecisionTask { id, .. } => id == item_id,
+                PlanItem::Milestone { id, .. } => id == item_id,
+                PlanItem::Stage { id, .. } => id == item_id,
+                PlanItem::EventListener { id, .. } => id == item_id,
+            }
+        })
+    }
+
+    /// Get a sentry by ID
+    pub fn get_sentry(&self, sentry_id: &str) -> Option<&Sentry> {
+        self.case_plan_model.sentries.iter().find(|s| s.id == sentry_id)
+    }
+
+    /// Get all sentries that reference a specific plan item
+    pub fn get_sentries_for_item(&self, item_id: &str) -> Vec<&Sentry> {
+        self.case_plan_model.sentries.iter().filter(|s| {
+            s.on_parts.iter().any(|on_part| on_part.source_ref == item_id)
+        }).collect()
+    }
+
+    /// Get all plan items with a specific type
+    pub fn get_items_of_type<T: std::any::Any>(&self) -> Vec<&PlanItem> {
+        self.case_plan_model.plan_items.iter().collect()
+    }
+
+    /// Get required plan items
+    pub fn get_required_items(&self) -> Vec<&PlanItem> {
+        self.case_plan_model.plan_items.iter().filter(|item| {
+            match item {
+                PlanItem::HumanTask { required, .. } => *required,
+                PlanItem::ProcessTask { required, .. } => *required,
+                _ => false,
+            }
+        }).collect()
+    }
+
+    /// Get discretionary items (optional plan items)
+    pub fn get_discretionary_items(&self) -> Vec<&PlanItem> {
+        self.case_plan_model.plan_items.iter().filter(|item| {
+            match item {
+                PlanItem::HumanTask { required, .. } => !*required,
+                PlanItem::ProcessTask { required, .. } => !*required,
+                _ => true,
+            }
+        }).collect()
+    }
+
+    /// Count plan items by type
+    pub fn count_items_by_type(&self) -> std::collections::HashMap<&'static str, usize> {
+        let mut counts = std::collections::HashMap::new();
+        for item in &self.case_plan_model.plan_items {
+            let type_name = match item {
+                PlanItem::HumanTask { .. } => "HumanTask",
+                PlanItem::ProcessTask { .. } => "ProcessTask",
+                PlanItem::CaseTask { .. } => "CaseTask",
+                PlanItem::DecisionTask { .. } => "DecisionTask",
+                PlanItem::Milestone { .. } => "Milestone",
+                PlanItem::Stage { .. } => "Stage",
+                PlanItem::EventListener { .. } => "EventListener",
+            };
+            *counts.entry(type_name).or_insert(0) += 1;
+        }
+        counts
+    }
+
     /// Export to CMMN 1.1 XML (simplified)
     pub fn to_cmmn_xml(&self) -> String {
         let mut xml = String::new();

@@ -1,0 +1,248 @@
+{
+  "bpmn_process": {
+    "id": "task_01_bpmn_xml_import_export",
+    "name": "Implement BPMN 2.0 XML Import/Export with DI Support",
+    "version": "1.0.0",
+    "isExecutable": true,
+    "processType": "agent_workflow"
+  },
+  "task_metadata": {
+    "task_id": "1",
+    "agent_id": "ada0504",
+    "model": "claude-haiku-3-5",
+    "status": "in_progress",
+    "started": "2026-01-27T06:00:00Z",
+    "priority": "high",
+    "category": "core_functionality"
+  },
+  "dodaf_metadata": {
+    "operational_activity": {
+      "id": "OA-001",
+      "name": "BPMN_XML_Implementation",
+      "type": "Automated",
+      "performer": "AI_Agent_Haiku",
+      "security_domain": "Development"
+    },
+    "capability": "BPMN_Interoperability",
+    "inputs": [
+      "BPMN 2.0 specification",
+      "Diagram Interchange specification",
+      "Existing BPMN data structures"
+    ],
+    "outputs": [
+      "XML serialization module",
+      "XML deserialization module",
+      "DI support module",
+      "Round-trip validation"
+    ]
+  },
+  "workflow_steps": [
+    {
+      "id": "start",
+      "name": "Start BPMN XML Task",
+      "type": "startEvent",
+      "eventType": "none"
+    },
+    {
+      "id": "research_bpmn_spec",
+      "name": "Research BPMN 2.0 XML Specification",
+      "type": "serviceTask",
+      "taskType": "research",
+      "implementation": "specification_research",
+      "inputs": ["BPMN 2.0 standard"],
+      "outputs": ["spec_understanding"],
+      "sub_tasks": [
+        "Review BPMN 2.0 XML schema (XSD)",
+        "Study Diagram Interchange (DI) specification",
+        "Analyze element hierarchy",
+        "Document attribute requirements",
+        "Identify required vs optional elements"
+      ]
+    },
+    {
+      "id": "design_xml_structure",
+      "name": "Design XML Serialization Architecture",
+      "type": "serviceTask",
+      "taskType": "design",
+      "implementation": "architectural_design",
+      "inputs": ["spec_understanding", "existing_rust_structures"],
+      "outputs": ["xml_architecture"],
+      "decisions": [
+        "Use xml-rs or quick-xml for parsing",
+        "Implement serialize/deserialize traits",
+        "Support incremental parsing for large files",
+        "Separate DI layout from logical model",
+        "Version detection and compatibility"
+      ]
+    },
+    {
+      "id": "implement_serializer",
+      "name": "Implement XML Serializer",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "rust_code_generation",
+      "inputs": ["xml_architecture"],
+      "outputs": ["serializer_module"],
+      "components": [
+        "Element serializers (events, tasks, gateways)",
+        "Attribute serializers",
+        "Namespace handling",
+        "Schema validation",
+        "Pretty printing support"
+      ]
+    },
+    {
+      "id": "implement_deserializer",
+      "name": "Implement XML Deserializer",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "rust_code_generation",
+      "inputs": ["xml_architecture"],
+      "outputs": ["deserializer_module"],
+      "components": [
+        "XML parser integration",
+        "Element builders",
+        "Error handling for malformed XML",
+        "Version compatibility checks",
+        "ID reference resolution"
+      ]
+    },
+    {
+      "id": "implement_di",
+      "name": "Implement Diagram Interchange Support",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "rust_code_generation",
+      "inputs": ["xml_architecture", "UI layout data"],
+      "outputs": ["di_module"],
+      "components": [
+        "BPMNDiagram elements",
+        "BPMNPlane layout",
+        "BPMNShape positioning",
+        "BPMNEdge waypoints",
+        "Coordinate system handling"
+      ]
+    },
+    {
+      "id": "integrate_workspace",
+      "name": "Integrate with Workspace System",
+      "type": "serviceTask",
+      "taskType": "integration",
+      "implementation": "system_integration",
+      "inputs": ["xml_modules", "workspace_system"],
+      "outputs": ["integrated_save_load"],
+      "actions": [
+        "Add .bpmn file extension support",
+        "Update workspace save/load methods",
+        "Add file dialogs for BPMN files",
+        "Implement import validation",
+        "Add export options"
+      ]
+    },
+    {
+      "id": "test_roundtrip",
+      "name": "Test Round-Trip Conversion",
+      "type": "serviceTask",
+      "taskType": "testing",
+      "implementation": "integration_testing",
+      "inputs": ["integrated_system"],
+      "outputs": ["validation_results"],
+      "test_cases": [
+        "Simple process (start -> task -> end)",
+        "Complex process with gateways",
+        "Subprocess and call activities",
+        "Data objects and artifacts",
+        "Multiple pools and lanes",
+        "Layout preservation test"
+      ]
+    },
+    {
+      "id": "gateway_check",
+      "name": "Quality Gate: Round-Trip Success?",
+      "type": "exclusiveGateway",
+      "name": "Round-trip tests pass?"
+    },
+    {
+      "id": "fix_issues",
+      "name": "Fix Round-Trip Issues",
+      "type": "serviceTask",
+      "taskType": "debugging",
+      "implementation": "issue_resolution"
+    },
+    {
+      "id": "document",
+      "name": "Write Documentation",
+      "type": "serviceTask",
+      "taskType": "documentation",
+      "implementation": "doc_generation",
+      "outputs": [
+        "XML format guide",
+        "API documentation",
+        "Migration guide",
+        "Example workflows"
+      ]
+    },
+    {
+      "id": "end",
+      "name": "Task Complete",
+      "type": "endEvent",
+      "eventType": "none"
+    }
+  ],
+  "sequence_flows": [
+    {"id": "f1", "sourceRef": "start", "targetRef": "research_bpmn_spec"},
+    {"id": "f2", "sourceRef": "research_bpmn_spec", "targetRef": "design_xml_structure"},
+    {"id": "f3", "sourceRef": "design_xml_structure", "targetRef": "implement_serializer"},
+    {"id": "f4", "sourceRef": "implement_serializer", "targetRef": "implement_deserializer"},
+    {"id": "f5", "sourceRef": "implement_deserializer", "targetRef": "implement_di"},
+    {"id": "f6", "sourceRef": "implement_di", "targetRef": "integrate_workspace"},
+    {"id": "f7", "sourceRef": "integrate_workspace", "targetRef": "test_roundtrip"},
+    {"id": "f8", "sourceRef": "test_roundtrip", "targetRef": "gateway_check"},
+    {"id": "f9", "sourceRef": "gateway_check", "targetRef": "fix_issues", "conditionExpression": "tests_failed"},
+    {"id": "f10", "sourceRef": "fix_issues", "targetRef": "test_roundtrip"},
+    {"id": "f11", "sourceRef": "gateway_check", "targetRef": "document", "conditionExpression": "tests_passed"},
+    {"id": "f12", "sourceRef": "document", "targetRef": "end"}
+  ],
+  "expected_deliverables": {
+    "modules": [
+      "src/bpmn/xml/mod.rs",
+      "src/bpmn/xml/serializer.rs",
+      "src/bpmn/xml/deserializer.rs",
+      "src/bpmn/xml/diagram_interchange.rs",
+      "src/bpmn/xml/validation.rs"
+    ],
+    "tests": [
+      "tests/bpmn_xml_roundtrip.rs",
+      "tests/bpmn_xml_validation.rs"
+    ],
+    "documentation": [
+      "docs/BPMN_XML_FORMAT.md",
+      "docs/XML_MIGRATION_GUIDE.md"
+    ],
+    "examples": [
+      "examples/bpmn_xml_import_export.rs"
+    ]
+  },
+  "dependencies": {
+    "external_crates": [
+      "quick-xml or xml-rs",
+      "serde (already present)",
+      "serde_xml_rs (optional)"
+    ]
+  },
+  "success_criteria": {
+    "functional": [
+      "Export any BPMN model to valid XML",
+      "Import standard BPMN 2.0 XML files",
+      "Preserve layout information via DI",
+      "Round-trip conversion with no data loss",
+      "Schema validation passes"
+    ],
+    "quality": [
+      "Test coverage > 80%",
+      "Documentation complete",
+      "Examples demonstrate all features",
+      "Performance acceptable for large models"
+    ]
+  }
+}

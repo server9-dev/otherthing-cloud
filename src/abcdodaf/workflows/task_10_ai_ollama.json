@@ -1,0 +1,297 @@
+{
+  "bpmn_process": {
+    "id": "task_10_ai_llm_ollama_integration",
+    "name": "Enhance AI/LLM Integration with Ollama",
+    "version": "1.0.0",
+    "isExecutable": true,
+    "processType": "agent_workflow"
+  },
+  "task_metadata": {
+    "task_id": "10",
+    "agent_id": "a70d417",
+    "model": "claude-sonnet-4-5",
+    "status": "in_progress",
+    "started": "2026-01-27T06:00:00Z",
+    "priority": "medium",
+    "category": "advanced_features",
+    "complexity": "high",
+    "reasoning": "Requires deep understanding of LLM integration, MCP protocol, and agent orchestration patterns"
+  },
+  "dodaf_metadata": {
+    "operational_activity": {
+      "id": "OA-010",
+      "name": "AI_LLM_Enhancement",
+      "type": "Automated",
+      "performer": "AI_Agent_Sonnet",
+      "security_domain": "Development"
+    },
+    "capability": "AI_Agent_Orchestration_Enhancement",
+    "strategic_importance": "high",
+    "enables": [
+      "Local LLM inference",
+      "Cost reduction through Ollama",
+      "Multi-agent collaboration",
+      "Advanced agent capabilities"
+    ]
+  },
+  "workflow_steps": [
+    {
+      "id": "start",
+      "name": "Start AI Enhancement Task",
+      "type": "startEvent",
+      "eventType": "none"
+    },
+    {
+      "id": "analyze_mcp_tools",
+      "name": "Analyze Available Ollama MCP Tools",
+      "type": "serviceTask",
+      "taskType": "analysis",
+      "implementation": "mcp_tool_discovery",
+      "inputs": ["MCP server configuration"],
+      "outputs": ["available_ollama_tools"],
+      "discovered_tools": [
+        "mcp__ollama__serve",
+        "mcp__ollama__run",
+        "mcp__ollama__list",
+        "mcp__ollama__pull",
+        "mcp__ollama__chat_completion"
+      ]
+    },
+    {
+      "id": "research_agent_patterns",
+      "name": "Research Advanced Agent Patterns",
+      "type": "serviceTask",
+      "taskType": "research",
+      "implementation": "web_research",
+      "inputs": ["current agent system"],
+      "outputs": ["enhancement_proposals"],
+      "research_areas": [
+        "Multi-agent collaboration frameworks",
+        "Agent memory and state management",
+        "Tool use and function calling patterns",
+        "Prompt template best practices",
+        "Context window optimization",
+        "Streaming response handling"
+      ]
+    },
+    {
+      "id": "design_ollama_integration",
+      "name": "Design Ollama Integration Layer",
+      "type": "serviceTask",
+      "taskType": "design",
+      "implementation": "architectural_design",
+      "inputs": ["ollama_tools", "agent_system"],
+      "outputs": ["integration_architecture"],
+      "design_decisions": [
+        "Wrapper around MCP Ollama tools",
+        "Model selection strategy (local vs API)",
+        "Fallback chain (Ollama -> Claude)",
+        "Cost tracking per inference",
+        "Response caching layer",
+        "Streaming interface"
+      ]
+    },
+    {
+      "id": "implement_ollama_client",
+      "name": "Implement Ollama Client",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "rust_code_generation",
+      "inputs": ["integration_architecture"],
+      "outputs": ["ollama_client"],
+      "components": [
+        "OllamaClient struct",
+        "Model management",
+        "Chat completion wrapper",
+        "Streaming support",
+        "Error handling",
+        "Cost tracking"
+      ]
+    },
+    {
+      "id": "expand_agent_capabilities",
+      "name": "Expand Agent Capability Types",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "capability_expansion",
+      "inputs": ["current_12_capabilities"],
+      "outputs": ["expanded_capabilities"],
+      "new_capabilities": [
+        "Vision (image understanding)",
+        "Audio (speech processing)",
+        "CodeGeneration (specialized)",
+        "ToolUse (function calling)",
+        "MultiModal (combined inputs)",
+        "ReasoningChains (step-by-step)",
+        "KnowledgeRetrieval (RAG)",
+        "CreativeGeneration"
+      ]
+    },
+    {
+      "id": "implement_prompt_templates",
+      "name": "Implement Prompt Template System",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "template_system",
+      "outputs": ["prompt_templates"],
+      "features": [
+        "Template variables",
+        "Template composition",
+        "Version control",
+        "A/B testing support",
+        "Performance tracking per template"
+      ]
+    },
+    {
+      "id": "implement_agent_memory",
+      "name": "Implement Agent Memory System",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "memory_system",
+      "outputs": ["agent_memory"],
+      "memory_types": [
+        "Short-term (conversation)",
+        "Working memory (task state)",
+        "Long-term (knowledge base)",
+        "Episodic (previous executions)"
+      ]
+    },
+    {
+      "id": "implement_multi_agent",
+      "name": "Implement Multi-Agent Collaboration",
+      "type": "serviceTask",
+      "taskType": "code_generation",
+      "implementation": "collaboration_framework",
+      "outputs": ["collaboration_system"],
+      "patterns": [
+        "Sequential (chain of agents)",
+        "Parallel (concurrent execution)",
+        "Hierarchical (manager-worker)",
+        "Consensus (voting)",
+        "Debate (multiple perspectives)"
+      ]
+    },
+    {
+      "id": "integrate_with_execution",
+      "name": "Integrate with Execution Engine",
+      "type": "serviceTask",
+      "taskType": "integration",
+      "implementation": "system_integration",
+      "inputs": ["all_ai_components", "execution_engine"],
+      "outputs": ["integrated_ai_system"],
+      "actions": [
+        "Update AgentTask to use Ollama",
+        "Add model selection to task definition",
+        "Implement cost tracking in metrics",
+        "Add streaming support to UI",
+        "Update examples"
+      ]
+    },
+    {
+      "id": "test_ollama",
+      "name": "Test Ollama Integration",
+      "type": "serviceTask",
+      "taskType": "testing",
+      "implementation": "integration_testing",
+      "test_scenarios": [
+        "Start Ollama server",
+        "List available models",
+        "Run inference with local model",
+        "Stream responses",
+        "Fallback to API on failure",
+        "Cost tracking accuracy",
+        "Multi-agent collaboration"
+      ]
+    },
+    {
+      "id": "document_ai",
+      "name": "Write AI Integration Documentation",
+      "type": "serviceTask",
+      "taskType": "documentation",
+      "outputs": [
+        "Ollama setup guide",
+        "Agent capability reference",
+        "Prompt template guide",
+        "Multi-agent patterns guide",
+        "Cost optimization guide"
+      ]
+    },
+    {
+      "id": "end",
+      "name": "AI Enhancement Complete",
+      "type": "endEvent",
+      "eventType": "none"
+    }
+  ],
+  "sequence_flows": [
+    {"id": "f1", "sourceRef": "start", "targetRef": "analyze_mcp_tools"},
+    {"id": "f2", "sourceRef": "analyze_mcp_tools", "targetRef": "research_agent_patterns"},
+    {"id": "f3", "sourceRef": "research_agent_patterns", "targetRef": "design_ollama_integration"},
+    {"id": "f4", "sourceRef": "design_ollama_integration", "targetRef": "implement_ollama_client"},
+    {"id": "f5", "sourceRef": "implement_ollama_client", "targetRef": "expand_agent_capabilities"},
+    {"id": "f6", "sourceRef": "expand_agent_capabilities", "targetRef": "implement_prompt_templates"},
+    {"id": "f7", "sourceRef": "implement_prompt_templates", "targetRef": "implement_agent_memory"},
+    {"id": "f8", "sourceRef": "implement_agent_memory", "targetRef": "implement_multi_agent"},
+    {"id": "f9", "sourceRef": "implement_multi_agent", "targetRef": "integrate_with_execution"},
+    {"id": "f10", "sourceRef": "integrate_with_execution", "targetRef": "test_ollama"},
+    {"id": "f11", "sourceRef": "test_ollama", "targetRef": "document_ai"},
+    {"id": "f12", "sourceRef": "document_ai", "targetRef": "end"}
+  ],
+  "expected_deliverables": {
+    "modules": [
+      "src/ai/mod.rs",
+      "src/ai/ollama.rs",
+      "src/ai/capabilities.rs",
+      "src/ai/prompts.rs",
+      "src/ai/memory.rs",
+      "src/ai/collaboration.rs"
+    ],
+    "tests": [
+      "tests/ai_integration_test.rs",
+      "tests/ollama_test.rs",
+      "tests/multi_agent_test.rs"
+    ],
+    "documentation": [
+      "docs/AI_INTEGRATION_GUIDE.md",
+      "docs/OLLAMA_SETUP.md",
+      "docs/MULTI_AGENT_PATTERNS.md"
+    ],
+    "examples": [
+      "examples/ollama_inference.rs",
+      "examples/multi_agent_workflow.rs"
+    ]
+  },
+  "dependencies": {
+    "mcp_tools": [
+      "Ollama MCP server (configured)",
+      "Running Ollama instance"
+    ],
+    "external_crates": [
+      "reqwest (HTTP client)",
+      "tokio-stream (streaming)",
+      "serde_json (JSON handling)"
+    ]
+  },
+  "success_criteria": {
+    "functional": [
+      "Successfully run inference with Ollama",
+      "Model selection working",
+      "Streaming responses functional",
+      "Cost tracking accurate",
+      "Fallback to API working",
+      "Multi-agent collaboration demonstrated"
+    ],
+    "quality": [
+      "Test coverage > 75%",
+      "Documentation complete with examples",
+      "Performance acceptable",
+      "Error handling robust"
+    ],
+    "business_value": [
+      "Reduces API costs significantly",
+      "Enables offline operation",
+      "Increases agent capabilities",
+      "Enables advanced patterns"
+    ]
+  }
+}
