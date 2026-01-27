@@ -14,6 +14,7 @@
 pub mod operational;
 pub mod capability;
 pub mod services;
+pub mod ov5;
 
 pub use operational::{
     OperationalActivity, OperationalContext, OperationalView,
@@ -21,6 +22,7 @@ pub use operational::{
 };
 pub use capability::{Capability, CapabilityView, CapabilityMapping, CapabilityType};
 pub use services::{Service, ServiceView, ServiceSpecification, ServiceType};
+pub use ov5::*;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

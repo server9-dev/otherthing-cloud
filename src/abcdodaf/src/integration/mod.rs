@@ -3,8 +3,10 @@
 //! Provides integration capabilities with RhizOS MCP protocol and other systems
 
 pub mod mcp;
+pub mod bpmn_dodaf_mapping;
 
 pub use mcp::McpIntegration;
+pub use bpmn_dodaf_mapping::*;
 
 use serde::{Deserialize, Serialize};
 

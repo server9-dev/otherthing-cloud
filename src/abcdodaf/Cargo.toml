@@ -37,6 +37,16 @@ tracing = "0.1"
 futures = "0.3"
 async-trait = "0.1"
 
+# UI dependencies (optional, feature-gated)
+egui = { version = "0.33", optional = true }
+eframe = { version = "0.33", optional = true, default-features = false, features = ["glow", "wayland", "x11"] }
+egui-snarl = { version = "0.9", optional = true, features = ["serde"] }
+rfd = { version = "0.15", optional = true }
+
+[features]
+default = []
+ui = ["dep:egui", "dep:eframe", "dep:egui-snarl", "dep:rfd"]
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3"
@@ -57,3 +67,13 @@ path = "examples/agent_orchestration.rs"
 [[example]]
 name = "bpm_plus_triple_threat"
 path = "examples/bpm_plus_triple_threat.rs"
+
+[[example]]
+name = "ui_editor"
+path = "examples/ui_editor.rs"
+required-features = ["ui"]
+
+[[example]]
+name = "enhanced_ui_editor"
+path = "examples/enhanced_ui_editor.rs"
+required-features = ["ui"]

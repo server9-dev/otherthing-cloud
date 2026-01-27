@@ -72,6 +72,10 @@ pub mod dodaf;
 pub mod workforce;
 pub mod bpm_plus;
 pub mod integration;
+pub mod dev_logger;
+
+#[cfg(feature = "ui")]
+pub mod ui;
 
 pub mod prelude {
     //! Convenience re-exports for common types and traits

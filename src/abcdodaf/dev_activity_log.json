@@ -1,0 +1,15 @@
+{
+  "log_metadata": {
+    "version": "1.0.0",
+    "created_at": "2026-01-26T00:00:00Z",
+    "project": "abcdodaf",
+    "description": "Development activity log for BPMN and DoDAF compliant process modeling",
+    "standards": {
+      "bpmn_version": "2.0",
+      "dodaf_version": "2.02"
+    }
+  },
+  "operational_activities": [],
+  "process_flows": [],
+  "activities": []
+}

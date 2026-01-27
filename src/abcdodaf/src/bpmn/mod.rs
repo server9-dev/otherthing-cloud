@@ -5,9 +5,11 @@
 
 pub mod process;
 pub mod executor;
+pub mod elements;
 
 pub use process::{Process, ProcessBuilder};
 pub use executor::ProcessExecutor;
+pub use elements::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
