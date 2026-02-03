@@ -246,6 +246,7 @@ fn create_sample_diagram() -> BpmnDiagram {
             item_ref: None,
         }],
         signals: Vec::new(),
+        diagram_info: None,
     }
 }
 

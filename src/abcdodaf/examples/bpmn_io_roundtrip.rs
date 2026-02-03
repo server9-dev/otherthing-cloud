@@ -223,5 +223,6 @@ fn create_sample_diagram() -> BpmnDiagram {
         data_stores: vec![],
         messages: vec![],
         signals: vec![],
+        diagram_info: None,
     }
 }

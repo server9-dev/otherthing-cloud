@@ -10,7 +10,6 @@ use crate::integration::connector::{
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::HashMap;
 use std::time::Instant;
 
 /// Distance metric for vector similarity
@@ -315,6 +314,8 @@ impl Connector for QdrantConnector {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     use serde_json::json;
 

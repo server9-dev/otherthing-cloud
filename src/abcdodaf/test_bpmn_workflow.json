@@ -1,91 +1,148 @@
 {
-  "bpmn_process": {
-    "id": "test_workflow",
+  "version": "2.0",
+  "diagram": {
+    "id": "test_bpmn_workflow",
     "name": "Test Workflow",
-    "version": "1.0.0",
-    "isExecutable": true,
-    "processType": "agent_workflow"
-  },
-  "workflow_steps": [
-    {
-      "id": "start_event_1",
-      "name": "Start",
-      "type": "startEvent",
-      "eventType": "none"
-    },
-    {
-      "id": "task_research",
-      "name": "Research Task",
-      "type": "serviceTask",
-      "taskType": "research",
-      "inputs": ["requirements", "context"],
-      "outputs": ["findings"],
-      "duration_minutes": 30
-    },
-    {
-      "id": "gateway_1",
-      "name": "Decision Gateway",
-      "type": "exclusiveGateway"
-    },
-    {
-      "id": "task_design",
-      "name": "Design Task",
-      "type": "serviceTask",
-      "taskType": "design",
-      "inputs": ["findings"],
-      "outputs": ["design_spec"],
-      "duration_minutes": 60
-    },
-    {
-      "id": "task_code",
-      "name": "Code Generation",
-      "type": "serviceTask",
-      "taskType": "code_generation",
-      "inputs": ["design_spec"],
-      "outputs": ["code"],
-      "duration_minutes": 90
-    },
-    {
-      "id": "end_event_1",
-      "name": "End",
-      "type": "endEvent",
-      "eventType": "none"
-    }
-  ],
-  "sequence_flows": [
-    {
-      "id": "flow_1",
-      "sourceRef": "start_event_1",
-      "targetRef": "task_research"
-    },
-    {
-      "id": "flow_2",
-      "sourceRef": "task_research",
-      "targetRef": "gateway_1"
-    },
-    {
-      "id": "flow_3",
-      "sourceRef": "gateway_1",
-      "targetRef": "task_design",
-      "name": "Design Path",
-      "condition": "design_needed == true"
-    },
-    {
-      "id": "flow_4",
-      "sourceRef": "gateway_1",
-      "targetRef": "task_code",
-      "name": "Direct Code Path",
-      "condition": "design_needed == false"
-    },
-    {
-      "id": "flow_5",
-      "sourceRef": "task_design",
-      "targetRef": "task_code"
-    },
-    {
-      "id": "flow_6",
-      "sourceRef": "task_code",
-      "targetRef": "end_event_1"
-    }
-  ]
+    "documentation": null,
+    "processes": [
+      {
+        "id": "test_bpmn_workflow_process",
+        "name": "Test Workflow",
+        "documentation": null,
+        "is_executable": true,
+        "process_type": "None",
+        "start_events": [
+          {
+            "id": "start_event_1",
+            "name": "Start",
+            "documentation": null,
+            "event_definition": null,
+            "is_interrupting": true
+          }
+        ],
+        "end_events": [
+          {
+            "id": "end_event_1",
+            "name": "End",
+            "documentation": null,
+            "event_definition": null
+          }
+        ],
+        "intermediate_events": [],
+        "tasks": [
+          {
+            "id": "task_research",
+            "name": "Research Task",
+            "documentation": "",
+            "task_type": {
+              "Service": {
+                "implementation": "",
+                "operation_ref": ""
+              }
+            },
+            "default_flow": null,
+            "io_specification": null,
+            "properties": {},
+            "loop_characteristics": null,
+            "is_for_compensation": false
+          },
+          {
+            "id": "task_design",
+            "name": "Design Task",
+            "documentation": null,
+            "task_type": {
+              "Service": {
+                "implementation": null,
+                "operation_ref": null
+              }
+            },
+            "default_flow": null,
+            "io_specification": null,
+            "properties": {},
+            "loop_characteristics": null,
+            "is_for_compensation": false
+          },
+          {
+            "id": "task_code",
+            "name": "Code Generation",
+            "documentation": null,
+            "task_type": {
+              "Service": {
+                "implementation": null,
+                "operation_ref": null
+              }
+            },
+            "default_flow": null,
+            "io_specification": null,
+            "properties": {},
+            "loop_characteristics": null,
+            "is_for_compensation": false
+          }
+        ],
+        "subprocesses": [],
+        "gateways": [
+          {
+            "id": "gateway_1",
+            "name": "Decision Gateway",
+            "documentation": null,
+            "gateway_type": "Exclusive",
+            "gateway_direction": "Unspecified",
+            "default_flow": null
+          }
+        ],
+        "sequence_flows": [
+          {
+            "id": "flow_task_code_end_event_1",
+            "name": null,
+            "source_ref": "task_code",
+            "target_ref": "end_event_1",
+            "condition_expression": null,
+            "is_immediate": true
+          },
+          {
+            "id": "flow_task_research_gateway_1",
+            "name": null,
+            "source_ref": "task_research",
+            "target_ref": "gateway_1",
+            "condition_expression": null,
+            "is_immediate": true
+          },
+          {
+            "id": "flow_start_event_1_task_research",
+            "name": null,
+            "source_ref": "start_event_1",
+            "target_ref": "task_research",
+            "condition_expression": null,
+            "is_immediate": true
+          },
+          {
+            "id": "flow_task_design_task_code",
+            "name": null,
+            "source_ref": "task_design",
+            "target_ref": "task_code",
+            "condition_expression": null,
+            "is_immediate": true
+          },
+          {
+            "id": "flow_gateway_1_task_design",
+            "name": null,
+            "source_ref": "gateway_1",
+            "target_ref": "task_design",
+            "condition_expression": null,
+            "is_immediate": true
+          }
+        ],
+        "data_objects": [],
+        "data_associations": [],
+        "text_annotations": [],
+        "groups": [],
+        "lanes": [],
+        "metadata": {}
+      }
+    ],
+    "collaborations": [],
+    "data_stores": [],
+    "messages": [],
+    "signals": []
+  }
 }

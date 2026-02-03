@@ -10,7 +10,7 @@
 //! - Security markings
 //! - Cost/duration estimates
 
-use crate::dodaf::{CapabilityView, OperationalActivity, ServiceView};
+use crate::dodaf::OperationalActivity;
 use crate::error::Result;
 use crate::executor::database::DatabaseManager;
 use serde::{Deserialize, Serialize};
